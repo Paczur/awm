@@ -1,3 +1,6 @@
+#define XK_LATIN1
+#include <X11/keysymdef.h>
+#include <X11/XF86keysym.h>
 #include <xcb/xcb.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -72,6 +75,9 @@ int main(int argc, char *argv[]) {
         kmapping->keysyms_per_keycode];
       printf("Keysym: %d\n", keysym);
       printf("Keycode: %d\n", keycode);
+      if(keysym == XK_a) {
+        puts("\"a\" key pressed");
+      }
     break;
     case XCB_EXPOSE:
       printf("Exposure\n");
