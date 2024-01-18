@@ -1,6 +1,6 @@
 #include <xcb/xcb.h>
-#include <stdio.h>
 #include <unistd.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 xcb_connection_t* conn;
@@ -11,6 +11,7 @@ uint32_t window_id;
 uint32_t gc_id;
 uint32_t value_mask;
 uint32_t* value_list;
+xcb_get_keyboard_mapping_reply_t* kmapping;
 
 int main(int argc, char *argv[]) {
   /* CONNECT */
@@ -61,7 +62,16 @@ int main(int argc, char *argv[]) {
   while((event = xcb_wait_for_event(conn))) {
     switch(event->response_type) {
     case XCB_KEY_PRESS:
-      printf("Button pressed\n");
+      xcb_get_keyboard_mapping_cookie_t cookie =
+        xcb_get_keyboard_mapping(conn, setup->min_keycode,
+                                 setup->max_keycode-setup->min_keycode);
+      kmapping = xcb_get_keyboard_mapping_reply(conn, cookie, NULL);
+      xcb_keycode_t keycode = ((xcb_key_press_event_t*)event)->detail;
+      xcb_keysym_t* keysyms = xcb_get_keyboard_mapping_keysyms(kmapping);
+      xcb_keysym_t keysym = keysyms[(keycode-setup->min_keycode)*
+        kmapping->keysyms_per_keycode];
+      printf("Keysym: %d\n", keysym);
+      printf("Keycode: %d\n", keycode);
     break;
     case XCB_EXPOSE:
       printf("Exposure\n");
