@@ -91,17 +91,17 @@ int main(int argc, char *argv[], char *envp[]) {
       xcb_keysym_t* keysyms = xcb_get_keyboard_mapping_keysyms(kmapping);
       xcb_keysym_t keysym = keysyms[(keycode-setup->min_keycode)*
         kmapping->keysyms_per_keycode];
-      switch(keysym) {
-      case XK_Super_L:
-        mode = !mode;
-      break;
-      case XK_Escape:
-        mode = false;
-      break;
-      case XK_Return:
-        sh("mlterm");
-        printf("mode state: %d\n", mode);
-      break;
+      if(mode) {
+        switch(keysym) {
+        case XK_Escape:
+          mode = false;
+        break;
+        case XK_Return:
+          sh("mlterm");
+        break;
+        }
+      } else if(keysym == XK_Super_L) {
+        mode = true;
       }
     break;
     case XCB_EXPOSE:
