@@ -1,9 +1,11 @@
-#define XK_LATIN1
+#define XK_LATIN1 //letters
+#define XK_MISCELLANY //modifiers and special
 #include <X11/keysymdef.h>
 #include <X11/XF86keysym.h>
 #include <xcb/xcb.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <stdlib.h>
 
 xcb_connection_t* conn;
@@ -15,8 +17,24 @@ uint32_t gc_id;
 uint32_t value_mask;
 uint32_t* value_list;
 xcb_get_keyboard_mapping_reply_t* kmapping;
+bool mode = false;
+extern char **environ;
 
-int main(int argc, char *argv[]) {
+void sh(char* cmd) {
+  int i=0;
+  while(environ[i]!=0) {
+    printf("%s\n", environ[i]);
+    i++;
+  }
+  int pid = fork();
+  if(pid == 0) {
+    execl("/bin/sh", "sh", "-c", cmd, NULL);
+  }
+}
+
+int main(int argc, char *argv[], char *envp[]) {
+  environ = envp;
+
   /* CONNECT */
   conn =  xcb_connect(NULL, NULL); //display and screen
   if(xcb_connection_has_error(conn)) {
@@ -27,7 +45,7 @@ int main(int argc, char *argv[]) {
   screen = xcb_setup_roots_iterator(setup).data;
 
   /* CREATE WINDOW */
-  value_list = malloc(32*2);
+  value_list = malloc(32*2); //Max 2 values
   value_mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
   value_list[0] = screen->black_pixel;
   value_list[1] = XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_EXPOSURE;
@@ -73,10 +91,17 @@ int main(int argc, char *argv[]) {
       xcb_keysym_t* keysyms = xcb_get_keyboard_mapping_keysyms(kmapping);
       xcb_keysym_t keysym = keysyms[(keycode-setup->min_keycode)*
         kmapping->keysyms_per_keycode];
-      printf("Keysym: %d\n", keysym);
-      printf("Keycode: %d\n", keycode);
-      if(keysym == XK_a) {
-        puts("\"a\" key pressed");
+      switch(keysym) {
+      case XK_Super_L:
+        mode = !mode;
+      break;
+      case XK_Escape:
+        mode = false;
+      break;
+      case XK_Return:
+        sh("mlterm");
+        printf("mode state: %d\n", mode);
+      break;
       }
     break;
     case XCB_EXPOSE:
