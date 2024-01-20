@@ -1,6 +1,7 @@
 #define XK_LATIN1 //letters
 #define XK_MISCELLANY //modifiers and special
 #include "main.h"
+#include <xcb/randr.h>
 #include <inttypes.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -16,10 +17,9 @@ const xcb_setup_t* setup;
 xcb_screen_t* screen;
 xcb_generic_event_t* event;
 xcb_keysym_t* keysyms;
-xcb_get_keyboard_mapping_reply_t* kmapping;
+xcb_get_keyboard_mapping_reply_t *kmapping;
 uint32_t window_id;
 uint32_t gc_id;
-uint32_t* values;
 bool mode = false;
 extern char **environ;
 
@@ -47,24 +47,62 @@ void setup_wm(void) {
   setup = xcb_get_setup(conn);
   screen = xcb_setup_roots_iterator(setup).data;
 
-  values = malloc(32*VALUE_LIST_SIZE);
-  values[0] = XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT |
+  xcb_randr_get_screen_resources_cookie_t randr_cookie =
+    xcb_randr_get_screen_resources(conn, screen->root);
+
+  xcb_get_keyboard_mapping_cookie_t kmap_cookie =
+    xcb_get_keyboard_mapping(conn, setup->min_keycode,
+                             setup->max_keycode-setup->min_keycode);
+
+  uint32_t values = XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT |
     XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY |
     XCB_EVENT_MASK_STRUCTURE_NOTIFY |
     XCB_EVENT_MASK_PROPERTY_CHANGE;
   xcb_change_window_attributes_checked(conn, screen->root,
-                                       XCB_CW_EVENT_MASK, values);
+                                       XCB_CW_EVENT_MASK, &values);
   xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, XCB_MOD_MASK_ANY);
-  xcb_get_keyboard_mapping_cookie_t cookie =
-    xcb_get_keyboard_mapping(conn, setup->min_keycode,
-                             setup->max_keycode-setup->min_keycode);
-  kmapping = xcb_get_keyboard_mapping_reply(conn, cookie, NULL);
+
+  kmapping = xcb_get_keyboard_mapping_reply(conn, kmap_cookie, NULL);
   keysyms = xcb_get_keyboard_mapping_keysyms(kmapping);
 
   xcb_grab_key(conn, 1, screen->root, XCB_MOD_MASK_ANY,
                keysym_to_keycode(XK_Super_L),
                XCB_GRAB_MODE_ASYNC,
                XCB_GRAB_MODE_ASYNC);
+
+  xcb_randr_get_screen_resources_reply_t *screen_res =
+    xcb_randr_get_screen_resources_reply(conn, randr_cookie, 0);
+
+  int crtcs_num = xcb_randr_get_screen_resources_crtcs_length(screen_res);
+  printf("%d\n", crtcs_num);
+  xcb_randr_crtc_t *firstCrtc = xcb_randr_get_screen_resources_crtcs(screen_res);
+
+  xcb_randr_get_crtc_info_cookie_t *randr_cookies =
+    malloc(crtcs_num*sizeof(xcb_randr_get_crtc_info_cookie_t));
+
+  for(int i=0; i<crtcs_num; i++)
+    randr_cookies[i] = xcb_randr_get_crtc_info(conn, *(firstCrtc+i), 0);
+
+  xcb_randr_get_crtc_info_reply_t **randr_crtcs =
+    malloc(crtcs_num*sizeof(xcb_randr_get_crtc_info_reply_t));
+
+  for(int i=0; i<crtcs_num; i++) {
+    randr_crtcs[i] = xcb_randr_get_crtc_info_reply(conn, randr_cookies[i], 0);
+  }
+  free(randr_cookies);
+
+  for(int i=0; i<crtcs_num; i++) {
+   printf("CRTC[%i] INFO:\n", i);
+   printf("x-off\t: %i\n", randr_crtcs[i]->x);
+   printf("y-off\t: %i\n", randr_crtcs[i]->y);
+   printf("width\t: %i\n", randr_crtcs[i]->width);
+   printf("height\t: %i\n\n", randr_crtcs[i]->height);
+   free(randr_crtcs[i]);
+  }
+
+  fflush(stdout);
+  free(screen_res);
+  free(randr_crtcs);
   xcb_flush(conn);
 }
 
