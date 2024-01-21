@@ -17,4 +17,6 @@ void normal_mode(void);
 void insert_mode(void);
 void terminal(void);
 
+extern size_t spawn_order[];
+
 #endif

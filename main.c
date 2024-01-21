@@ -7,19 +7,19 @@
 #include <stdbool.h>
 #include <stdlib.h> //malloc
 
-#define VALUE_LIST_SIZE 10
-
-//Required
 extern char **environ;
-
 monitor_t *monitors;
+size_t monitors_length;
+
+window_t *windows;
+size_t windows_length;
+size_t windows_i = 0;
 
 void setup_wm(void) {
   xcb_randr_get_screen_resources_cookie_t randr_cookie;
   xcb_get_keyboard_mapping_cookie_t kmap_cookie;
   uint32_t values;
   xcb_randr_get_screen_resources_reply_t *screen_res;
-  int crtcs_num;
   xcb_randr_crtc_t *firstCrtc;
   xcb_randr_get_crtc_info_cookie_t *randr_cookies;
   xcb_randr_get_crtc_info_reply_t **randr_crtcs;
@@ -46,28 +46,28 @@ void setup_wm(void) {
 
   screen_res = xcb_randr_get_screen_resources_reply(conn, randr_cookie, 0);
 
-  crtcs_num = xcb_randr_get_screen_resources_crtcs_length(screen_res);
+  monitors_length = xcb_randr_get_screen_resources_crtcs_length(screen_res);
   firstCrtc = xcb_randr_get_screen_resources_crtcs(screen_res);
 
-  randr_cookies = malloc(crtcs_num*sizeof(xcb_randr_get_crtc_info_cookie_t));
+  randr_cookies = malloc(monitors_length*sizeof(xcb_randr_get_crtc_info_cookie_t));
 
-  for(int i=0; i<crtcs_num; i++)
+  for(size_t i=0; i<monitors_length; i++)
     randr_cookies[i] = xcb_randr_get_crtc_info(conn, *(firstCrtc+i), 0);
 
-  randr_crtcs = malloc(crtcs_num*sizeof(xcb_randr_get_crtc_info_reply_t));
+  randr_crtcs = malloc(monitors_length*sizeof(xcb_randr_get_crtc_info_reply_t));
 
-  for(int i=0; i<crtcs_num; i++) {
+  for(size_t i=0; i<monitors_length; i++) {
     randr_crtcs[i] = xcb_randr_get_crtc_info_reply(conn, randr_cookies[i], 0);
   }
   free(randr_cookies);
 
-  for(int i=0; i<crtcs_num; i++) {
+  for(size_t i=0; i<monitors_length; i++) {
     if(randr_crtcs[i]->width == 0)
-      crtcs_num = i;
+      monitors_length = i;
   }
 
-  monitors = malloc(sizeof(monitor_t) * crtcs_num);
-  for(int i=0; i<crtcs_num; i++) {
+  monitors = malloc(sizeof(monitor_t) * monitors_length);
+  for(size_t i=0; i<monitors_length; i++) {
     monitors[i].w = randr_crtcs[i]->width;
     monitors[i].h = randr_crtcs[i]->height;
     monitors[i].x = randr_crtcs[i]->x;
@@ -77,8 +77,14 @@ void setup_wm(void) {
   free(screen_res);
   free(randr_crtcs);
 
-  config_parse();
-  normal_mode();
+  windows_length = monitors_length * 4;
+  windows = calloc(windows_length, sizeof(window_t));
+
+  //TODO: ARENA ALLOCATE
+  for(size_t i=0; i<windows_length; i++) {
+    windows[i].id = malloc(sizeof(xcb_window_t));
+  }
+
   fflush(stdout);
   xcb_flush(conn);
 }
@@ -92,28 +98,63 @@ void handle_shortcut(xcb_keycode_t keycode) {
   }
 }
 
-int main(int argc, char *argv[], char *envp[]) {
-  xcb_generic_event_t* event;
-  environ = envp;
+void spawn_window(xcb_window_t window) {
+  if(windows_i == windows_length) {
+    puts("Too much windows - TODO: MINIMIZE");
+    windows_i = 0;
+  }
+  size_t i = spawn_order[windows_i++];
+  size_t m = i/4;
+  window_t *wn = windows+i;
 
-  setup_wm();
+  wn->geometry[2] = monitors[m].w/2;
+  wn->geometry[3] = monitors[m].h/2;
+
+  //TODO: POSSIBLY MAKE USER CONFIGURABLE
+  switch(i%4) {
+  case 0:
+    wn->geometry[0] = monitors[m].x;
+    wn->geometry[1] = monitors[m].y;
+  break;
+  case 1:
+    wn->geometry[0] = wn->geometry[2];
+    wn->geometry[1] = monitors[m].y;
+  break;
+  case 2:
+    wn->geometry[0] = wn->geometry[2];
+    wn->geometry[1] = wn->geometry[3];
+  break;
+  case 3:
+    wn->geometry[0] = monitors[m].x;
+    wn->geometry[1] = wn->geometry[3];
+  break;
+  }
+
+  //check for collision
+  //window_t *w = windows+m*4+j;
+
+  wn->exists = true;
+  *(wn->id) = window;
+  xcb_map_window(conn, *(wn->id));
+  xcb_configure_window(conn, *(wn->id),
+                       XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y |
+                       XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
+                       wn->geometry);
+}
+
+void event_loop(void) {
+  xcb_generic_event_t* event;
+
   while((event = xcb_wait_for_event(conn))) {
     switch(event->response_type) {
     case XCB_KEY_PRESS:
       handle_shortcut(((xcb_key_press_event_t*)event)->detail);
     break;
     case XCB_MAP_REQUEST:
-      xcb_map_request_event_t *e = (xcb_map_request_event_t *) event;
-      xcb_map_window(conn, e->window);
-      uint32_t vals[5];
-      vals[0] = monitors[0].x;
-      vals[1] = monitors[0].y;
-      vals[2] = monitors[0].w;
-      vals[3] = monitors[0].h;
-      vals[4] = 0; //border_width
-      xcb_configure_window(conn, e->window, XCB_CONFIG_WINDOW_X |
-                           XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH |
-                           XCB_CONFIG_WINDOW_HEIGHT | XCB_CONFIG_WINDOW_BORDER_WIDTH, vals);
+      spawn_window(((xcb_map_request_event_t *)event)->window);
+    break;
+    case XCB_EXPOSE:
+      puts("Expose");
     break;
     default:
       printf ("Unknown event: %"PRIu8"\n", event->response_type);
@@ -121,5 +162,15 @@ int main(int argc, char *argv[], char *envp[]) {
     }
     xcb_flush(conn);
   }
+}
+
+int main(int argc, char *argv[], char *envp[]) {
+  environ = envp;
+
+  setup_wm();
+  config_parse();
+  normal_mode();
+  event_loop();
+
   return 0;
 }

@@ -12,7 +12,7 @@ xcb_keycode_t keysym_to_keycode(xcb_keysym_t keysym) {
   return -1;
 }
 
-void config_parse(void) {
+void convert_shortcuts(void) {
   int start = 0;
 
   normal_code = keysym_to_keycode(normal_shortcut);
@@ -54,6 +54,10 @@ void config_parse(void) {
   }
 }
 
+void config_parse(void) {
+  convert_shortcuts();
+}
+
 void terminal(void) {
   sh("mlterm");
 }
@@ -70,8 +74,8 @@ void normal_mode(void) {
 void insert_mode(void) {
   mode = MODE_INSERT;
   xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, XCB_MOD_MASK_ANY);
-    xcb_grab_key(conn, 1, screen->root, 0, normal_code,
-                 XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+  xcb_grab_key(conn, 1, screen->root, 0, normal_code,
+               XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
 }
 
 
