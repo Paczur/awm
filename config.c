@@ -78,4 +78,6 @@ void insert_mode(void) {
                XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
 }
 
-
+void librewolf(void) {
+  sh("lb");
+}

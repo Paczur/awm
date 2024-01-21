@@ -114,10 +114,10 @@ void spawn_window(xcb_window_t window) {
   size_t m = windows_i/4;
   window_t *wn = windows+windows_i;
 
-  wn->geometry[0] = monitors[m].x;
-  wn->geometry[1] = monitors[m].y;
-  wn->geometry[2] = monitors[m].w;
-  wn->geometry[3] = monitors[m].h;
+  wn->geometry[0] = monitors[m].x + gaps;
+  wn->geometry[1] = monitors[m].y + gaps;
+  wn->geometry[2] = monitors[m].w - gaps*2;
+  wn->geometry[3] = monitors[m].h - gaps*2;
 
   //TODO: POSSIBLY MAKE USER CONFIGURABLE
   switch(windows_i%4) {
@@ -137,34 +137,35 @@ void spawn_window(xcb_window_t window) {
   for(int i=0; i<4; i++) {
     window_t *w = windows+m*4+i;
     if(!w->exists) continue;
-    if(wn->geometry[2] == monitors[m].w &&
+    if(wn->geometry[2] == monitors[m].w-gaps*2 &&
        (wn->geometry[1] == w->geometry[1] ||
         (wn->geometry[0] == w->geometry[0] &&
-         w->geometry[2] == monitors[m].w/2))) {
-      if(w->geometry[2] == monitors[m].w) {
-        w->geometry[2] /= 2;
+         w->geometry[2] != monitors[m].w-gaps*2))) {
+      if(w->geometry[2] == monitors[m].w-gaps*2) {
+        w->geometry[2] = monitors[m].w/2-gaps*2;
         if(wn->geometry[0] == w->geometry[0])
-          w->geometry[0] = monitors[m].w/2;
+          w->geometry[0] = monitors[m].w/2+gaps;
         xcb_configure_window(conn, *(w->id),
                              XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y |
                              XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
                              w->geometry);
       }
-      wn->geometry[2] /= 2;
-    } else if(wn->geometry[3] == monitors[m].h &&
+      wn->geometry[2] = monitors[m].w/2-gaps*2;
+    }
+    if(wn->geometry[3] == monitors[m].h-gaps*2 &&
               (wn->geometry[0] == w->geometry[0] ||
                (wn->geometry[1] == w->geometry[1] &&
-                w->geometry[3] == monitors[m].h/2))) {
-      if(w->geometry[3] == monitors[m].h) {
-        w->geometry[3] /= 2;
+                w->geometry[3] == monitors[m].h/2-gaps*2))) {
+      if(w->geometry[3] == monitors[m].h-gaps*2) {
+        w->geometry[3] = monitors[m].h/2-gaps*2;
         if(wn->geometry[1] == w->geometry[1])
-          w->geometry[1] = monitors[m].h/2;
+          w->geometry[1] = monitors[m].h+gaps;
         xcb_configure_window(conn, *(w->id),
                              XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y |
                              XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
                              w->geometry);
       }
-      wn->geometry[3] /= 2;
+      wn->geometry[3] = monitors[m].h/2-gaps*2;
     }
   }
 
