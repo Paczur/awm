@@ -13,7 +13,6 @@ size_t monitors_length;
 
 window_t *windows;
 size_t windows_length;
-size_t windows_i = 0;
 
 void setup_wm(void) {
   xcb_randr_get_screen_resources_cookie_t randr_cookie;
@@ -99,39 +98,75 @@ void handle_shortcut(xcb_keycode_t keycode) {
 }
 
 void spawn_window(xcb_window_t window) {
-  if(windows_i == windows_length) {
-    puts("Too much windows - TODO: MINIMIZE");
-    windows_i = 0;
+  size_t windows_i = windows_length;
+  for(size_t i=0; i<windows_length; i++) {
+    if(spawn_order[i] < windows_length && !windows[spawn_order[i]].exists) {
+      windows_i = i;
+      break;
+    }
   }
-  size_t i = spawn_order[windows_i++];
-  size_t m = i/4;
-  window_t *wn = windows+i;
+  if(windows_i == windows_length) {
+    puts("TOO MUCH WINDOWS - TODO: MINIMIZE");
+    return;
+  }
 
-  wn->geometry[2] = monitors[m].w/2;
-  wn->geometry[3] = monitors[m].h/2;
+  windows_i = spawn_order[windows_i];
+  size_t m = windows_i/4;
+  window_t *wn = windows+windows_i;
+
+  wn->geometry[0] = monitors[m].x;
+  wn->geometry[1] = monitors[m].y;
+  wn->geometry[2] = monitors[m].w;
+  wn->geometry[3] = monitors[m].h;
 
   //TODO: POSSIBLY MAKE USER CONFIGURABLE
-  switch(i%4) {
-  case 0:
-    wn->geometry[0] = monitors[m].x;
-    wn->geometry[1] = monitors[m].y;
-  break;
+  switch(windows_i%4) {
   case 1:
-    wn->geometry[0] = wn->geometry[2];
-    wn->geometry[1] = monitors[m].y;
+    wn->geometry[0] += monitors[m].w/2;
   break;
   case 2:
-    wn->geometry[0] = wn->geometry[2];
-    wn->geometry[1] = wn->geometry[3];
+    wn->geometry[0] += monitors[m].w/2;
+    wn->geometry[1] += monitors[m].h/2;
   break;
   case 3:
-    wn->geometry[0] = monitors[m].x;
-    wn->geometry[1] = wn->geometry[3];
+    wn->geometry[1] += monitors[m].h/2;
   break;
   }
 
   //check for collision
-  //window_t *w = windows+m*4+j;
+  for(int i=0; i<4; i++) {
+    window_t *w = windows+m*4+i;
+    if(!w->exists) continue;
+    if(wn->geometry[2] == monitors[m].w &&
+       (wn->geometry[1] == w->geometry[1] ||
+        (wn->geometry[0] == w->geometry[0] &&
+         w->geometry[2] == monitors[m].w/2))) {
+      if(w->geometry[2] == monitors[m].w) {
+        w->geometry[2] /= 2;
+        if(wn->geometry[0] == w->geometry[0])
+          w->geometry[0] = monitors[m].w/2;
+        xcb_configure_window(conn, *(w->id),
+                             XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y |
+                             XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
+                             w->geometry);
+      }
+      wn->geometry[2] /= 2;
+    } else if(wn->geometry[3] == monitors[m].h &&
+              (wn->geometry[0] == w->geometry[0] ||
+               (wn->geometry[1] == w->geometry[1] &&
+                w->geometry[3] == monitors[m].h/2))) {
+      if(w->geometry[3] == monitors[m].h) {
+        w->geometry[3] /= 2;
+        if(wn->geometry[1] == w->geometry[1])
+          w->geometry[1] = monitors[m].h/2;
+        xcb_configure_window(conn, *(w->id),
+                             XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y |
+                             XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
+                             w->geometry);
+      }
+      wn->geometry[3] /= 2;
+    }
+  }
 
   wn->exists = true;
   *(wn->id) = window;
