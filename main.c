@@ -11,8 +11,13 @@ extern char **environ;
 monitor_t *monitors;
 size_t monitors_length;
 
+// TODO: MOVE TO LINKED LIST
 window_t *windows;
 size_t windows_length;
+size_t windows_i = 0;
+
+grid_cell_t *window_grid;
+size_t grid_length;
 
 void setup_wm(void) {
   xcb_randr_get_screen_resources_cookie_t randr_cookie;
@@ -76,8 +81,11 @@ void setup_wm(void) {
   free(screen_res);
   free(randr_crtcs);
 
-  windows_length = monitors_length * 4;
+  grid_length = monitors_length * 4;
+  windows_length = monitors_length * 14;
+
   windows = calloc(windows_length, sizeof(window_t));
+  window_grid = calloc(grid_length, sizeof(grid_cell_t));
 
   //TODO: ARENA ALLOCATE
   for(size_t i=0; i<windows_length; i++) {
@@ -98,79 +106,96 @@ void handle_shortcut(xcb_keycode_t keycode) {
 }
 
 void spawn_window(xcb_window_t window) {
-  size_t windows_i = windows_length;
-  for(size_t i=0; i<windows_length; i++) {
-    if(spawn_order[i] < windows_length && !windows[spawn_order[i]].exists) {
-      windows_i = i;
+  window_t *w;
+  window_t *wn;
+  size_t m;
+  size_t grid_i = windows_length;
+  if(windows_i == windows_length) {
+    puts("TOO MUCH WINDOWS");
+    fflush(stdout);
+    return;
+  }
+  for(size_t i=0; i<LENGTH(spawn_order); i++) {
+    if(spawn_order[i] < grid_length && !window_grid[spawn_order[i]].origin) {
+      grid_i = spawn_order[i];
       break;
     }
   }
-  if(windows_i == windows_length) {
-    puts("TOO MUCH WINDOWS - TODO: MINIMIZE");
+  if(grid_i == windows_length) {
+    puts("TODO: MINIMIZE");
+    fflush(stdout);
     return;
   }
 
-  windows_i = spawn_order[windows_i];
-  size_t m = windows_i/4;
-  window_t *wn = windows+windows_i;
+  m = grid_i/4;
+  wn = windows+windows_i;
 
   wn->geometry[0] = monitors[m].x + gaps;
   wn->geometry[1] = monitors[m].y + gaps;
   wn->geometry[2] = monitors[m].w - gaps*2;
   wn->geometry[3] = monitors[m].h - gaps*2;
-
-  //TODO: POSSIBLY MAKE USER CONFIGURABLE
-  switch(windows_i%4) {
-  case 1:
-    wn->geometry[0] += monitors[m].w/2;
-  break;
-  case 2:
-    wn->geometry[0] += monitors[m].w/2;
-    wn->geometry[1] += monitors[m].h/2;
-  break;
-  case 3:
-    wn->geometry[1] += monitors[m].h/2;
-  break;
-  }
+  w = window_grid[grid_i].window;
 
   //check for collision
-  for(int i=0; i<4; i++) {
-    window_t *w = windows+m*4+i;
-    if(!w->exists) continue;
-    if(wn->geometry[2] == monitors[m].w-gaps*2 &&
-       (wn->geometry[1] == w->geometry[1] ||
-        (wn->geometry[0] == w->geometry[0] &&
-         w->geometry[2] != monitors[m].w-gaps*2))) {
-      if(w->geometry[2] == monitors[m].w-gaps*2) {
-        w->geometry[2] = monitors[m].w/2-gaps*2;
-        if(wn->geometry[0] == w->geometry[0])
-          w->geometry[0] = monitors[m].w/2+gaps;
-        xcb_configure_window(conn, *(w->id),
-                             XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y |
-                             XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
-                             w->geometry);
-      }
-      wn->geometry[2] = monitors[m].w/2-gaps*2;
+  if(window_grid[grid_i].window == NULL) { //EMPTY WORKSPACE
+    for(int i=0; i<4; i++) {
+      window_grid[m*4 + i].window = wn;
     }
-    if(wn->geometry[3] == monitors[m].h-gaps*2 &&
-              (wn->geometry[0] == w->geometry[0] ||
-               (wn->geometry[1] == w->geometry[1] &&
-                w->geometry[3] == monitors[m].h/2-gaps*2))) {
-      if(w->geometry[3] == monitors[m].h-gaps*2) {
-        w->geometry[3] = monitors[m].h/2-gaps*2;
-        if(wn->geometry[1] == w->geometry[1])
-          w->geometry[1] = monitors[m].h+gaps;
-        xcb_configure_window(conn, *(w->id),
-                             XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y |
-                             XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
-                             w->geometry);
-      }
-      wn->geometry[3] = monitors[m].h/2-gaps*2;
+    wn->geometry[0] = monitors[m].x + gaps;
+    wn->geometry[1] = monitors[m].y + gaps;
+    wn->geometry[2] = monitors[m].w - gaps*2;
+    wn->geometry[3] = monitors[m].h - gaps*2;
+  } else if(window_grid[(grid_i+1)%4 + m*4].window ==
+            window_grid[(grid_i+3)%4 + m*4].window) { //ONE WINDOW
+    w->geometry[2] = monitors[m].w/2 - gaps*2;
+    wn->geometry[2] = monitors[m].w/2 - gaps*2;
+    if(grid_i%4 == 1 || grid_i%4 == 2) { //RIGHT SIDE
+      wn->geometry[0] = monitors[m].x + monitors[m].w/2 + gaps;
+      window_grid[4*m + 1].window = wn;
+      window_grid[4*m + 2].window = wn;
+    } else { //LEFT SIDE
+      w->geometry[0] = monitors[m].x + monitors[m].w/2 + gaps;
+      window_grid[4*m + 4].window = wn;
+      window_grid[4*m + 0].window = wn;
     }
+  } else {
+    wn->geometry[2] = monitors[m].w/2 - gaps*2;
+    wn->geometry[3] = monitors[m].h/2 - gaps*2;
+    switch(grid_i%4) {
+    case 1:
+      wn->geometry[0] = monitors[m].x + monitors[m].w/2 + gaps;
+    break;
+    case 2:
+      wn->geometry[0] = monitors[m].x + monitors[m].w/2 + gaps;
+      wn->geometry[1] = monitors[m].y + monitors[m].h/2 + gaps;
+    break;
+    case 3:
+      wn->geometry[1] = monitors[m].y + monitors[m].h/2 + gaps;
+    break;
+    }
+    if(w->geometry[2] > w->geometry[3]) { //HORIZONTAL
+      w->geometry[2] = monitors[m].w/2 - gaps*2;
+      if(wn->geometry[0] == w->geometry[0]) {
+        w->geometry[0] = monitors[m].x + monitors[m].w/2 + gaps;
+      }
+    } else { //VERTICAL
+      w->geometry[3] = monitors[m].h/2 - gaps*2;
+      if(wn->geometry[1] == w->geometry[1]) {
+        w->geometry[1] = monitors[m].y + monitors[m].h/2 + gaps;
+      }
+    }
+    window_grid[grid_i].window = wn;
   }
+  window_grid[grid_i].origin = true;
 
-  wn->exists = true;
+  if(w != NULL) {
+    xcb_configure_window(conn, *(w->id),
+                         XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y |
+                         XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
+                         w->geometry);
+  }
   *(wn->id) = window;
+  windows_i++;
   xcb_map_window(conn, *(wn->id));
   xcb_configure_window(conn, *(wn->id),
                        XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y |

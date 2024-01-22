@@ -12,9 +12,13 @@ typedef struct {
 } monitor_t;
 
 typedef struct {
-  bool exists;
   xcb_window_t *id;
   uint32_t geometry[4];
 } window_t;
+
+typedef struct {
+  bool origin;
+  window_t *window;
+} grid_cell_t;
 
 #endif

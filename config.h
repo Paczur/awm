@@ -18,7 +18,7 @@ void insert_mode(void);
 void terminal(void);
 void librewolf(void);
 
-extern size_t spawn_order[];
+extern size_t spawn_order[24];
 extern uint32_t gaps;
 
 #endif
