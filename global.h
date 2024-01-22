@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <xcb/xcb.h>
+#include "window.h"
 
 #define LENGTH(x) (sizeof(x)/sizeof(x[0]))
 
@@ -23,6 +24,18 @@ extern size_t shortcut_lookup_offset;
 extern size_t shortcut_lookup_l;
 extern MODE mode;
 extern xcb_keycode_t normal_code;
+
+extern window_t *windows;
+extern size_t windows_length;
+extern size_t windows_i;
+
+extern monitor_t *monitors;
+extern size_t monitors_length;
+
+extern grid_cell_t *window_grid;
+extern size_t grid_length;
+
+extern size_t current_window;
 
 //XCB
 extern xcb_connection_t* conn;
