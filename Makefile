@@ -21,3 +21,9 @@ clean:
 
 install:
 	cp bin/main /home/paczur/main
+
+uninstall:
+	rm /home/paczur/main
+	rm /home/paczur/out
+
+test: uninstall install
