@@ -36,6 +36,7 @@ void focus_window_down(void);
 void focus_window_up(void);
 void focus_window_left(void);
 void focus_window_right(void);
+void destroy_current_window(void);
 
 extern size_t spawn_order[24];
 extern uint32_t gaps;

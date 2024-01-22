@@ -21,8 +21,8 @@ typedef struct {
   window_t *window;
 } grid_cell_t;
 
+void destroy_window(uint);
 void focus_window(uint);
-
 void spawn_window(xcb_window_t);
 
 #endif

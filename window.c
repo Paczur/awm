@@ -2,13 +2,33 @@
 #include "config.h"
 #include <stdio.h>
 
+void destroy_window(uint n) {
+  size_t m = n/4;
+  xcb_destroy_window(conn, window_grid[n].window->id);
+  for(int i=0; i<4; i++) {
+    if(window_grid[i+m*4].window != NULL &&
+       window_grid[i+m*4].window->id == window_grid[n].window->id) {
+      window_grid[i+m*4].window = NULL;
+      window_grid[i+m*4].origin = false;
+    }
+  }
+  if(n == current_window) {
+    for(size_t i=0; i<grid_length; i++) {
+      if(window_grid[i].window != NULL) {
+         focus_window(i);
+         break;
+      }
+    }
+  }
+}
+
 void focus_window(uint n) {
   window_t *w;
   uint32_t geom[4];
   if(n >= grid_length)
     return;
 
-  if(current_window < grid_length) {
+  if(current_window < grid_length && window_grid[current_window].window != NULL) {
     w = window_grid[current_window].window;
     xcb_configure_window(conn, w->id,
                          XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y |
@@ -17,7 +37,9 @@ void focus_window(uint n) {
   }
   xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT,
                       window_grid[n].window->id, XCB_CURRENT_TIME);
+
   w = window_grid[n].window;
+
   geom[0] = w->geometry[0]-gaps;
   geom[1] = w->geometry[1]-gaps;
   geom[2] = w->geometry[2]+gaps*2;

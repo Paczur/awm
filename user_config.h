@@ -11,6 +11,7 @@ shortcut_t shortcuts[] = {
   {XK_8, focus_window_7},
   {XK_9, focus_window_8},
   {XK_0, focus_window_9},
+  {XK_d, destroy_current_window},
   {XK_j, focus_window_down},
   {XK_h, focus_window_left},
   {XK_k, focus_window_up},

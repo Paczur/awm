@@ -162,6 +162,10 @@ void insert_mode(void) {
                XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
 }
 
+void destroy_current_window(void) {
+  destroy_window(current_window);
+}
+
 void librewolf(void) {
   sh("lb");
 }
