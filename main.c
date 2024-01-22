@@ -97,11 +97,15 @@ void setup_wm(void) {
 }
 
 void handle_shortcut(xcb_keycode_t keycode) {
+  size_t lookup;
   if(mode == MODE_INSERT &&
      keycode == normal_code) {
     normal_mode();
   } else if(mode == MODE_NORMAL) {
-    shortcut_lookup[keycode-shortcut_lookup_offset]();
+    lookup = keycode-shortcut_lookup_offset;
+    if(lookup >= shortcut_lookup_l)
+      return;
+    shortcut_lookup[lookup]();
   }
 }
 
