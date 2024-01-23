@@ -66,7 +66,7 @@ void config_parse(void) {
 }
 
 void focus_window_down(void) {
-  if(current_window/2 == 0) {
+  if(current_window%4/2 == 0) {
     focus_window_n(current_window+2);
   } else {
     focus_window_n(current_window-2);
@@ -78,15 +78,23 @@ void focus_window_up(void) {
 }
 
 void focus_window_left(void) {
-  if(current_window%2 == 0) {
-    focus_window_n(current_window+1);
-  } else {
+  if(current_window%2 != 0) {
     focus_window_n(current_window-1);
+  } else if(current_window-3 < grid_length) {
+    focus_window_n(current_window-3);
+  } else {
+    focus_window_n((monitors_length-1)*4 + current_window/2*2+1);
   }
 }
 
 void focus_window_right(void) {
-  focus_window_left();
+  if(current_window%2 == 0) {
+    focus_window_n(current_window+1);
+  } else if(current_window+3 < grid_length) {
+    focus_window_n(current_window+3);
+  } else {
+    focus_window_n(current_window%4/2*2);
+  }
 }
 
 fwindow_impl(0)

@@ -69,7 +69,7 @@ void sync_layout_with_grid(void) {
       w->geometry[0] = monitors[m].x +
         (monitors[m].w/2)*(i%2==0 ? 0 : 1) + gaps;
       w->geometry[1] = monitors[m].y +
-        (monitors[m].h/2)*(i/2==0 ? 0 : 1) + gaps;
+        (monitors[m].h/2)*(i%4/2==0 ? 0 : 1) + gaps;
       w->geometry[2] = monitors[m].w/2 - gaps*2;
       w->geometry[3] = monitors[m].h/2 - gaps*2;
     } else {
@@ -113,7 +113,7 @@ size_t get_index(xcb_window_t w) {
 }
 
 void focus_window_n(uint n) {
-  if(n >= grid_length)
+  if(n >= grid_length || window_grid[n].window == NULL)
     return;
   xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT,
                       window_grid[n].window->id, XCB_CURRENT_TIME);
@@ -144,8 +144,8 @@ void map_request(xcb_window_t window) {
   window_grid[grid_i].origin = true;
   xcb_map_window(conn, window);
   windows_i++;
-
   xcb_change_window_attributes(conn, window, XCB_CW_EVENT_MASK, &mask);
+
   sync_layout_with_grid();
   xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT,
                       window, XCB_CURRENT_TIME);
@@ -157,7 +157,7 @@ void map_request(xcb_window_t window) {
 
 void unmap_window(xcb_window_t window) {
   for(size_t i=0; i<grid_length; i++) {
-    if(window_grid[i].window->id == window) {
+    if(window_grid[i].window != NULL && window_grid[i].window->id == window) {
       if(window_grid[i].origin)
         window_grid[i].origin = false;
       //TODO: DEALLOCATE
