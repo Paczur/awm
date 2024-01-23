@@ -101,18 +101,43 @@ void event_loop(void) {
   while((event = xcb_wait_for_event(conn))) {
     switch(event->response_type) {
     case XCB_KEY_PRESS:
+      puts("KEY PRESS");
       handle_shortcut(((xcb_key_press_event_t*)event)->detail);
     break;
+
     case XCB_MAP_REQUEST:
-      spawn_window(((xcb_map_request_event_t *)event)->window);
+      puts("MAP REQUEST");
+      map_request(((xcb_map_request_event_t *)event)->window);
     break;
+
+    case XCB_MAP_NOTIFY:
+      puts("MAP NOTIFY");
+    break;
+
+    case XCB_UNMAP_NOTIFY:
+      puts("UNMAP NOTIFY");
+      unmap_window(((xcb_unmap_notify_event_t *)event)->window);
+    break;
+
+    case XCB_FOCUS_IN:
+      puts("FOCUS IN");
+      if(((xcb_focus_in_event_t *)event)->detail == XCB_NOTIFY_DETAIL_POINTER) continue;
+      focus_in(((xcb_focus_in_event_t *)event)->event);
+    break;
+
+    case XCB_FOCUS_OUT:
+      puts("FOCUS OUT");
+    break;
+
     case XCB_EXPOSE:
-      puts("Expose");
+      puts("EXPOSE");
     break;
+
     default:
-      printf ("Unknown event: %"PRIu8"\n", event->response_type);
+      printf("Unknown event: %"PRIu8"\n", event->response_type);
     break;
     }
+    fflush(stdout);
     xcb_flush(conn);
   }
 }

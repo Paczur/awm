@@ -23,7 +23,7 @@ shortcut_t shortcuts[] = {
 };
 
 size_t spawn_order[] = {
-  0, 4, 7, 1, 6, 2, 5, 3
+  0, 4, 6, 1, 7, 3, 5, 2
 };
 
 uint32_t gaps = 15;

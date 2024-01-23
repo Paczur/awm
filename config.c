@@ -8,7 +8,7 @@
 
 #define fwindow_impl(n) \
   void focus_window_ ## n (void) { \
-    focus_window(n); \
+    focus_window_n(n); \
   }
 
 xcb_keycode_t keysym_to_keycode(xcb_keysym_t keysym) {
@@ -66,69 +66,27 @@ void config_parse(void) {
 }
 
 void focus_window_down(void) {
-  switch(current_window%4) {
-  case 0:
-    focus_window(current_window+3);
-  break;
-  case 1:
-    focus_window(current_window+1);
-  break;
+  if(current_window/2 == 0) {
+    focus_window_n(current_window+2);
+  } else {
+    focus_window_n(current_window-2);
   }
 }
 
 void focus_window_up(void) {
-  switch(current_window%4) {
-  case 2:
-    focus_window(current_window-1);
-  break;
-  case 3:
-    focus_window(current_window-3);
-  break;
-  }
+  focus_window_down();
 }
 
 void focus_window_left(void) {
-  int next = current_window;
-  switch(next%4) {
-  case 0:
-    next -= 3;
-  break;
-  case 1:
-    next--;
-  break;
-  case 2:
-    next++;
-  break;
-  case 3:
-    next -= 5;
-  break;
+  if(current_window%2 == 0) {
+    focus_window_n(current_window+1);
+  } else {
+    focus_window_n(current_window-1);
   }
-  if(next < 0) {
-    next += 4;
-    next %= 4;
-  }
-  focus_window(next);
 }
 
 void focus_window_right(void) {
-  size_t next = current_window;
-  switch(next%4) {
-  case 0:
-    next++;
-  break;
-  case 1:
-    next += 3;
-  break;
-  case 2:
-    next += 5;
-  break;
-  case 3:
-    next--;
-  break;
-  }
-  if(next > grid_length)
-    next %= 4;
-  focus_window(next);
+  focus_window_left();
 }
 
 fwindow_impl(0)
@@ -163,7 +121,7 @@ void insert_mode(void) {
 }
 
 void destroy_current_window(void) {
-  destroy_window(current_window);
+  destroy_window_n(current_window);
 }
 
 void librewolf(void) {

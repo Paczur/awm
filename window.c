@@ -1,60 +1,126 @@
 #include "global.h"
 #include "config.h"
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-void destroy_window(uint n) {
-  size_t m = n/4;
-  xcb_destroy_window(conn, window_grid[n].window->id);
-  for(int i=0; i<4; i++) {
-    if(window_grid[i+m*4].window != NULL &&
-       window_grid[i+m*4].window->id == window_grid[n].window->id) {
-      window_grid[i+m*4].window = NULL;
-      window_grid[i+m*4].origin = false;
+uint32_t *previous;
+size_t prev_focus = SIZE_MAX;
+
+void sync_layout_with_grid_expand_hor(size_t m) {
+  if(window_grid[m*4 + 0].window == NULL &&
+     window_grid[m*4 + 1].window != NULL) {
+    window_grid[m*4 + 0].window = window_grid[m*4 + 1].window;
+    window_grid[m*4 + 1].window->geometry[0] = monitors[m].x + gaps;
+    window_grid[m*4 + 1].window->geometry[2] = monitors[m].w - gaps*2;
+  } else if(window_grid[m*4 + 1].window == NULL &&
+            window_grid[m*4 + 0].window != NULL) {
+    window_grid[m*4 + 1].window = window_grid[m*4 + 0].window;
+    window_grid[m*4 + 0].window->geometry[2] = monitors[m].w - gaps*2;
+  }
+
+  if(window_grid[m*4 + 2].window == NULL &&
+     window_grid[m*4 + 3].window != NULL) {
+    window_grid[m*4 + 2].window = window_grid[m*4 + 3].window;
+    window_grid[m*4 + 3].window->geometry[0] = monitors[m].x + gaps;
+    window_grid[m*4 + 3].window->geometry[2] = monitors[m].w - gaps*2;
+  } else if(window_grid[m*4 + 3].window == NULL &&
+            window_grid[m*4 + 2].window != NULL) {
+    window_grid[m*4 + 3].window = window_grid[m*4 + 2].window;
+    window_grid[m*4 + 2].window->geometry[2] = monitors[m].w - gaps*2;
+  }
+}
+
+void sync_layout_with_grid_expand_vert(size_t m) {
+  if(window_grid[m*4 + 0].window == NULL &&
+     window_grid[m*4 + 2].window != NULL) {
+    window_grid[m*4 + 0].window = window_grid[m*4 + 2].window;
+    window_grid[m*4 + 2].window->geometry[1] = monitors[m].y + gaps;
+    window_grid[m*4 + 2].window->geometry[3] = monitors[m].h - gaps*2;
+  } else if(window_grid[m*4 + 2].window == NULL &&
+            window_grid[m*4 + 0].window != NULL) {
+    window_grid[m*4 + 2].window = window_grid[m*4 + 0].window;
+    window_grid[m*4 + 0].window->geometry[3] = monitors[m].h - gaps*2;
+  }
+
+  if(window_grid[m*4 + 1].window == NULL &&
+     window_grid[m*4 + 3].window != NULL) {
+    window_grid[m*4 + 1].window = window_grid[m*4 + 3].window;
+    window_grid[m*4 + 3].window->geometry[1] = monitors[m].y + gaps;
+    window_grid[m*4 + 3].window->geometry[3] = monitors[m].h - gaps*2;
+  } else if(window_grid[m*4 + 3].window == NULL &&
+            window_grid[m*4 + 1].window != NULL) {
+    window_grid[m*4 + 3].window = window_grid[m*4 + 1].window;
+    window_grid[m*4 + 1].window->geometry[3] = monitors[m].h - gaps*2;
+  }
+}
+
+void sync_layout_with_grid(void) {
+  window_t *w;
+  size_t m;
+  if(previous == NULL)
+    previous = malloc(grid_length * 4 * sizeof(uint32_t));
+  //collapse all windows
+  for(size_t i=0; i<grid_length; i++) {
+    if(window_grid[i].origin) {
+      w = window_grid[i].window;
+      m = i/4;
+      memcpy(previous+i*4, w->geometry, 4*sizeof(uint32_t));
+      w->geometry[0] = monitors[m].x +
+        (monitors[m].w/2)*(i%2==0 ? 0 : 1) + gaps;
+      w->geometry[1] = monitors[m].y +
+        (monitors[m].h/2)*(i/2==0 ? 0 : 1) + gaps;
+      w->geometry[2] = monitors[m].w/2 - gaps*2;
+      w->geometry[3] = monitors[m].h/2 - gaps*2;
+    } else {
+      window_grid[i].window = NULL;
     }
   }
-  if(n == current_window) {
-    for(size_t i=0; i<grid_length; i++) {
-      if(window_grid[i].window != NULL) {
-         focus_window(i);
-         break;
-      }
+  for(size_t i=0; i<monitors_length; i++) {
+    if(monitors[i].w >= monitors[i].h) {
+      sync_layout_with_grid_expand_vert(i);
+      sync_layout_with_grid_expand_hor(i);
+    } else {
+      sync_layout_with_grid_expand_hor(i);
+      sync_layout_with_grid_expand_vert(i);
+    }
+  }
+  for(size_t i=0; i<grid_length; i++) {
+    w = window_grid[i].window;
+    if(w != NULL &&
+       (previous[i*4 + 0] != w->geometry[0] ||
+        previous[i*4 + 1] != w->geometry[1] ||
+        previous[i*4 + 2] != w->geometry[2] ||
+        previous[i*4 + 3] != w->geometry[3])) {
+      xcb_configure_window(conn, w->id, XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y |
+                           XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
+                           w->geometry);
     }
   }
 }
 
-void focus_window(uint n) {
-  window_t *w;
-  uint32_t geom[4];
+void destroy_window_n(uint n) {
+  xcb_destroy_window(conn, window_grid[n].window->id);
+}
+
+size_t get_index(xcb_window_t w) {
+  for(size_t i=0; i<grid_length; i++) {
+    if(window_grid[i].window != NULL && window_grid[i].window->id == w) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+void focus_window_n(uint n) {
   if(n >= grid_length)
     return;
-
-  if(current_window < grid_length && window_grid[current_window].window != NULL) {
-    w = window_grid[current_window].window;
-    xcb_configure_window(conn, w->id,
-                         XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y |
-                         XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
-                         w->geometry);
-  }
   xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT,
                       window_grid[n].window->id, XCB_CURRENT_TIME);
-
-  w = window_grid[n].window;
-
-  geom[0] = w->geometry[0]-gaps;
-  geom[1] = w->geometry[1]-gaps;
-  geom[2] = w->geometry[2]+gaps*2;
-  geom[3] = w->geometry[3]+gaps*2;
-  xcb_configure_window(conn, w->id,
-                       XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y |
-                       XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
-                       geom);
-  current_window = n;
 }
 
-void spawn_window(xcb_window_t window) {
-  window_t *w;
-  window_t *wn;
-  size_t m;
+void map_request(xcb_window_t window) {
+  int mask = XCB_EVENT_MASK_FOCUS_CHANGE | XCB_EVENT_MASK_ENTER_WINDOW;
   size_t grid_i = windows_length;
   if(windows_i == windows_length) {
     puts("TOO MUCH WINDOWS");
@@ -73,93 +139,53 @@ void spawn_window(xcb_window_t window) {
     return;
   }
 
-  m = grid_i/4;
-  wn = windows+windows_i;
-
-  wn->geometry[0] = monitors[m].x + gaps;
-  wn->geometry[1] = monitors[m].y + gaps;
-  wn->geometry[2] = monitors[m].w - gaps*2;
-  wn->geometry[3] = monitors[m].h - gaps*2;
-  w = window_grid[grid_i].window;
-
-  //check for collision
-  if(window_grid[grid_i].window == NULL) { //EMPTY WORKSPACE
-    for(int i=0; i<4; i++) {
-      window_grid[m*4 + i].window = wn;
-    }
-    wn->geometry[0] = monitors[m].x + gaps;
-    wn->geometry[1] = monitors[m].y + gaps;
-    wn->geometry[2] = monitors[m].w - gaps*2;
-    wn->geometry[3] = monitors[m].h - gaps*2;
-  } else if(window_grid[(grid_i+1)%4 + m*4].window ==
-            window_grid[(grid_i+3)%4 + m*4].window) { //ONE WINDOW
-    if(monitors[m].w >= monitors[m].h) {
-      w->geometry[2] = monitors[m].w/2 - gaps*2;
-      wn->geometry[2] = monitors[m].w/2 - gaps*2;
-      if(grid_i%4 == 1 || grid_i%4 == 2) { //RIGHT SIDE
-        wn->geometry[0] = monitors[m].x + monitors[m].w/2 + gaps;
-        window_grid[4*m + 1].window = wn;
-        window_grid[4*m + 2].window = wn;
-      } else { //LEFT SIDE
-        w->geometry[0] = monitors[m].x + monitors[m].w/2 + gaps;
-        window_grid[4*m + 3].window = wn;
-        window_grid[4*m + 0].window = wn;
-      }
-    } else {
-      w->geometry[3] = monitors[m].h/2 - gaps*2;
-      wn->geometry[3] = monitors[m].h/2 - gaps*2;
-      if(grid_i%4 == 2 || grid_i%4 == 3) { //BOTTOM
-        wn->geometry[1] = monitors[m].y + monitors[m].h/2 + gaps;
-        window_grid[4*m + 2].window = wn;
-        window_grid[4*m + 3].window = wn;
-      } else { //TOP
-        w->geometry[1] = monitors[m].y + monitors[m].h/2 + gaps;
-        window_grid[4*m + 0].window = wn;
-        window_grid[4*m + 1].window = wn;
-      }
-    }
-  } else {
-    wn->geometry[2] = monitors[m].w/2 - gaps*2;
-    wn->geometry[3] = monitors[m].h/2 - gaps*2;
-    switch(grid_i%4) {
-    case 1:
-      wn->geometry[0] = monitors[m].x + monitors[m].w/2 + gaps;
-    break;
-    case 2:
-      wn->geometry[0] = monitors[m].x + monitors[m].w/2 + gaps;
-      wn->geometry[1] = monitors[m].y + monitors[m].h/2 + gaps;
-    break;
-    case 3:
-      wn->geometry[1] = monitors[m].y + monitors[m].h/2 + gaps;
-    break;
-    }
-    if(w->geometry[2] > w->geometry[3]) { //HORIZONTAL
-      w->geometry[2] = monitors[m].w/2 - gaps*2;
-      if(wn->geometry[0] == w->geometry[0]) {
-        w->geometry[0] = monitors[m].x + monitors[m].w/2 + gaps;
-      }
-    } else { //VERTICAL
-      w->geometry[3] = monitors[m].h/2 - gaps*2;
-      if(wn->geometry[1] == w->geometry[1]) {
-        w->geometry[1] = monitors[m].y + monitors[m].h/2 + gaps;
-      }
-    }
-    window_grid[grid_i].window = wn;
-  }
+  windows[windows_i].id = window;
+  window_grid[grid_i].window = windows+windows_i;
   window_grid[grid_i].origin = true;
+  xcb_map_window(conn, window);
+  windows_i++;
 
-  if(w != NULL) {
-    xcb_configure_window(conn, w->id,
-                         XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y |
+  xcb_change_window_attributes(conn, window, XCB_CW_EVENT_MASK, &mask);
+  sync_layout_with_grid();
+  xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT,
+                      window, XCB_CURRENT_TIME);
+  xcb_configure_window(conn, window, XCB_CONFIG_WINDOW_X |
+                       XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH |
+                       XCB_CONFIG_WINDOW_HEIGHT,
+                       window_grid[grid_i].window->geometry);
+}
+
+void unmap_window(xcb_window_t window) {
+  for(size_t i=0; i<grid_length; i++) {
+    if(window_grid[i].window->id == window) {
+      if(window_grid[i].origin)
+        window_grid[i].origin = false;
+      //TODO: DEALLOCATE
+      window_grid[i].window = NULL;
+    }
+  }
+  sync_layout_with_grid();
+}
+
+void focus_in(xcb_window_t window) {
+  uint32_t geom[4];
+  window_t *w;
+  size_t i = get_index(window);
+  if(i >= grid_length) return;
+  if(prev_focus < grid_length) {
+    w = window_grid[prev_focus].window;
+    xcb_configure_window(conn, w->id, XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y |
                          XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
                          w->geometry);
   }
-  wn->id = window;
-  windows_i++;
-  xcb_map_window(conn, wn->id);
-  xcb_configure_window(conn, wn->id,
-                       XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y |
+  w = window_grid[i].window;
+  geom[0] = w->geometry[0]-gaps;
+  geom[1] = w->geometry[1]-gaps;
+  geom[2] = w->geometry[2]+gaps*2;
+  geom[3] = w->geometry[3]+gaps*2;
+  xcb_configure_window(conn, w->id, XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y |
                        XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
-                       wn->geometry);
-  focus_window(grid_i);
+                       geom);
+  prev_focus = current_window;
+  current_window = i;
 }
