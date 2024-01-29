@@ -8,7 +8,7 @@
 #define LENGTH(x) (sizeof(x)/sizeof(x[0]))
 #ifdef DEBUG
 #undef DEBUG
-#define DEBUG if(true)
+#define DEBUG for(int _i=1; _i; _i=0, fflush(stdout))
 #else
 #define DEBUG if(false)
 #endif

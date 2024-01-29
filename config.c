@@ -6,6 +6,10 @@
 #include <string.h> //memmove
 #include <stdio.h> //printf
 
+#define X(pos) ((pos)%2)
+#define Y(pos) ((pos)%4/2)
+#define COMB(x, y) ((x)+(y)*2)
+
 #define fwindow_impl(n) \
   void focus_window_ ## n (void) { \
     focus_window_n(n); \
@@ -67,7 +71,7 @@ void config_parse(void) {
 
 void focus_window_down(void) {
   size_t t = view.workspaces[view.focus].focus;
-  focus_window_n(t%2+!(t%4/2)*2);
+  focus_window_n(t/4*4+COMB(X(t), !Y(t)));
 }
 
 void focus_window_up(void) {
