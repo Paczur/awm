@@ -30,7 +30,7 @@ typedef struct grid_cell_t {
 typedef struct workspace_t {
   grid_cell_t *grid;
   size_t focus;
-  int cross[2];
+  int *cross;
 } workspace_t;
 
 typedef struct view_t {
@@ -40,8 +40,8 @@ typedef struct view_t {
   size_t focus;
 } view_t;
 
-void resize_n_w(size_t, int);
-void resize_n_h(size_t, int);
+void resize_w(size_t, int);
+void resize_h(size_t, int);
 void destroy_n(size_t);
 void focus_window_n(size_t);
 void unmap_notify(xcb_window_t);

@@ -79,41 +79,51 @@ void focus_window_up(void) {
 }
 
 void focus_window_left(void) {
-  size_t t = view.workspaces[view.focus].focus;
-  if(t%2 != 0) {
-    focus_window_n(t-1);
-  } else if(t-3 < view.monitor_count*4) {
-    focus_window_n(t-3);
-  } else {
-    focus_window_n((view.monitor_count-1)*4 + t/2*2+1);
+  workspace_t *workspace = view.workspaces+view.focus;
+  window_t *next = workspace->grid[workspace->focus].window;
+  window_t *prev = workspace->grid[workspace->focus].window;
+  size_t t = workspace->focus;
+  while(prev == next) {
+    if(t == 0 || t == 2) {
+      t = COMB(0, Y(t)) + view.monitor_count*2-1;
+    } else {
+      t -= X(t) == 0 ? 3 : 1;
+    }
+    next = workspace->grid[t].window;
   }
+  focus_window_n(t);
 }
 
 void focus_window_right(void) {
-  size_t t = view.workspaces[view.focus].focus;
-  if(t%2 == 0) {
-    focus_window_n(t+1);
-  } else if(t+3 < view.monitor_count*4) {
-    focus_window_n(t+3);
-  } else {
-    focus_window_n(t%4/2*2);
+  workspace_t *workspace = view.workspaces+view.focus;
+  window_t *next = workspace->grid[workspace->focus].window;
+  window_t *prev = workspace->grid[workspace->focus].window;
+  size_t t = workspace->focus;
+  while(prev == next) {
+    if(t == view.monitor_count*4-1 || t == view.monitor_count*4-3) {
+      t = COMB(0, Y(t));
+    } else {
+      t += X(t) == 1 ? 3 : 1;
+    }
+    next = workspace->grid[t].window;
   }
+  focus_window_n(t);
 }
 
 void enlarge_width(void) {
-  resize_n_w(view.workspaces[view.focus].focus, 10);
+  resize_w(view.workspaces[view.focus].focus/4, 10);
 }
 
 void enlarge_height(void) {
-  resize_n_h(view.workspaces[view.focus].focus, 10);
+  resize_h(view.workspaces[view.focus].focus/4, 10);
 }
 
 void shrink_width(void) {
-  resize_n_w(view.workspaces[view.focus].focus, -10);
+  resize_w(view.workspaces[view.focus].focus/4, -10);
 }
 
 void shrink_height(void) {
-  resize_n_h(view.workspaces[view.focus].focus, -10);
+  resize_h(view.workspaces[view.focus].focus/4, -10);
 }
 
 fwindow_impl(0)
