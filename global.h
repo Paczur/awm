@@ -6,6 +6,12 @@
 #include "window.h"
 
 #define LENGTH(x) (sizeof(x)/sizeof(x[0]))
+#ifdef DEBUG
+#undef DEBUG
+#define DEBUG if(true)
+#else
+#define DEBUG if(false)
+#endif
 
 typedef enum {
   MODE_NORMAL,
@@ -22,20 +28,11 @@ extern xcb_get_keyboard_mapping_reply_t *kmapping;
 extern void (**shortcut_lookup) (void);
 extern size_t shortcut_lookup_offset;
 extern size_t shortcut_lookup_l;
-extern MODE mode;
 extern xcb_keycode_t normal_code;
+extern MODE mode;
 
 extern window_t *windows;
-extern size_t windows_length;
-extern size_t windows_i;
-
-extern monitor_t *monitors;
-extern size_t monitors_length;
-
-extern grid_cell_t *window_grid;
-extern size_t grid_length;
-
-extern size_t current_window;
+extern view_t view;
 
 //XCB
 extern xcb_connection_t* conn;

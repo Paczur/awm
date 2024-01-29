@@ -66,11 +66,8 @@ void config_parse(void) {
 }
 
 void focus_window_down(void) {
-  if(current_window%4/2 == 0) {
-    focus_window_n(current_window+2);
-  } else {
-    focus_window_n(current_window-2);
-  }
+  size_t t = view.workspaces[view.focus].focus;
+  focus_window_n(t%2+!(t%4/2)*2);
 }
 
 void focus_window_up(void) {
@@ -78,23 +75,41 @@ void focus_window_up(void) {
 }
 
 void focus_window_left(void) {
-  if(current_window%2 != 0) {
-    focus_window_n(current_window-1);
-  } else if(current_window-3 < grid_length) {
-    focus_window_n(current_window-3);
+  size_t t = view.workspaces[view.focus].focus;
+  if(t%2 != 0) {
+    focus_window_n(t-1);
+  } else if(t-3 < view.monitor_count*4) {
+    focus_window_n(t-3);
   } else {
-    focus_window_n((monitors_length-1)*4 + current_window/2*2+1);
+    focus_window_n((view.monitor_count-1)*4 + t/2*2+1);
   }
 }
 
 void focus_window_right(void) {
-  if(current_window%2 == 0) {
-    focus_window_n(current_window+1);
-  } else if(current_window+3 < grid_length) {
-    focus_window_n(current_window+3);
+  size_t t = view.workspaces[view.focus].focus;
+  if(t%2 == 0) {
+    focus_window_n(t+1);
+  } else if(t+3 < view.monitor_count*4) {
+    focus_window_n(t+3);
   } else {
-    focus_window_n(current_window%4/2*2);
+    focus_window_n(t%4/2*2);
   }
+}
+
+void enlarge_width(void) {
+  resize_n_w(view.workspaces[view.focus].focus, 10);
+}
+
+void enlarge_height(void) {
+  resize_n_h(view.workspaces[view.focus].focus, 10);
+}
+
+void shrink_width(void) {
+  resize_n_w(view.workspaces[view.focus].focus, -10);
+}
+
+void shrink_height(void) {
+  resize_n_h(view.workspaces[view.focus].focus, -10);
 }
 
 fwindow_impl(0)
@@ -129,7 +144,7 @@ void insert_mode(void) {
 }
 
 void destroy_current_window(void) {
-  destroy_window_n(current_window);
+  destroy_n(view.workspaces[view.focus].focus);
 }
 
 void librewolf(void) {

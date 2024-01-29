@@ -9,6 +9,7 @@
 #include <stdlib.h> //malloc
 
 extern char **environ;
+bool restart;
 
 void setup_wm(void) {
   xcb_randr_get_screen_resources_cookie_t randr_cookie;
@@ -41,42 +42,43 @@ void setup_wm(void) {
 
   screen_res = xcb_randr_get_screen_resources_reply(conn, randr_cookie, 0);
 
-  monitors_length = xcb_randr_get_screen_resources_crtcs_length(screen_res);
+  view.monitor_count = xcb_randr_get_screen_resources_crtcs_length(screen_res);
   firstCrtc = xcb_randr_get_screen_resources_crtcs(screen_res);
 
-  randr_cookies = malloc(monitors_length*sizeof(xcb_randr_get_crtc_info_cookie_t));
+  randr_cookies = malloc(view.monitor_count*sizeof(xcb_randr_get_crtc_info_cookie_t));
 
-  for(size_t i=0; i<monitors_length; i++)
+  for(size_t i=0; i<view.monitor_count; i++)
     randr_cookies[i] = xcb_randr_get_crtc_info(conn, *(firstCrtc+i), 0);
 
-  randr_crtcs = malloc(monitors_length*sizeof(xcb_randr_get_crtc_info_reply_t));
+  randr_crtcs = malloc(view.monitor_count*sizeof(xcb_randr_get_crtc_info_reply_t));
 
-  for(size_t i=0; i<monitors_length; i++) {
+  for(size_t i=0; i<view.monitor_count; i++) {
     randr_crtcs[i] = xcb_randr_get_crtc_info_reply(conn, randr_cookies[i], 0);
   }
   free(randr_cookies);
 
-  for(size_t i=0; i<monitors_length; i++) {
+  for(size_t i=0; i<view.monitor_count; i++) {
     if(randr_crtcs[i]->width == 0)
-      monitors_length = i;
+      view.monitor_count = i;
   }
 
-  monitors = malloc(sizeof(monitor_t) * monitors_length);
-  for(size_t i=0; i<monitors_length; i++) {
-    monitors[i].w = randr_crtcs[i]->width;
-    monitors[i].h = randr_crtcs[i]->height;
-    monitors[i].x = randr_crtcs[i]->x;
-    monitors[i].y = randr_crtcs[i]->y;
+  view.monitors = malloc(sizeof(monitor_t) * view.monitor_count);
+  for(size_t i=0; i<view.monitor_count; i++) {
+    view.monitors[i].w = randr_crtcs[i]->width;
+    view.monitors[i].h = randr_crtcs[i]->height;
+    view.monitors[i].x = randr_crtcs[i]->x;
+    view.monitors[i].y = randr_crtcs[i]->y;
     free(randr_crtcs[i]);
   }
   free(screen_res);
   free(randr_crtcs);
 
-  grid_length = monitors_length * 4;
-  windows_length = monitors_length * 14;
-
-  windows = calloc(windows_length, sizeof(window_t));
-  window_grid = calloc(grid_length, sizeof(grid_cell_t));
+  for(size_t i=0; i<LENGTH(view.workspaces); i++) {
+    view.workspaces[i].grid = calloc(4, sizeof(grid_cell_t));
+    for(size_t j=0; j<4; j++) {
+      view.workspaces[i].grid[j].origin = -1;
+    }
+  }
 
   fflush(stdout);
   xcb_flush(conn);
@@ -98,32 +100,68 @@ void handle_shortcut(xcb_keycode_t keycode) {
 void event_loop(void) {
   xcb_generic_event_t* event;
 
-  while((event = xcb_wait_for_event(conn))) {
+  while(!restart) {
+    event = xcb_wait_for_event(conn);
     switch(event->response_type) {
     case XCB_KEY_PRESS:
+      DEBUG {
+        puts("KEY PRESS");
+      }
       handle_shortcut(((xcb_key_press_event_t*)event)->detail);
     break;
 
     case XCB_MAP_REQUEST:
+      DEBUG {
+        puts("MAP REQUEST");
+      }
       map_request(((xcb_map_request_event_t *)event)->window);
     break;
 
+    case XCB_CREATE_NOTIFY:
+      DEBUG {
+        puts("CREATE NOTIFY");
+      }
+      create_notify(((xcb_create_notify_event_t *)event)->window);
+    break;
+
+    case XCB_DESTROY_NOTIFY:
+      DEBUG {
+        puts("DESTROY NOTIFY");
+      }
+      destroy_notify(((xcb_destroy_notify_event_t *)event)->window);
+    break;
+
     case XCB_MAP_NOTIFY:
+      DEBUG {
+        puts("MAP NOTIFY");
+      }
     break;
 
     case XCB_UNMAP_NOTIFY:
-      unmap_window(((xcb_unmap_notify_event_t *)event)->window);
+      DEBUG {
+        puts("UNMAP NOTIFY");
+      }
+      unmap_notify(((xcb_unmap_notify_event_t *)event)->window);
     break;
 
     case XCB_FOCUS_IN:
       if(((xcb_focus_in_event_t *)event)->detail == XCB_NOTIFY_DETAIL_POINTER) continue;
+      DEBUG {
+        puts("FOCUS_IN");
+      }
       focus_in(((xcb_focus_in_event_t *)event)->event);
     break;
 
     case XCB_FOCUS_OUT:
+      DEBUG {
+        puts("FOCUS OUT");
+      }
     break;
 
     case XCB_EXPOSE:
+      DEBUG {
+        puts("EXPOSE");
+      }
     break;
     }
     fflush(stdout);
@@ -132,6 +170,8 @@ void event_loop(void) {
 }
 
 int main(int argc, char *argv[], char *envp[]) {
+  (void)argc;
+  (void)argv;
   environ = envp;
 
   setup_wm();

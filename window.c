@@ -4,188 +4,387 @@
 #include <stdlib.h>
 #include <string.h>
 
-uint32_t *previous;
-size_t prev_focus = SIZE_MAX;
+#define X(pos) ((pos)%2)
+#define Y(pos) ((pos)%4/2)
+#define COMB(x, y) ((x)+(y)*2)
 
-void sync_layout_with_grid_expand_hor(size_t m) {
-  if(window_grid[m*4 + 0].window == NULL &&
-     window_grid[m*4 + 1].window != NULL) {
-    window_grid[m*4 + 0].window = window_grid[m*4 + 1].window;
-    window_grid[m*4 + 1].window->geometry[0] = monitors[m].x + gaps;
-    window_grid[m*4 + 1].window->geometry[2] = monitors[m].w - gaps*2;
-  } else if(window_grid[m*4 + 1].window == NULL &&
-            window_grid[m*4 + 0].window != NULL) {
-    window_grid[m*4 + 1].window = window_grid[m*4 + 0].window;
-    window_grid[m*4 + 0].window->geometry[2] = monitors[m].w - gaps*2;
-  }
-
-  if(window_grid[m*4 + 2].window == NULL &&
-     window_grid[m*4 + 3].window != NULL) {
-    window_grid[m*4 + 2].window = window_grid[m*4 + 3].window;
-    window_grid[m*4 + 3].window->geometry[0] = monitors[m].x + gaps;
-    window_grid[m*4 + 3].window->geometry[2] = monitors[m].w - gaps*2;
-  } else if(window_grid[m*4 + 3].window == NULL &&
-            window_grid[m*4 + 2].window != NULL) {
-    window_grid[m*4 + 3].window = window_grid[m*4 + 2].window;
-    window_grid[m*4 + 2].window->geometry[2] = monitors[m].w - gaps*2;
-  }
-}
-
-void sync_layout_with_grid_expand_vert(size_t m) {
-  if(window_grid[m*4 + 0].window == NULL &&
-     window_grid[m*4 + 2].window != NULL) {
-    window_grid[m*4 + 0].window = window_grid[m*4 + 2].window;
-    window_grid[m*4 + 2].window->geometry[1] = monitors[m].y + gaps;
-    window_grid[m*4 + 2].window->geometry[3] = monitors[m].h - gaps*2;
-  } else if(window_grid[m*4 + 2].window == NULL &&
-            window_grid[m*4 + 0].window != NULL) {
-    window_grid[m*4 + 2].window = window_grid[m*4 + 0].window;
-    window_grid[m*4 + 0].window->geometry[3] = monitors[m].h - gaps*2;
-  }
-
-  if(window_grid[m*4 + 1].window == NULL &&
-     window_grid[m*4 + 3].window != NULL) {
-    window_grid[m*4 + 1].window = window_grid[m*4 + 3].window;
-    window_grid[m*4 + 3].window->geometry[1] = monitors[m].y + gaps;
-    window_grid[m*4 + 3].window->geometry[3] = monitors[m].h - gaps*2;
-  } else if(window_grid[m*4 + 3].window == NULL &&
-            window_grid[m*4 + 1].window != NULL) {
-    window_grid[m*4 + 3].window = window_grid[m*4 + 1].window;
-    window_grid[m*4 + 1].window->geometry[3] = monitors[m].h - gaps*2;
-  }
-}
-
-void sync_layout_with_grid(void) {
-  window_t *w;
-  size_t m;
-  if(previous == NULL)
-    previous = malloc(grid_length * 4 * sizeof(uint32_t));
-  //collapse all windows
-  for(size_t i=0; i<grid_length; i++) {
-    if(window_grid[i].origin) {
-      w = window_grid[i].window;
-      m = i/4;
-      memcpy(previous+i*4, w->geometry, 4*sizeof(uint32_t));
-      w->geometry[0] = monitors[m].x +
-        (monitors[m].w/2)*(i%2==0 ? 0 : 1) + gaps;
-      w->geometry[1] = monitors[m].y +
-        (monitors[m].h/2)*(i%4/2==0 ? 0 : 1) + gaps;
-      w->geometry[2] = monitors[m].w/2 - gaps*2;
-      w->geometry[3] = monitors[m].h/2 - gaps*2;
-    } else {
-      window_grid[i].window = NULL;
-    }
-  }
-  for(size_t i=0; i<monitors_length; i++) {
-    if(monitors[i].w >= monitors[i].h) {
-      sync_layout_with_grid_expand_vert(i);
-      sync_layout_with_grid_expand_hor(i);
-    } else {
-      sync_layout_with_grid_expand_hor(i);
-      sync_layout_with_grid_expand_vert(i);
-    }
-  }
-  for(size_t i=0; i<grid_length; i++) {
-    w = window_grid[i].window;
-    if(w != NULL &&
-       (previous[i*4 + 0] != w->geometry[0] ||
-        previous[i*4 + 1] != w->geometry[1] ||
-        previous[i*4 + 2] != w->geometry[2] ||
-        previous[i*4 + 3] != w->geometry[3])) {
-      xcb_configure_window(conn, w->id, XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y |
-                           XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
-                           w->geometry);
-    }
-  }
-}
-
-void destroy_window_n(uint n) {
-  xcb_destroy_window(conn, window_grid[n].window->id);
-}
+#define UPDATE(i) \
+  do { \
+    DEBUG { \
+      printf("UPDATING: %lu LINE: %u\n", workspace->grid[i].origin, __LINE__); \
+    } \
+    xcb_configure_window(conn, \
+                         workspace->grid[(i)].window->id, \
+                         XCB_CONFIG_WINDOW_X | \
+                         XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH | \
+                         XCB_CONFIG_WINDOW_HEIGHT, \
+                         workspace->grid[(i)].geometry); \
+  } while(false)
 
 size_t get_index(xcb_window_t w) {
-  for(size_t i=0; i<grid_length; i++) {
-    if(window_grid[i].window != NULL && window_grid[i].window->id == w) {
+  for(size_t i=0; i<view.monitor_count*4; i++) {
+    if(view.workspaces[view.focus].grid[i].window->id == w)
       return i;
-    }
   }
   return -1;
 }
 
-void focus_window_n(uint n) {
-  if(n >= grid_length || window_grid[n].window == NULL)
+window_t* get_window(xcb_window_t w) {
+  window_t *win = windows;
+  while(win != NULL) {
+    if(win->id == w)
+      return win;
+    win = win->next;
+  }
+  return NULL;
+}
+
+void destroy_n(size_t n) {
+  xcb_destroy_window(conn, view.workspaces[view.focus].grid[n].window->id);
+}
+
+void resize_n_h(size_t n, int h) {
+  if(n >= view.monitor_count*4)
+    return;
+  workspace_t *workspace = view.workspaces+view.focus;
+  size_t origin = workspace->grid[n].origin;
+  size_t next = workspace->grid[COMB(X(n), !Y(n))].origin;
+  size_t onext = workspace->grid[COMB(!X(n), !Y(n))].origin;
+  size_t oorigin = workspace->grid[COMB(!X(n), Y(n))].origin;
+  if(Y(origin) == Y(next)) return;
+  if((workspace->grid[next].geometry[3] - h > workspace->grid[next].geometry[3] ||
+      workspace->grid[onext].geometry[3] - h > workspace->grid[onext].geometry[3]) &&
+     (workspace->grid[origin].geometry[3] + h > workspace->grid[origin].geometry[3] ||
+      workspace->grid[origin].geometry[3] + h == 0))
+    return;
+  workspace->grid[origin].geometry[3] += h;
+  workspace->grid[next].geometry[3] -= h;
+  if(Y(next) == 1) {
+    workspace->grid[next].geometry[1] += h;
+  } else {
+    workspace->grid[origin].geometry[1] -= h;
+  }
+  if(onext != next) {
+    workspace->grid[onext].geometry[3] -= h;
+    if(Y(next) == 1)
+      workspace->grid[onext].geometry[1] += h;
+    UPDATE(onext);
+  }
+  if(oorigin != origin) {
+    workspace->grid[oorigin].geometry[3] += h;
+    if(Y(oorigin) == 1)
+      workspace->grid[oorigin].geometry[1] -= h;
+    UPDATE(oorigin);
+  }
+  UPDATE(origin);
+  UPDATE(next);
+}
+
+void resize_n_w(size_t n, int w) {
+  if(n >= view.monitor_count*4)
+    return;
+  workspace_t *workspace = view.workspaces+view.focus;
+  size_t origin = workspace->grid[n].origin;
+  size_t next = workspace->grid[COMB(!X(n), Y(n))].origin;
+  size_t onext = workspace->grid[COMB(!X(n), !Y(n))].origin;
+  size_t oorigin = workspace->grid[COMB(X(n), !Y(n))].origin;
+  if(X(origin) == X(next)) return;
+  if((workspace->grid[next].geometry[2] - w > workspace->grid[next].geometry[2] ||
+      workspace->grid[next].geometry[2] - w == 0 ||
+      workspace->grid[onext].geometry[2] - w == 0 ||
+      workspace->grid[onext].geometry[2] - w > workspace->grid[onext].geometry[2]) &&
+     workspace->grid[origin].geometry[2] + w > workspace->grid[origin].geometry[2])
+    return;
+  workspace->grid[origin].geometry[2] += w;
+  workspace->grid[next].geometry[2] -= w;
+  if(X(next) == 1) {
+    workspace->grid[next].geometry[0] += w;
+  } else {
+    workspace->grid[origin].geometry[0] -= w;
+  }
+  if(onext != next) {
+    workspace->grid[onext].geometry[2] -= w;
+    if(X(next) == 1)
+      workspace->grid[onext].geometry[0] += w;
+    UPDATE(onext);
+  }
+  if(oorigin != origin) {
+    workspace->grid[oorigin].geometry[2] += w;
+    if(X(oorigin) == 1)
+      workspace->grid[oorigin].geometry[0] -= w;
+    UPDATE(oorigin);
+  }
+  UPDATE(origin);
+  UPDATE(next);
+}
+
+void focus_window_n(size_t n) {
+  if(n >= view.monitor_count*4)
+    return;
+  window_t *window = view.workspaces[view.focus].grid[n].window;
+  if(window == NULL)
     return;
   xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT,
-                      window_grid[n].window->id, XCB_CURRENT_TIME);
+                      window->id, XCB_CURRENT_TIME);
+}
+
+void focus_in(xcb_window_t window) {
+  workspace_t *workspace = view.workspaces+view.focus;
+  grid_cell_t *cell = workspace->grid+workspace->focus;
+  size_t i = workspace->grid[get_index(window)].origin;
+  if(i >= view.monitor_count*4) return;
+  if(workspace->grid[workspace->focus].window != NULL) {
+    cell->geometry[0] += gaps;
+    cell->geometry[1] += gaps;
+    cell->geometry[2] -= gaps*2;
+    cell->geometry[3] -= gaps*2;
+    xcb_configure_window(conn, workspace->grid[workspace->focus].window->id,
+                         XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y |
+                         XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
+                         cell->geometry);
+  }
+  workspace->focus = i;
+  cell = workspace->grid+i;
+  cell->geometry[0] -= gaps;
+  cell->geometry[1] -= gaps;
+  cell->geometry[2] += gaps*2;
+  cell->geometry[3] += gaps*2;
+  xcb_configure_window(conn, workspace->grid[workspace->focus].window->id,
+                       XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y |
+                       XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
+                       cell->geometry);
+}
+
+void create_notify(xcb_window_t window) {
+  window_t *w = malloc(sizeof(window_t));
+  w->id = window;
+  w->next = windows;
+  w->prev = NULL;
+  windows = w;
+}
+
+void destroy_notify(xcb_window_t window) {
+  window_t *w = get_window(window);
+  if(w == NULL) return;
+  if(w->prev != NULL) {
+    w->prev->next = w->next;
+  } else {
+    windows = w->next;
+  }
+  if(w->next != NULL) {
+    w->next->prev = w->prev;
+  }
+  xcb_kill_client(conn, window);
+  free(w);
 }
 
 void map_request(xcb_window_t window) {
   int mask = XCB_EVENT_MASK_FOCUS_CHANGE | XCB_EVENT_MASK_ENTER_WINDOW;
-  size_t grid_i = windows_length;
-  if(windows_i == windows_length) {
-    puts("TOO MUCH WINDOWS");
-    fflush(stdout);
-    return;
-  }
+  size_t grid_i = SIZE_MAX;
+  workspace_t *workspace = view.workspaces+view.focus;
+  window_t *win = get_window(window);
+  size_t m;
   for(size_t i=0; i<LENGTH(spawn_order); i++) {
-    if(spawn_order[i] < grid_length && !window_grid[spawn_order[i]].origin) {
+    if(spawn_order[i] < view.monitor_count*4 &&
+       workspace->grid[spawn_order[i]].origin != spawn_order[i]) {
       grid_i = spawn_order[i];
       break;
     }
   }
-  if(grid_i == windows_length) {
+  if(grid_i == SIZE_MAX) {
     puts("TODO: MINIMIZE");
     fflush(stdout);
     return;
   }
 
-  windows[windows_i].id = window;
-  window_grid[grid_i].window = windows+windows_i;
-  window_grid[grid_i].origin = true;
+  m = grid_i/4;
+  workspace->grid[grid_i].geometry[0] = view.monitors[m].x +
+    view.monitors[m].w * (X(grid_i) ? 1 : 0)/2 + gaps;
+  workspace->grid[grid_i].geometry[1] = view.monitors[m].y +
+    view.monitors[m].h * (Y(grid_i) ? 1 : 0)/2 + gaps;
+  workspace->grid[grid_i].geometry[2] = view.monitors[m].w/2 - gaps*2;
+  workspace->grid[grid_i].geometry[3] = view.monitors[m].h/2 - gaps*2;
+
+  if(workspace->grid[grid_i].window == NULL) { //EMPTY WORKSPACE
+    for(size_t i=0; i<4; i++) {
+      workspace->grid[i].window = win;
+      workspace->grid[i].origin = grid_i;
+    }
+    //gap bug
+    workspace->grid[grid_i].geometry[0] = view.monitors[m].x;
+    workspace->grid[grid_i].geometry[1] = view.monitors[m].y;
+    workspace->grid[grid_i].geometry[2] = view.monitors[m].w;
+    workspace->grid[grid_i].geometry[3] = view.monitors[m].h;
+  } else {
+    size_t origin = workspace->grid[grid_i].origin;
+    if(X(origin) == X(grid_i)) { //one below other
+      workspace->grid[origin].geometry[3] -= view.monitors[m].h/2;
+      if(Y(origin) != 0) { //old one on bottom
+        workspace->grid[origin].geometry[1] += view.monitors[m].h/2;
+      }
+      if(X(grid_i) == 0) { //expand new horizontally when one window present
+        if(workspace->grid[grid_i+1].origin == origin) {
+          workspace->grid[grid_i].geometry[2] += view.monitors[m].w/2;
+          workspace->grid[grid_i+1].origin = grid_i;
+          workspace->grid[grid_i+1].window = workspace->grid[grid_i].window;
+        }
+      } else {
+        if(workspace->grid[grid_i-1].origin == origin) {
+          workspace->grid[grid_i].geometry[2] += view.monitors[m].w/2;
+          workspace->grid[grid_i-1].origin = grid_i;
+          workspace->grid[grid_i-1].window = workspace->grid[grid_i].window;
+        }
+      }
+    } else {
+      workspace->grid[origin].geometry[2] -= view.monitors[m].w/2;
+      if(X(origin) != 0) { //old one to the right
+        workspace->grid[origin].geometry[0] += view.monitors[m].w/2;
+      }
+      if(Y(grid_i) == 0) { //expand new vertically when one window present
+        if(workspace->grid[grid_i+2].origin == origin) {
+          workspace->grid[grid_i].geometry[3] += view.monitors[m].h/2;
+          workspace->grid[grid_i+2].origin = grid_i;
+          workspace->grid[grid_i+2].window = win;
+        }
+      } else {
+        if(workspace->grid[grid_i-2].origin == origin) {
+          workspace->grid[grid_i].geometry[3] += view.monitors[m].h/2;
+          workspace->grid[grid_i-2].origin = grid_i;
+          workspace->grid[grid_i-2].window = win;
+        }
+      }
+    }
+    UPDATE(origin);
+  }
+
+  workspace->grid[grid_i].window = win;
+  workspace->grid[grid_i].origin = grid_i;
+  for(size_t i=0; i<view.monitor_count*4; i++) {
+    printf("i: %lu origin: %lu id: %u geometry: %ux%u+%ux%u\n",
+           i, workspace->grid[i].origin,
+           workspace->grid[i].window->id, workspace->grid[i].geometry[0],
+           workspace->grid[i].geometry[1],
+           workspace->grid[i].geometry[2],
+           workspace->grid[i].geometry[3]);
+  }
   xcb_map_window(conn, window);
-  windows_i++;
   xcb_change_window_attributes(conn, window, XCB_CW_EVENT_MASK, &mask);
 
-  sync_layout_with_grid();
   xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT,
                       window, XCB_CURRENT_TIME);
-  xcb_configure_window(conn, window, XCB_CONFIG_WINDOW_X |
-                       XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH |
-                       XCB_CONFIG_WINDOW_HEIGHT,
-                       window_grid[grid_i].window->geometry);
+  UPDATE(grid_i);
 }
 
-void unmap_window(xcb_window_t window) {
-  for(size_t i=0; i<grid_length; i++) {
-    if(window_grid[i].window != NULL && window_grid[i].window->id == window) {
-      if(window_grid[i].origin)
-        window_grid[i].origin = false;
-      //TODO: DEALLOCATE
-      window_grid[i].window = NULL;
+void unmap_notify(xcb_window_t window) {
+  workspace_t *workspace = view.workspaces+view.focus;
+  int count = 0;
+  int pos = 0;
+  int opposite;
+  int next;
+  if(workspace->grid[0].window == NULL)
+    return;
+  for(size_t i=0; i<view.monitor_count*4; i++) {
+    if(workspace->grid[i].window->id == window) {
+      if(workspace->grid[i].origin)
+        workspace->grid[i].origin = false;
+      workspace->grid[i].window = NULL;
+      pos = i;
+      count++;
     }
   }
-  sync_layout_with_grid();
-}
-
-void focus_in(xcb_window_t window) {
-  uint32_t geom[4];
-  window_t *w;
-  size_t i = get_index(window);
-  if(i >= grid_length) return;
-  if(prev_focus < grid_length) {
-    w = window_grid[prev_focus].window;
-    xcb_configure_window(conn, w->id, XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y |
-                         XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
-                         w->geometry);
+  DEBUG {
+    for(size_t i=0; i<view.monitor_count*4; i++) {
+      if(workspace->grid[i].window != NULL)
+        printf("i: %lu origin: %lu id: %u geometry: %ux%u+%ux%u\n",
+               i, workspace->grid[i].origin,
+               workspace->grid[i].window->id, workspace->grid[i].geometry[0],
+               workspace->grid[i].geometry[1],
+               workspace->grid[i].geometry[2],
+               workspace->grid[i].geometry[3]);
+      else
+        printf("i: %lu NULL\n", i);
+    }
   }
-  w = window_grid[i].window;
-  geom[0] = w->geometry[0]-gaps;
-  geom[1] = w->geometry[1]-gaps;
-  geom[2] = w->geometry[2]+gaps*2;
-  geom[3] = w->geometry[3]+gaps*2;
-  xcb_configure_window(conn, w->id, XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y |
-                       XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
-                       geom);
-  prev_focus = current_window;
-  current_window = i;
+  if(count == 4) return;
+  if(count == 2) {
+    opposite = COMB(!X(pos),Y(pos));
+    if(workspace->grid[opposite].window == NULL) { //removing horizontal
+      next = COMB(!X(pos), Y(pos));
+      workspace->grid[workspace->grid[COMB(X(pos), !Y(pos))].origin].geometry[3] +=
+        workspace->grid[workspace->grid[pos].origin].geometry[3] + gaps;
+      workspace->grid[pos].window = workspace->grid[COMB(X(pos), !Y(pos))].window;
+      workspace->grid[next].window = workspace->grid[COMB(X(next), !Y(next))].window;
+      workspace->grid[pos].origin = workspace->grid[COMB(X(pos), !Y(pos))].origin;
+      workspace->grid[next].origin = workspace->grid[COMB(X(next), !Y(next))].origin;
+      if(Y(pos) == 0)
+        workspace->grid[workspace->grid[COMB(X(pos), 1)].origin].geometry[1] -=
+          workspace->grid[workspace->grid[pos].origin].geometry[3] + gaps;
+      UPDATE(workspace->grid[COMB(X(pos), !Y(pos))].origin);
+      if(workspace->grid[COMB(X(pos), !Y(pos))].window !=
+         workspace->grid[COMB(X(next), !Y(next))].window) {
+        workspace->grid[COMB(X(next), !Y(next))].geometry[3] +=
+          workspace->grid[workspace->grid[next].origin].geometry[3] + gaps;
+        if(Y(next) == 0)
+          workspace->grid[COMB(X(next), 1)].geometry[1] -=
+            workspace->grid[workspace->grid[next].origin].geometry[3] + gaps;
+        UPDATE(COMB(X(next), !Y(next)));
+      }
+    } else { //removing vertical
+      next = COMB(X(pos), !Y(pos));
+      workspace->grid[pos].window = workspace->grid[COMB(!X(pos), Y(pos))].window;
+      workspace->grid[next].window = workspace->grid[COMB(!X(next), Y(next))].window;
+      workspace->grid[pos].origin = workspace->grid[COMB(!X(pos), Y(pos))].origin;
+      workspace->grid[next].origin = workspace->grid[COMB(!X(next), Y(next))].origin;
+      workspace->grid[workspace->grid[COMB(!X(pos), Y(pos))].origin].geometry[2] +=
+        workspace->grid[workspace->grid[pos].origin].geometry[2] + gaps;
+      if(X(pos) == 0)
+        workspace->grid[workspace->grid[COMB(1, Y(pos))].origin].geometry[0] -=
+          workspace->grid[workspace->grid[pos].origin].geometry[2] + gaps;
+      UPDATE(workspace->grid[COMB(!X(pos), Y(pos))].origin);
+      if(workspace->grid[COMB(!X(pos), Y(pos))].window !=
+         workspace->grid[COMB(!X(next), Y(next))].window) {
+        workspace->grid[COMB(!X(next), Y(next))].geometry[2] +=
+          workspace->grid[workspace->grid[next].origin].geometry[2] + gaps;
+        if(X(next) == 0)
+          workspace->grid[COMB(1, Y(next))].geometry[0] -=
+            workspace->grid[workspace->grid[next].origin].geometry[2] + gaps;
+        UPDATE(COMB(!X(next), Y(next)));
+      }
+    }
+  } else { //removing quarter
+    opposite = COMB(0, !(Y(pos)));
+    if(workspace->grid[opposite].window ==
+       workspace->grid[opposite+1].window) { //horizontal window higher/lower
+      next = COMB(!X(pos), Y(pos));
+      workspace->grid[pos].window = workspace->grid[next].window;
+      workspace->grid[pos].origin = workspace->grid[next].origin;
+      workspace->grid[next].geometry[2] +=
+        workspace->grid[workspace->grid[pos].origin].geometry[2];
+      if(X(next) == 1)
+        workspace->grid[next].geometry[0] -=
+          workspace->grid[workspace->grid[pos].origin].geometry[2];
+    } else {
+      next = COMB(X(pos), !Y(pos));
+      workspace->grid[pos].window = workspace->grid[next].window;
+      workspace->grid[pos].origin = workspace->grid[next].origin;
+      workspace->grid[next].geometry[3] +=
+        workspace->grid[pos].geometry[3];
+      if(Y(next) == 1)
+        workspace->grid[next].geometry[1] -=
+          workspace->grid[pos].geometry[3];
+    }
+    UPDATE(next);
+  }
+  DEBUG {
+    printf("free: %u\n", window);
+    for(size_t i=0; i<view.monitor_count*4; i++) {
+      printf("i: %lu origin: %lu id: %u geometry: %ux%u+%ux%u\n",
+             i, workspace->grid[i].origin,
+             workspace->grid[i].window->id, workspace->grid[i].geometry[0],
+             workspace->grid[i].geometry[1],
+             workspace->grid[i].geometry[2],
+             workspace->grid[i].geometry[3]);
+    }
+  }
+  focus_window_n(pos);
 }

@@ -1,7 +1,7 @@
 BIN=bin
 
 WARN=-Wall -Wextra
-DEBUG=-Og -ggdb3 -fsanitize=address -fsanitize=pointer-compare \
+DEBUG=-D DEBUG -Og -ggdb3 -fsanitize=address -fsanitize=pointer-compare \
 -fsanitize=pointer-subtract -fsanitize=undefined \
 -fsanitize-address-use-after-scope -fstack-check \
 -fno-stack-clash-protection
@@ -19,7 +19,7 @@ main: main.c config.c global.c window.c
 clean:
 	rm -f $(wildcard bin/*)
 
-install:
+install: main
 	cp bin/main /home/paczur/main
 
 uninstall:
