@@ -74,7 +74,7 @@ void setup_wm(void) {
   free(randr_crtcs);
 
   for(size_t i=0; i<LENGTH(view.workspaces); i++) {
-    view.workspaces[i].grid = calloc(4, sizeof(grid_cell_t));
+    view.workspaces[i].grid = calloc(4*view.monitor_count, sizeof(grid_cell_t));
     for(size_t j=0; j<4; j++) {
       view.workspaces[i].grid[j].origin = -1;
     }
