@@ -21,7 +21,6 @@ typedef struct window_t {
 } window_t;
 
 typedef struct grid_cell_t {
-  uint32_t geometry[4];
   window_t *window;
   size_t origin;
 } grid_cell_t;
@@ -31,6 +30,7 @@ typedef struct grid_cell_t {
 typedef struct workspace_t {
   grid_cell_t *grid;
   size_t focus;
+  int cross[2];
 } workspace_t;
 
 typedef struct view_t {
