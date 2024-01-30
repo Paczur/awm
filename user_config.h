@@ -31,3 +31,4 @@ size_t spawn_order[] = {
 };
 
 uint32_t gaps = 15;
+int bar_height = 20;

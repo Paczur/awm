@@ -67,6 +67,7 @@ void convert_shortcuts(void) {
 
 void config_parse(void) {
   convert_shortcuts();
+  view.bar_height = bar_height;
 }
 
 void focus_window_down(void) {
@@ -164,5 +165,4 @@ void destroy_current_window(void) {
 void librewolf(void) {
   sh("lb");
 }
-
 

@@ -103,15 +103,17 @@ void update_layout(size_t m) {
     newstate[i*4+0] = view.monitors[m].x + gaps + (X(i)==0 ? 0 :
                                                      (view.monitors[m].w/2 +
                                                       workspace->cross[m*2+0]));
-    newstate[i*4+1] = view.monitors[m].y + gaps + (Y(i)==0 ? 0 :
-                                                   (view.monitors[m].h/2 +
-                                                    workspace->cross[m*2+1]));
+    newstate[i*4+1] = view.monitors[m].y + view.bar_height + gaps +
+      (Y(i)==0 ? 0 :
+       (view.monitors[m].h/2 +
+        workspace->cross[m*2+1]));
     newstate[i*4+2] = view.monitors[m].w/2 - gaps*2 + (X(i)==0 ?
                                                        workspace->cross[m*2+0] :
                                                        -workspace->cross[m*2+0]);
-    newstate[i*4+3] = view.monitors[m].h/2 - gaps*2 + (Y(i)==0 ?
-                                                         workspace->cross[m*2+1] :
-                                                         -workspace->cross[m*2+1]);
+    newstate[i*4+3] = view.monitors[m].h/2 - view.bar_height/2 - gaps*2 +
+      (Y(i)==0 ?
+       workspace->cross[m*2+1] :
+       -workspace->cross[m*2+1]);
   }
   DEBUG {
     print_grid();
@@ -161,12 +163,26 @@ void destroy_n(size_t n) {
 }
 
 void resize_h(size_t m, int h) {
-  view.workspaces[view.focus].cross[m*2+1] += h;
+  workspace_t* workspace = view.workspaces+view.focus;
+  size_t ph = view.monitors[m].h/2 - view.bar_height/2 - gaps*2 - workspace->cross[m*2+1];
+  if((h > 0 && (ph - h > ph || ph - h == 0)) ||
+     (h < 0 && (ph + workspace->cross[m*2+1]*2 + h >
+                ph + workspace->cross[m*2+1]*2 ||
+                ph + workspace->cross[m*2+1]*2 + h == 0)))
+    return;
+  workspace->cross[m*2+1] += h;
   update_layout(m);
 }
 
 void resize_w(size_t m, int w) {
-  view.workspaces[view.focus].cross[m*2+0] += w;
+  workspace_t* workspace = view.workspaces+view.focus;
+  size_t pw = view.monitors[m].w/2 - gaps*2 - workspace->cross[m*2+0];
+  if((w > 0 && (pw - w > pw || pw - w == 0)) ||
+     (w < 0 && (pw + workspace->cross[m*2+0]*2 + w >
+                pw + workspace->cross[m*2+0]*2 ||
+                pw + workspace->cross[m*2+0]*2 + w == 0)))
+    return;
+  workspace->cross[m*2+0] += w;
   update_layout(m);
 }
 

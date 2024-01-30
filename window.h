@@ -25,8 +25,6 @@ typedef struct grid_cell_t {
   size_t origin;
 } grid_cell_t;
 
-//TODO: POSSIBLY CHANGE INDEX TO POINTER
-
 typedef struct workspace_t {
   grid_cell_t *grid;
   size_t focus;
@@ -38,6 +36,7 @@ typedef struct view_t {
   monitor_t *monitors;
   size_t monitor_count;
   size_t focus;
+  int bar_height;
 } view_t;
 
 void resize_w(size_t, int);
