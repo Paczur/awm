@@ -137,6 +137,7 @@ void update_layout(size_t m) {
   }
   for(size_t i=0; i<4; i++) {
     if(workspace->grid[m*4+i].origin == m*4+i &&
+       workspace->grid[m*4+i].window != NULL &&
        (prevstate[m*16+i*4+0] != newstate[i*4+0] ||
         prevstate[m*16+i*4+1] != newstate[i*4+1] ||
         prevstate[m*16+i*4+2] != newstate[i*4+2] ||
@@ -159,7 +160,9 @@ void update_layout(size_t m) {
 }
 
 void destroy_n(size_t n) {
-  xcb_destroy_window(conn, view.workspaces[view.focus].grid[n].window->id);
+  workspace_t *workspace = view.workspaces+view.focus;
+  if(workspace->grid[n].window == NULL) return;
+  xcb_destroy_window(conn, workspace->grid[n].window->id);
 }
 
 void resize_h(size_t m, int h) {
@@ -199,6 +202,8 @@ void focus_window_n(size_t n) {
 void focus_in(xcb_window_t window) {
   workspace_t *workspace = view.workspaces+view.focus;
   size_t grid_i = workspace->focus;
+  size_t in = get_index(window);
+  if(in >= view.monitor_count*4) return;
   workspace->focus = workspace->grid[get_index(window)].origin;
   DEBUG {
     printf("grid_i: %lu focus: %lu\n",
@@ -292,20 +297,28 @@ void map_request(xcb_window_t window) {
 void unmap_notify(xcb_window_t window) {
   workspace_t *workspace = view.workspaces+view.focus;
   int count = 0;
-  int pos = 0;
-  if(workspace->grid[0].window == NULL)
-    return;
+  int pos = -1;
   for(size_t i=0; i<view.monitor_count*4; i++) {
-    if(workspace->grid[i].window->id == window) {
-      if(workspace->grid[i].origin)
-        workspace->grid[i].origin = false;
+    if(workspace->grid[i].window != NULL &&
+       workspace->grid[i].window->id == window) {
+      workspace->grid[i].origin = -1;
       workspace->grid[i].window = NULL;
       pos = i;
       count++;
     }
   }
+  if(pos == -1) return;
   workspace->grid[pos].window = NULL;
   workspace->grid[pos].origin = -1;
   update_layout(pos/4);
-  focus_window_n(pos);
+  if(workspace->grid[pos].window != NULL) {
+    focus_window_n(pos);
+    return;
+  }
+  for(size_t i=0; i<view.monitor_count; i++) {
+    if(workspace->grid[i*4].window != NULL) {
+      focus_window_n(i*4);
+      return;
+    }
+  }
 }
