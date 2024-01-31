@@ -13,7 +13,7 @@ CFLAGS=$(WARN) -march=native -std=gnu99 $(LIBS)
 SOURCE=$(wildcard *.c)
 $(VERBOSE).SILENT:
 
-main: main.c config.c global.c window.c
+main: main.c config.c global.c window.c bar.c
 	$(CC) $(DEBUG) $(CFLAGS) -o $(BIN)/$@ $^
 
 clean:

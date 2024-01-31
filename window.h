@@ -31,14 +31,6 @@ typedef struct workspace_t {
   int *cross;
 } workspace_t;
 
-typedef struct view_t {
-  workspace_t workspaces[10];
-  monitor_t *monitors;
-  size_t monitor_count;
-  size_t focus;
-  int bar_height;
-} view_t;
-
 void resize_w(size_t, int);
 void resize_h(size_t, int);
 void destroy_n(size_t);

@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <xcb/xcb.h>
 #include "window.h"
+#include "bar.h"
 
 #define LENGTH(x) (sizeof(x)/sizeof(x[0]))
 #ifdef DEBUG
@@ -17,6 +18,13 @@ typedef enum {
   MODE_NORMAL,
   MODE_INSERT
 } MODE;
+
+typedef struct view_t {
+  workspace_t workspaces[10];
+  monitor_t *monitors;
+  size_t monitor_count;
+  size_t focus;
+} view_t;
 
 void sh(char*);
 
@@ -33,6 +41,7 @@ extern MODE mode;
 
 extern window_t *windows;
 extern view_t view;
+extern bar_t bar;
 
 //XCB
 extern xcb_connection_t* conn;

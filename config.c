@@ -65,9 +65,24 @@ void convert_shortcuts(void) {
   }
 }
 
+uint32_t hex_to_uint(char* str, size_t len) {
+  uint32_t mul = 1;
+  uint32_t ret = 0;
+  while(len --> 0) {
+    if(str[len] > '9') {
+      ret += mul * (str[len] - 'A' + 10);
+    } else {
+      ret += mul * (str[len] - '0');
+    }
+    mul *= 16;
+  }
+  return ret;
+}
+
 void config_parse(void) {
   convert_shortcuts();
-  view.bar_height = bar_height;
+  bar.height = bar_height;
+  bar.color = hex_to_uint(bar_color, 6);
 }
 
 void focus_window_down(void) {

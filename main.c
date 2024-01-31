@@ -2,6 +2,7 @@
 #include "config.h"
 #include "global.h"
 #include "window.h"
+#include "bar.h"
 #include <xcb/randr.h>
 #include <inttypes.h>
 #include <stdio.h>
@@ -80,6 +81,8 @@ void setup_wm(void) {
       view.workspaces[i].grid[j].origin = -1;
     }
   }
+  config_parse();
+  place_bars();
 
   fflush(stdout);
   xcb_flush(conn);
@@ -176,7 +179,6 @@ int main(int argc, char *argv[], char *envp[]) {
   environ = envp;
 
   setup_wm();
-  config_parse();
   normal_mode();
   event_loop();
 

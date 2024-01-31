@@ -14,6 +14,7 @@ MODE mode = MODE_NORMAL;
 
 window_t *windows;
 view_t view;
+bar_t bar;
 
 //XCB
 xcb_connection_t* conn;

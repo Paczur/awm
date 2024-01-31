@@ -103,14 +103,14 @@ void update_layout(size_t m) {
     newstate[i*4+0] = view.monitors[m].x + gaps + (X(i)==0 ? 0 :
                                                      (view.monitors[m].w/2 +
                                                       workspace->cross[m*2+0]));
-    newstate[i*4+1] = view.monitors[m].y + view.bar_height + gaps +
+    newstate[i*4+1] = view.monitors[m].y + bar.height + gaps +
       (Y(i)==0 ? 0 :
        (view.monitors[m].h/2 +
         workspace->cross[m*2+1]));
     newstate[i*4+2] = view.monitors[m].w/2 - gaps*2 + (X(i)==0 ?
                                                        workspace->cross[m*2+0] :
                                                        -workspace->cross[m*2+0]);
-    newstate[i*4+3] = view.monitors[m].h/2 - view.bar_height/2 - gaps*2 +
+    newstate[i*4+3] = view.monitors[m].h/2 - bar.height/2 - gaps*2 +
       (Y(i)==0 ?
        workspace->cross[m*2+1] :
        -workspace->cross[m*2+1]);
@@ -167,7 +167,7 @@ void destroy_n(size_t n) {
 
 void resize_h(size_t m, int h) {
   workspace_t* workspace = view.workspaces+view.focus;
-  size_t ph = view.monitors[m].h/2 - view.bar_height/2 - gaps*2 - workspace->cross[m*2+1];
+  size_t ph = view.monitors[m].h/2 - bar.height/2 - gaps*2 - workspace->cross[m*2+1];
   if((h > 0 && (ph - h > ph || ph - h == 0)) ||
      (h < 0 && (ph + workspace->cross[m*2+1]*2 + h >
                 ph + workspace->cross[m*2+1]*2 ||
@@ -192,8 +192,10 @@ void resize_w(size_t m, int w) {
 void focus_window_n(size_t n) {
   if(n >= view.monitor_count*4)
     return;
-  window_t *window = view.workspaces[view.focus].grid[n].window;
-  if(window == NULL)
+  workspace_t *workspace = view.workspaces+view.focus;
+  window_t *window = workspace->grid[n].window;
+  if(window == NULL || (workspace->focus < view.monitor_count * 4 &&
+                        window == workspace->grid[workspace->focus].window))
     return;
   xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT,
                       window->id, XCB_CURRENT_TIME);
@@ -209,7 +211,8 @@ void focus_in(xcb_window_t window) {
     printf("grid_i: %lu focus: %lu\n",
            grid_i, workspace->focus);
   }
-  if(workspace->grid[grid_i].window != NULL) {
+  if(grid_i < view.monitor_count * 4 &&
+     workspace->grid[grid_i].window != NULL) {
     prevstate[grid_i*4+0] += gaps;
     prevstate[grid_i*4+1] += gaps;
     prevstate[grid_i*4+2] -= gaps*2;
@@ -311,6 +314,7 @@ void unmap_notify(xcb_window_t window) {
   workspace->grid[pos].window = NULL;
   workspace->grid[pos].origin = -1;
   update_layout(pos/4);
+  workspace->focus = -1;
   if(workspace->grid[pos].window != NULL) {
     focus_window_n(pos);
     return;
