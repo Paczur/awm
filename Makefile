@@ -6,7 +6,7 @@ DEBUG=-D DEBUG -Og -ggdb3 -fsanitize=address -fsanitize=pointer-compare \
 -fsanitize-address-use-after-scope -fstack-check \
 -fno-stack-clash-protection
 CFLAGS=$(DEBUG) $(WARN) -march=native -std=gnu99
-LIBS=-lxcb -lxcb-randr
+LIBS=-lxcb -lxcb-randr -lcairo
 RELEASE=-O2 -s -pipe -flto=4
 CFLAGS=$(WARN) -march=native -std=gnu99 $(LIBS)
 
