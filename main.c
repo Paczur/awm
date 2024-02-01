@@ -194,6 +194,7 @@ void event_loop(void) {
       DEBUG {
         puts("EXPOSE");
       }
+      redraw_bars();
     break;
     }
     fflush(stdout);

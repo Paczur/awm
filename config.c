@@ -2,6 +2,7 @@
 #include "window.h"
 #include "user_config.h"
 #include "global.h"
+#include "bar.h"
 #include <stdlib.h> //calloc
 #include <string.h> //memmove
 #include <stdio.h> //printf
@@ -83,6 +84,7 @@ void config_parse(void) {
   convert_shortcuts();
   view.bar_height = bar_height;
   view.bar_color = hex_to_uint(bar_color, 6);
+  view.bar_font = bar_font;
 }
 
 void focus_window_down(void) {
@@ -164,6 +166,7 @@ void normal_mode(void) {
       xcb_grab_key(conn, 1, screen->root, 0, i+shortcut_lookup_offset,
                    XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
   }
+  redraw_bars();
 }
 
 void insert_mode(void) {
@@ -171,6 +174,7 @@ void insert_mode(void) {
   xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, XCB_MOD_MASK_ANY);
   xcb_grab_key(conn, 1, screen->root, 0, normal_code,
                XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+  redraw_bars();
 }
 
 void destroy_current_window(void) {

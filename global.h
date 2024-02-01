@@ -27,7 +27,7 @@ typedef struct view_t {
   bar_t *bars;
   uint32_t bar_height;
   uint32_t bar_color;
-  xcb_font_t bar_font;
+  char *bar_font;
   xcb_visualtype_t *visual_type;
 } view_t;
 
