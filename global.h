@@ -21,9 +21,13 @@ typedef enum {
 
 typedef struct view_t {
   workspace_t workspaces[10];
+  size_t focus;
   monitor_t *monitors;
   size_t monitor_count;
-  size_t focus;
+  bar_t *bars;
+  uint32_t bar_height;
+  uint32_t bar_color;
+  xcb_font_t bar_font;
 } view_t;
 
 void sh(char*);
@@ -41,11 +45,10 @@ extern MODE mode;
 
 extern window_t *windows;
 extern view_t view;
-extern bar_t bar;
 
 //XCB
-extern xcb_connection_t* conn;
-extern const xcb_setup_t* setup;
-extern xcb_screen_t* screen;
+extern xcb_connection_t *conn;
+extern const xcb_setup_t *setup;
+extern xcb_screen_t *screen;
 
 #endif

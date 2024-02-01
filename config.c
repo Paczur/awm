@@ -81,8 +81,8 @@ uint32_t hex_to_uint(char* str, size_t len) {
 
 void config_parse(void) {
   convert_shortcuts();
-  bar.height = bar_height;
-  bar.color = hex_to_uint(bar_color, 6);
+  view.bar_height = bar_height;
+  view.bar_color = hex_to_uint(bar_color, 6);
 }
 
 void focus_window_down(void) {

@@ -64,6 +64,7 @@ void setup_wm(void) {
   }
 
   view.monitors = malloc(sizeof(monitor_t) * view.monitor_count);
+  view.bars = malloc(sizeof(bar_t) * view.monitor_count);
   for(size_t i=0; i<view.monitor_count; i++) {
     view.monitors[i].w = randr_crtcs[i]->width;
     view.monitors[i].h = randr_crtcs[i]->height;
