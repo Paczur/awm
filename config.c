@@ -15,6 +15,10 @@
   void focus_window_ ## n (void) { \
     focus_window_n(n); \
   }
+#define swindow_impl(n) \
+  void swap_window_ ## n (void) { \
+    swap_windows(n, view.workspaces[view.focus].focus); \
+  }
 
 xcb_keycode_t keysym_to_keycode(xcb_keysym_t keysym) {
   for(int i=setup->min_keycode; i<setup->max_keycode; i++) {
@@ -26,18 +30,44 @@ xcb_keycode_t keysym_to_keycode(xcb_keysym_t keysym) {
 
 void convert_shortcuts(void) {
   int start = 0;
+  xcb_keycode_t index;
+  internal_shortcut_t *sh;
 
   normal_code = keysym_to_keycode(normal_shortcut);
 
   shortcut_lookup_l = setup->max_keycode-setup->min_keycode;
   shortcut_lookup_offset = setup->min_keycode;
-  shortcut_lookup = calloc(shortcut_lookup_l, sizeof(void(*)(void)));
+  shortcut_lookup = calloc(shortcut_lookup_l, sizeof(internal_shortcut_t*));
 
 
   // get keycodes from keysyms
   for(size_t i=0; i<LENGTH(shortcuts); i++) {
-    shortcut_lookup[keysym_to_keycode(shortcuts[i].keysym)-shortcut_lookup_offset] =
-      shortcuts[i].function;
+    index = keysym_to_keycode(shortcuts[i].keysym)-shortcut_lookup_offset;
+    if(shortcut_lookup[index] == NULL) {
+      shortcut_lookup[index] = malloc(sizeof(internal_shortcut_t));
+      sh = shortcut_lookup[index];
+    } else {
+      sh = shortcut_lookup[index];
+      while(sh->next != NULL) sh = sh->next;
+      sh->next = malloc(sizeof(internal_shortcut_t));
+      sh = sh->next;
+    }
+    sh->function = shortcuts[i].function;
+    sh->next = NULL;
+    switch(shortcuts[i].modifier) {
+    case MOD_NONE:
+      sh->mod_mask = 0;
+    break;
+    case MOD_SHIFT:
+      sh->mod_mask = XCB_MOD_MASK_SHIFT;
+    break;
+    case MOD_ALT:
+      sh->mod_mask = XCB_MOD_MASK_1;
+    break;
+    case MOD_SUPER:
+      sh->mod_mask = XCB_MOD_MASK_4;
+    break;
+    }
   }
 
   if(shortcut_lookup[0] == NULL) {
@@ -155,16 +185,31 @@ fwindow_impl(7)
 fwindow_impl(8)
 fwindow_impl(9)
 
+swindow_impl(0)
+swindow_impl(1)
+swindow_impl(2)
+swindow_impl(3)
+swindow_impl(4)
+swindow_impl(5)
+swindow_impl(6)
+swindow_impl(7)
+swindow_impl(8)
+swindow_impl(9)
+
 void terminal(void) {
   sh("mlterm");
 }
 
 void normal_mode(void) {
+  internal_shortcut_t *sh;
   mode = MODE_NORMAL;
   for(size_t i=0; i<shortcut_lookup_l; i++) {
-    if(shortcut_lookup[i] != NULL)
-      xcb_grab_key(conn, 1, screen->root, 0, i+shortcut_lookup_offset,
+    sh = shortcut_lookup[i];
+    while(sh != NULL) {
+      xcb_grab_key(conn, 1, screen->root, sh->mod_mask, i+shortcut_lookup_offset,
                    XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+      sh = sh->next;
+    }
   }
   redraw_bars();
 }

@@ -116,8 +116,11 @@ void setup_wm(void) {
   xcb_flush(conn);
 }
 
-void handle_shortcut(xcb_keycode_t keycode) {
+void handle_shortcut(xcb_key_press_event_t *event) {
+  xcb_keycode_t keycode;
+  internal_shortcut_t *sh;
   size_t lookup;
+  keycode = event->detail;
   if(mode == MODE_INSERT &&
      keycode == normal_code) {
     normal_mode();
@@ -125,7 +128,15 @@ void handle_shortcut(xcb_keycode_t keycode) {
     lookup = keycode-shortcut_lookup_offset;
     if(lookup >= shortcut_lookup_l)
       return;
-    shortcut_lookup[lookup]();
+    sh = shortcut_lookup[lookup];
+    while(sh != NULL) {
+      if(event->state == sh->mod_mask) {
+        sh->function();
+        break;
+      } else {
+        sh = sh->next;
+      }
+    }
   }
 }
 
@@ -139,7 +150,7 @@ void event_loop(void) {
       DEBUG {
         puts("KEY PRESS");
       }
-      handle_shortcut(((xcb_key_press_event_t*)event)->detail);
+      handle_shortcut((xcb_key_press_event_t*)event);
     break;
 
     case XCB_MAP_REQUEST:

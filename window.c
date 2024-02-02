@@ -103,9 +103,9 @@ void update_layout(size_t m) {
     newstate[i*4+0] = view.monitors[m].x + gaps + (X(i)==0 ? 0 :
                                                      (view.monitors[m].w/2 +
                                                       workspace->cross[m*2+0]));
-    newstate[i*4+1] = view.monitors[m].y + view.bar_height + gaps +
-      (Y(i)==0 ? 0 :
-       (view.monitors[m].h/2 +
+    newstate[i*4+1] = view.monitors[m].y + gaps +
+      (Y(i)==0 ? view.bar_height :
+       (view.bar_height/2 + view.monitors[m].h/2 +
         workspace->cross[m*2+1]));
     newstate[i*4+2] = view.monitors[m].w/2 - gaps*2 + (X(i)==0 ?
                                                        workspace->cross[m*2+0] :
@@ -143,9 +143,7 @@ void update_layout(size_t m) {
         prevstate[m*16+i*4+2] != newstate[i*4+2] ||
         prevstate[m*16+i*4+3] != newstate[i*4+3])) {
       DEBUG {
-        printf("UPDATING: %lu %ux%u+%ux%u\n", m*4+i,
-               newstate[i*4+2], newstate[i*4+3],
-               newstate[i*4+0], newstate[i*4+1]);
+        printf("UPDATED: %lu\n", m*4+i);
       }
       xcb_configure_window(conn,
                            workspace->grid[m*4+i].window->id,
@@ -163,6 +161,24 @@ void destroy_n(size_t n) {
   workspace_t *workspace = view.workspaces+view.focus;
   if(workspace->grid[n].window == NULL) return;
   xcb_destroy_window(conn, workspace->grid[n].window->id);
+}
+
+void swap_windows(size_t n, size_t m) {
+  window_t *window;
+  workspace_t *workspace;
+  if(n >= view.monitor_count*4 || m >= view.monitor_count*4) return;
+  workspace = view.workspaces+view.focus;
+  if(workspace->grid[n].window == workspace->grid[m].window) return;
+  window = workspace->grid[workspace->grid[n].origin].window;
+
+  workspace->grid[workspace->grid[n].origin].window =
+    workspace->grid[workspace->grid[m].origin].window;
+  workspace->grid[workspace->grid[m].origin].window = window;
+
+  update_layout(n/4);
+  if(n/4 != m/4) {
+    update_layout(m/4);
+  }
 }
 
 void resize_h(size_t m, int h) {
@@ -290,9 +306,6 @@ void map_request(xcb_window_t window) {
   xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT,
                       window, XCB_CURRENT_TIME);
   DEBUG {
-    printf("%ux%u+%ux%u\n", prevstate[grid_i*4+2],
-           prevstate[grid_i*4+3], prevstate[grid_i*4],
-           prevstate[grid_i*4+1]);
     print_grid();
   }
 }

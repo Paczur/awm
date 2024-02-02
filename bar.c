@@ -20,7 +20,6 @@ void place_bars(void) {
   }
 
   desc = pango_font_description_from_string(view.bar_font);
-  printf("%s\n", pango_font_description_get_family(desc));
 
   for(size_t i=0; i<view.monitor_count; i++) {
     view.bars[i].cairo =

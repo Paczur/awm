@@ -19,6 +19,12 @@ typedef enum {
   MODE_INSERT
 } MODE;
 
+typedef struct internal_shortcut_t {
+  uint16_t mod_mask;
+  void (*function) (void);
+  struct internal_shortcut_t *next;
+} internal_shortcut_t;
+
 typedef struct view_t {
   workspace_t workspaces[10];
   size_t focus;
@@ -38,7 +44,7 @@ extern xcb_keysym_t* keysyms;
 extern xcb_get_keyboard_mapping_reply_t *kmapping;
 
 //WM
-extern void (**shortcut_lookup) (void);
+extern internal_shortcut_t **shortcut_lookup;
 extern size_t shortcut_lookup_offset;
 extern size_t shortcut_lookup_l;
 extern xcb_keycode_t normal_code;

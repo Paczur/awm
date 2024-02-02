@@ -2,6 +2,8 @@
 #define H_CONFIG
 #define fwindow(n) \
   void focus_window_ ## n (void)
+#define swindow(n) \
+  void swap_window_ ## n (void)
 
 #define XK_LATIN1 //letters
 #define XK_MISCELLANY //modifiers and special
@@ -11,7 +13,15 @@
 #include <X11/keysymdef.h>
 #include <X11/XF86keysym.h>
 
-typedef struct {
+typedef enum {
+  MOD_NONE,
+  MOD_SHIFT,
+  MOD_ALT,
+  MOD_SUPER
+} MODIFIER;
+
+typedef struct shortcut_t {
+  MODIFIER modifier;
   xcb_keysym_t keysym;
   void (*function) (void);
 } shortcut_t;
@@ -26,6 +36,16 @@ fwindow(6);
 fwindow(7);
 fwindow(8);
 fwindow(9);
+swindow(0);
+swindow(1);
+swindow(2);
+swindow(3);
+swindow(4);
+swindow(5);
+swindow(6);
+swindow(7);
+swindow(8);
+swindow(9);
 void config_parse(void);
 
 void normal_mode(void);

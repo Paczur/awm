@@ -34,6 +34,7 @@ typedef struct workspace_t {
 void resize_w(size_t, int);
 void resize_h(size_t, int);
 void destroy_n(size_t);
+void swap_windows(size_t, size_t);
 void focus_window_n(size_t);
 void unmap_notify(xcb_window_t);
 void map_request(xcb_window_t);

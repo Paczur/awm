@@ -6,7 +6,7 @@ xcb_keysym_t* keysyms;
 xcb_get_keyboard_mapping_reply_t *kmapping;
 
 //WM
-void (**shortcut_lookup) (void);
+internal_shortcut_t **shortcut_lookup;
 size_t shortcut_lookup_offset;
 size_t shortcut_lookup_l;
 xcb_keycode_t normal_code;
