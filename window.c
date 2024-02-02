@@ -101,8 +101,8 @@ void update_layout(size_t m) {
       workspace->grid[m*4+i].window = NULL;
     }
     newstate[i*4+0] = view.monitors[m].x + gaps + (X(i)==0 ? 0 :
-                                                     (view.monitors[m].w/2 +
-                                                      workspace->cross[m*2+0]));
+                                                   (view.monitors[m].w/2 +
+                                                    workspace->cross[m*2+0]));
     newstate[i*4+1] = view.monitors[m].y + gaps +
       (Y(i)==0 ? view.bar_height :
        (view.bar_height/2 + view.monitors[m].h/2 +
@@ -207,8 +207,12 @@ void resize_w(size_t m, int w) {
 
 size_t window_to_right(void) {
   workspace_t *workspace = view.workspaces+view.focus;
+  DEBUG {
+    printf("ERROR HERE: %lu\n", workspace->focus);
+    fflush(stdout);
+  }
   window_t *next = workspace->grid[workspace->focus].window;
-  window_t *prev = workspace->grid[workspace->focus].window;
+  window_t *prev = next;
   size_t t = workspace->focus;
   while(prev == next) {
     if(t == view.monitor_count*4-1 || t == view.monitor_count*4-3) {
@@ -224,7 +228,7 @@ size_t window_to_right(void) {
 size_t window_to_left(void) {
   workspace_t *workspace = view.workspaces+view.focus;
   window_t *next = workspace->grid[workspace->focus].window;
-  window_t *prev = workspace->grid[workspace->focus].window;
+  window_t *prev = next;
   size_t t = workspace->focus;
   while(prev == next) {
     if(t == 0 || t == 2) {
@@ -262,35 +266,37 @@ void focus_in(xcb_window_t window) {
   workspace_t *workspace = view.workspaces+view.focus;
   size_t grid_i = workspace->focus;
   size_t in = get_index(window);
+  size_t temp = workspace->grid[get_index(window)].origin;
   if(in >= view.monitor_count*4) return;
-  workspace->focus = workspace->grid[get_index(window)].origin;
+  if(grid_i >= view.monitor_count * 4 ||
+     workspace->grid[grid_i].window == NULL ||
+     temp >= view.monitor_count*4 ||
+     workspace->grid[grid_i].window == workspace->grid[temp].window) return;
   DEBUG {
     printf("grid_i: %lu focus: %lu\n",
            grid_i, workspace->focus);
   }
-  if(grid_i < view.monitor_count * 4 &&
-     workspace->grid[grid_i].window != NULL) {
-    prevstate[grid_i*4+0] += gaps;
-    prevstate[grid_i*4+1] += gaps;
-    prevstate[grid_i*4+2] -= gaps*2;
-    prevstate[grid_i*4+3] -= gaps*2;
-    xcb_configure_window(conn,
-                         workspace->grid[grid_i].window->id,
-                         XCB_CONFIG_WINDOW_X |
-                         XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH |
-                         XCB_CONFIG_WINDOW_HEIGHT,
-                         prevstate+grid_i*4);
-  }
-  prevstate[workspace->focus*4+0] -= gaps;
-  prevstate[workspace->focus*4+1] -= gaps;
-  prevstate[workspace->focus*4+2] += gaps*2;
-  prevstate[workspace->focus*4+3] += gaps*2;
+  prevstate[grid_i*4+0] += gaps;
+  prevstate[grid_i*4+1] += gaps;
+  prevstate[grid_i*4+2] -= gaps*2;
+  prevstate[grid_i*4+3] -= gaps*2;
+  xcb_configure_window(conn,
+                       workspace->grid[grid_i].window->id,
+                       XCB_CONFIG_WINDOW_X |
+                       XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH |
+                       XCB_CONFIG_WINDOW_HEIGHT,
+                       prevstate+grid_i*4);
+  prevstate[temp*4+0] -= gaps;
+  prevstate[temp*4+1] -= gaps;
+  prevstate[temp*4+2] += gaps*2;
+  prevstate[temp*4+3] += gaps*2;
   xcb_configure_window(conn,
                        window,
                        XCB_CONFIG_WINDOW_X |
                        XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH |
                        XCB_CONFIG_WINDOW_HEIGHT,
-                       prevstate+workspace->focus*4);
+                       prevstate+temp*4);
+  workspace->focus = temp;
 }
 
 void create_notify(xcb_window_t window) {
@@ -368,7 +374,7 @@ void unmap_notify(xcb_window_t window) {
   workspace->grid[pos].window = NULL;
   workspace->grid[pos].origin = -1;
   update_layout(pos/4);
-  workspace->focus = -1;
+  workspace->focus = 0;
   if(workspace->grid[pos].window != NULL) {
     focus_window_n(pos);
     return;
