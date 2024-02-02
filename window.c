@@ -205,6 +205,47 @@ void resize_w(size_t m, int w) {
   update_layout(m);
 }
 
+size_t window_to_right(void) {
+  workspace_t *workspace = view.workspaces+view.focus;
+  window_t *next = workspace->grid[workspace->focus].window;
+  window_t *prev = workspace->grid[workspace->focus].window;
+  size_t t = workspace->focus;
+  while(prev == next) {
+    if(t == view.monitor_count*4-1 || t == view.monitor_count*4-3) {
+      t = COMB(0, Y(t));
+    } else {
+      t += X(t) == 1 ? 3 : 1;
+    }
+    next = workspace->grid[t].window;
+  }
+  return t;
+}
+
+size_t window_to_left(void) {
+  workspace_t *workspace = view.workspaces+view.focus;
+  window_t *next = workspace->grid[workspace->focus].window;
+  window_t *prev = workspace->grid[workspace->focus].window;
+  size_t t = workspace->focus;
+  while(prev == next) {
+    if(t == 0 || t == 2) {
+      t = COMB(0, Y(t)) + view.monitor_count*2-1;
+    } else {
+      t -= X(t) == 0 ? 3 : 1;
+    }
+    next = workspace->grid[t].window;
+  }
+  return t;
+}
+
+size_t window_above(void) {
+  return window_below();
+}
+
+size_t window_below(void) {
+  size_t t = view.workspaces[view.focus].focus;
+  return t/4*4+COMB(X(t), !Y(t));
+}
+
 void focus_window_n(size_t n) {
   if(n >= view.monitor_count*4)
     return;

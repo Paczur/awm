@@ -42,5 +42,9 @@ void create_notify(xcb_window_t);
 void destroy_notify(xcb_window_t);
 void focus_in(xcb_window_t);
 void focus_out(xcb_window_t);
+size_t window_below(void);
+size_t window_above(void);
+size_t window_to_right(void);
+size_t window_to_left(void);
 
 #endif
