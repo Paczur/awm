@@ -43,16 +43,17 @@ void place_bars(void) {
 }
 
 void redraw_mode(void) {
-  int width;
+  PangoRectangle t;
   for(size_t i=0; i<view.monitor_count; i++) {
     xcb_clear_area(conn, 0, view.bars[i].mode.id, 0, 0,
                    view.monitors[i].w, view.bar_height);
     pango_layout_set_text(view.bars[i].mode.pango,
-                          (mode == MODE_NORMAL) ? "󰆾 " : "󰗧", -1);
-    pango_layout_get_pixel_size(view.bars[i].mode.pango, &width, NULL);
+                          (mode == MODE_NORMAL) ? "󰆾" : "󰗧", -1);
+    pango_layout_get_extents(view.bars[i].mode.pango, &t, NULL);
+    pango_extents_to_pixels(&t, NULL);
     xcb_configure_window(conn, view.bars[i].mode.id,
-                         XCB_CONFIG_WINDOW_WIDTH, &width);
-    cairo_xcb_surface_set_size(view.bars[i].mode.surface, width, view.bar_height);
+                         XCB_CONFIG_WINDOW_WIDTH, &t.width);
+    cairo_xcb_surface_set_size(view.bars[i].mode.surface, t.width, view.bar_height);
     pango_cairo_show_layout(view.bars[i].mode.cairo, view.bars[i].mode.pango);
   }
 }
