@@ -41,6 +41,7 @@ void place_bars(void) {
   pango_font_description_free(desc);
 }
 
+//TODO: CENTER VERTICALLY
 void redraw_component(char *text, bar_component_t *component,
                       bar_component_settings_t *settings, size_t m) {
   PangoRectangle t;
