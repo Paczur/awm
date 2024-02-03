@@ -268,35 +268,39 @@ void focus_in(xcb_window_t window) {
   size_t in = get_index(window);
   size_t temp = workspace->grid[get_index(window)].origin;
   if(in >= view.monitor_count*4) return;
-  if(grid_i >= view.monitor_count * 4 ||
-     workspace->grid[grid_i].window == NULL ||
-     temp >= view.monitor_count*4 ||
+  if(grid_i <view.monitor_count * 4 &&
+     temp < view.monitor_count*4 &&
      workspace->grid[grid_i].window == workspace->grid[temp].window) return;
   DEBUG {
     printf("grid_i: %lu focus: %lu\n",
            grid_i, workspace->focus);
   }
-  prevstate[grid_i*4+0] += gaps;
-  prevstate[grid_i*4+1] += gaps;
-  prevstate[grid_i*4+2] -= gaps*2;
-  prevstate[grid_i*4+3] -= gaps*2;
-  xcb_configure_window(conn,
-                       workspace->grid[grid_i].window->id,
-                       XCB_CONFIG_WINDOW_X |
-                       XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH |
-                       XCB_CONFIG_WINDOW_HEIGHT,
-                       prevstate+grid_i*4);
-  prevstate[temp*4+0] -= gaps;
-  prevstate[temp*4+1] -= gaps;
-  prevstate[temp*4+2] += gaps*2;
-  prevstate[temp*4+3] += gaps*2;
-  xcb_configure_window(conn,
-                       window,
-                       XCB_CONFIG_WINDOW_X |
-                       XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH |
-                       XCB_CONFIG_WINDOW_HEIGHT,
-                       prevstate+temp*4);
-  workspace->focus = temp;
+  if(grid_i < view.monitor_count*4 &&
+     workspace->grid[grid_i].window != NULL) {
+    prevstate[grid_i*4+0] += gaps;
+    prevstate[grid_i*4+1] += gaps;
+    prevstate[grid_i*4+2] -= gaps*2;
+    prevstate[grid_i*4+3] -= gaps*2;
+    xcb_configure_window(conn,
+                         workspace->grid[grid_i].window->id,
+                         XCB_CONFIG_WINDOW_X |
+                         XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH |
+                         XCB_CONFIG_WINDOW_HEIGHT,
+                         prevstate+grid_i*4);
+  }
+  if(temp < view.monitor_count*4) {
+    prevstate[temp*4+0] -= gaps;
+    prevstate[temp*4+1] -= gaps;
+    prevstate[temp*4+2] += gaps*2;
+    prevstate[temp*4+3] += gaps*2;
+    xcb_configure_window(conn,
+                         window,
+                         XCB_CONFIG_WINDOW_X |
+                         XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH |
+                         XCB_CONFIG_WINDOW_HEIGHT,
+                         prevstate+temp*4);
+    workspace->focus = temp;
+  }
 }
 
 void create_notify(xcb_window_t window) {
@@ -374,7 +378,6 @@ void unmap_notify(xcb_window_t window) {
   workspace->grid[pos].window = NULL;
   workspace->grid[pos].origin = -1;
   update_layout(pos/4);
-  workspace->focus = 0;
   if(workspace->grid[pos].window != NULL) {
     focus_window_n(pos);
     return;
