@@ -269,7 +269,7 @@ void focus_in(xcb_window_t window) {
   size_t in = get_index(window);
   size_t temp = workspace->grid[get_index(window)].origin;
   if(in >= view.monitor_count*4) return;
-  if(grid_i <view.monitor_count * 4 &&
+  if(grid_i < view.monitor_count * 4 &&
      temp < view.monitor_count*4 &&
      workspace->grid[grid_i].window == workspace->grid[temp].window) return;
   DEBUG {
@@ -379,6 +379,7 @@ void unmap_notify(xcb_window_t window) {
   workspace->grid[pos].window = NULL;
   workspace->grid[pos].origin = -1;
   update_layout(pos/4);
+  workspace->focus = -1;
   if(workspace->grid[pos].window != NULL) {
     focus_window_n(pos);
     return;
