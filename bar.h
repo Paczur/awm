@@ -16,6 +16,20 @@ typedef struct bar_t {
   bar_component_t mode;
 } bar_t;
 
+typedef struct bar_component_settings_t {
+  uint32_t background;
+  double foreground[4];
+} bar_component_settings_t;
+
+typedef struct bar_settings_t {
+  uint32_t height;
+  char *font;
+  uint component_padding;
+  uint32_t background;
+  bar_component_settings_t mode_insert;
+  bar_component_settings_t mode_normal;
+} bar_settings_t;
+
 void place_bars(void);
 void redraw_mode(void);
 void redraw_bars(void);

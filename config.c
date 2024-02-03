@@ -96,25 +96,40 @@ void convert_shortcuts(void) {
   }
 }
 
-uint32_t hex_to_uint(char* str, size_t len) {
+uint32_t hex_to_uint(char* str, size_t start, size_t end) {
   uint32_t mul = 1;
   uint32_t ret = 0;
-  while(len --> 0) {
-    if(str[len] > '9') {
-      ret += mul * (str[len] - 'A' + 10);
+  while(end --> start) {
+    if(str[end] > '9') {
+      ret += mul * (str[end] - 'A' + 10);
     } else {
-      ret += mul * (str[len] - '0');
+      ret += mul * (str[end] - '0');
     }
     mul *= 16;
   }
   return ret;
 }
 
+void hex_to_cairo_color(char *str, double *cairo) {
+  cairo[0] = hex_to_uint(str, 0, 2)/255.0;
+  cairo[1] = hex_to_uint(str, 2, 4)/255.0;
+  cairo[2] = hex_to_uint(str, 4, 6)/255.0;
+}
+
 void config_parse(void) {
   convert_shortcuts();
-  view.bar_height = bar_height;
-  view.bar_color = hex_to_uint(bar_color, 6);
-  view.bar_font = bar_font;
+  view.bar_settings.height = bar_height;
+  view.bar_settings.font = bar_font;
+  view.bar_settings.component_padding = bar_component_padding;
+    view.bar_settings.background = hex_to_uint(bar_background, 0, 6);
+    view.bar_settings.mode_insert.background =
+    hex_to_uint(bar_mode_insert_background, 0, 6);
+  view.bar_settings.mode_normal.background =
+    hex_to_uint(bar_mode_normal_background, 0, 6);
+  hex_to_cairo_color(bar_mode_insert_foreground,
+                     view.bar_settings.mode_insert.foreground);
+  hex_to_cairo_color(bar_mode_normal_foreground,
+                     view.bar_settings.mode_normal.foreground);
 }
 
 void focus_window_down(void) {

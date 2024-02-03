@@ -31,9 +31,7 @@ typedef struct view_t {
   monitor_t *monitors;
   size_t monitor_count;
   bar_t *bars;
-  uint32_t bar_height;
-  uint32_t bar_color;
-  char *bar_font;
+  bar_settings_t bar_settings;
   xcb_visualtype_t *visual_type;
 } view_t;
 

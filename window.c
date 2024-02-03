@@ -104,13 +104,13 @@ void update_layout(size_t m) {
                                                    (view.monitors[m].w/2 +
                                                     workspace->cross[m*2+0]));
     newstate[i*4+1] = view.monitors[m].y + gaps +
-      (Y(i)==0 ? view.bar_height :
-       (view.bar_height/2 + view.monitors[m].h/2 +
+      (Y(i)==0 ? view.bar_settings.height :
+       (view.bar_settings.height/2 + view.monitors[m].h/2 +
         workspace->cross[m*2+1]));
     newstate[i*4+2] = view.monitors[m].w/2 - gaps*2 + (X(i)==0 ?
                                                        workspace->cross[m*2+0] :
                                                        -workspace->cross[m*2+0]);
-    newstate[i*4+3] = view.monitors[m].h/2 - view.bar_height/2 - gaps*2 +
+    newstate[i*4+3] = view.monitors[m].h/2 - view.bar_settings.height/2 - gaps*2 +
       (Y(i)==0 ?
        workspace->cross[m*2+1] :
        -workspace->cross[m*2+1]);
@@ -183,7 +183,8 @@ void swap_windows(size_t n, size_t m) {
 
 void resize_h(size_t m, int h) {
   workspace_t* workspace = view.workspaces+view.focus;
-  size_t ph = view.monitors[m].h/2 - view.bar_height/2 - gaps*2 - workspace->cross[m*2+1];
+  size_t ph = view.monitors[m].h/2 - view.bar_settings.height/2
+    - gaps*2 - workspace->cross[m*2+1];
   if((h > 0 && (ph - h > ph || ph - h == 0)) ||
      (h < 0 && (ph + workspace->cross[m*2+1]*2 + h >
                 ph + workspace->cross[m*2+1]*2 ||
