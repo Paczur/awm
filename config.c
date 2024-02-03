@@ -202,7 +202,7 @@ void normal_mode(void) {
       sh = sh->next;
     }
   }
-  redraw_bars();
+  redraw_mode();
 }
 
 void insert_mode(void) {
@@ -210,7 +210,7 @@ void insert_mode(void) {
   xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, XCB_MOD_MASK_ANY);
   xcb_grab_key(conn, 1, screen->root, 0, normal_code,
                XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
-  redraw_bars();
+  redraw_mode();
 }
 
 void destroy_current_window(void) {
