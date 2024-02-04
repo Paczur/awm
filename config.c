@@ -7,18 +7,115 @@
 #include <string.h> //memmove
 #include <stdio.h> //printf
 
+#define XK_LATIN1 //letters
+#define XK_MISCELLANY //modifiers and special
+#include <X11/keysymdef.h>
+#include <X11/XF86keysym.h>
+
 #define X(pos) ((pos)%2)
 #define Y(pos) ((pos)%4/2)
 #define COMB(x, y) ((x)+(y)*2)
 
-#define fwindow_impl(n) \
+#define window_n(n) \
   void focus_window_ ## n (void) { \
     focus_window_n(n); \
-  }
-#define swindow_impl(n) \
+  } \
   void swap_window_ ## n (void) { \
     swap_windows(n, view.workspaces[view.focus].focus); \
   }
+
+window_n(0)
+window_n(1)
+window_n(2)
+window_n(3)
+window_n(4)
+window_n(5)
+window_n(6)
+window_n(7)
+window_n(8)
+window_n(9)
+
+void focus_window_down(void) {
+  focus_window_n(window_below());
+}
+
+void focus_window_up(void) {
+  focus_window_n(window_above());
+}
+
+void focus_window_left(void) {
+  focus_window_n(window_to_left());
+}
+
+void focus_window_right(void) {
+  focus_window_n(window_to_right());
+}
+
+void swap_window_down(void) {
+  swap_windows(view.workspaces[view.focus].focus, window_below());
+}
+
+void swap_window_up(void) {
+  swap_windows(view.workspaces[view.focus].focus, window_above());
+}
+
+void swap_window_left(void) {
+  swap_windows(view.workspaces[view.focus].focus, window_to_left());
+}
+
+void swap_window_right(void) {
+  swap_windows(view.workspaces[view.focus].focus, window_to_right());
+}
+
+void enlarge_width(void) {
+  resize_w(view.workspaces[view.focus].focus/4, 10);
+}
+
+void enlarge_height(void) {
+  resize_h(view.workspaces[view.focus].focus/4, 10);
+}
+
+void shrink_width(void) {
+  resize_w(view.workspaces[view.focus].focus/4, -10);
+}
+
+void shrink_height(void) {
+  resize_h(view.workspaces[view.focus].focus/4, -10);
+}
+
+void terminal(void) {
+  sh("mlterm");
+}
+
+void normal_mode(void) {
+  internal_shortcut_t *sh;
+  mode = MODE_NORMAL;
+  for(size_t i=0; i<shortcut_lookup_l; i++) {
+    sh = shortcut_lookup[i];
+    while(sh != NULL) {
+      xcb_grab_key(conn, 1, screen->root, sh->mod_mask, i+shortcut_lookup_offset,
+                   XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+      sh = sh->next;
+    }
+  }
+  redraw_mode();
+}
+
+void insert_mode(void) {
+  mode = MODE_INSERT;
+  xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, XCB_MOD_MASK_ANY);
+  xcb_grab_key(conn, 1, screen->root, 0, normal_code,
+               XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+  redraw_mode();
+}
+
+void destroy_current_window(void) {
+  destroy_n(view.workspaces[view.focus].focus);
+}
+
+void librewolf(void) {
+  sh("lb");
+}
 
 typedef struct shortcut_t {
   MODIFIER modifier;
@@ -103,7 +200,6 @@ void convert_shortcuts(void) {
   }
 }
 
-//TODO: SUPPORT LOWERCASE LETTERS
 uint32_t hex_to_uint(char* str, size_t start, size_t end) {
   uint32_t mul = 1;
   uint32_t ret = 0;
@@ -159,108 +255,3 @@ void config_parse(void) {
   hex_to_cairo_color(CONFIG_BAR_WORKSPACE_UNFOCUSED_FOREGROUND,
                      view.bar_settings.workspace_unfocused.foreground);
 }
-
-void focus_window_down(void) {
-  focus_window_n(window_below());
-}
-
-void focus_window_up(void) {
-  focus_window_n(window_above());
-}
-
-void focus_window_left(void) {
-  focus_window_n(window_to_left());
-}
-
-void focus_window_right(void) {
-  focus_window_n(window_to_right());
-}
-
-void swap_window_down(void) {
-  swap_windows(view.workspaces[view.focus].focus, window_below());
-}
-
-void swap_window_up(void) {
-  swap_windows(view.workspaces[view.focus].focus, window_above());
-}
-
-void swap_window_left(void) {
-  swap_windows(view.workspaces[view.focus].focus, window_to_left());
-}
-
-void swap_window_right(void) {
-  swap_windows(view.workspaces[view.focus].focus, window_to_right());
-}
-
-void enlarge_width(void) {
-  resize_w(view.workspaces[view.focus].focus/4, 10);
-}
-
-void enlarge_height(void) {
-  resize_h(view.workspaces[view.focus].focus/4, 10);
-}
-
-void shrink_width(void) {
-  resize_w(view.workspaces[view.focus].focus/4, -10);
-}
-
-void shrink_height(void) {
-  resize_h(view.workspaces[view.focus].focus/4, -10);
-}
-
-fwindow_impl(0)
-fwindow_impl(1)
-fwindow_impl(2)
-fwindow_impl(3)
-fwindow_impl(4)
-fwindow_impl(5)
-fwindow_impl(6)
-fwindow_impl(7)
-fwindow_impl(8)
-fwindow_impl(9)
-
-swindow_impl(0)
-swindow_impl(1)
-swindow_impl(2)
-swindow_impl(3)
-swindow_impl(4)
-swindow_impl(5)
-swindow_impl(6)
-swindow_impl(7)
-swindow_impl(8)
-swindow_impl(9)
-
-void terminal(void) {
-  sh("mlterm");
-}
-
-void normal_mode(void) {
-  internal_shortcut_t *sh;
-  mode = MODE_NORMAL;
-  for(size_t i=0; i<shortcut_lookup_l; i++) {
-    sh = shortcut_lookup[i];
-    while(sh != NULL) {
-      xcb_grab_key(conn, 1, screen->root, sh->mod_mask, i+shortcut_lookup_offset,
-                   XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
-      sh = sh->next;
-    }
-  }
-  redraw_mode();
-}
-
-void insert_mode(void) {
-  mode = MODE_INSERT;
-  xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, XCB_MOD_MASK_ANY);
-  xcb_grab_key(conn, 1, screen->root, 0, normal_code,
-               XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
-  redraw_mode();
-}
-
-void destroy_current_window(void) {
-  destroy_n(view.workspaces[view.focus].focus);
-}
-
-void librewolf(void) {
-  sh("lb");
-}
-
