@@ -108,7 +108,9 @@ uint32_t hex_to_uint(char* str, size_t start, size_t end) {
   uint32_t mul = 1;
   uint32_t ret = 0;
   while(end --> start) {
-    if(str[end] > '9') {
+    if(str[end] >= 'a') {
+      ret += mul * (str[end] - 'a' + 10);
+    } else if(str[end] >= 'A') {
       ret += mul * (str[end] - 'A' + 10);
     } else {
       ret += mul * (str[end] - '0');
