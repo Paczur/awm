@@ -68,7 +68,7 @@ void expand_horizontally(size_t m, uint* values) {
         values[i*4+2]+gaps*2;
       if(X(i) == 0) {
         values[COMB(!X(i), Y(i))*4+0] -=
-          values[i*4+2]+gaps;
+          values[i*4+2]+gaps*2;
       }
     }
   }
@@ -87,7 +87,7 @@ void expand_vertically(size_t m, uint* values) {
         values[i*4+3]+gaps*2;
       if(Y(i) == 0) {
         values[COMB(X(i), !Y(i))*4+1] -=
-          values[i*4+3]+gaps;
+          values[i*4+3]+gaps*2;
       }
     }
   }
@@ -159,7 +159,9 @@ void update_layout(size_t m) {
 
 void destroy_n(size_t n) {
   workspace_t *workspace = view.workspaces+view.focus;
-  if(workspace->grid[n].window == NULL) return;
+  if(n >= view.monitor_count*4 ||
+     workspace->grid[n].window == NULL)
+    return;
   xcb_destroy_window(conn, workspace->grid[n].window->id);
 }
 
@@ -362,7 +364,6 @@ void map_request(xcb_window_t window) {
   }
 }
 
-//TODO: FIX BUG WITH FOCUS AND WINDOW POSITIONING WHILE UNMAPPING
 void unmap_notify(xcb_window_t window) {
   workspace_t *workspace = view.workspaces+view.focus;
   int count = 0;
