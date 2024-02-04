@@ -20,12 +20,6 @@ typedef enum {
   MOD_SUPER
 } MODIFIER;
 
-typedef struct shortcut_t {
-  MODIFIER modifier;
-  xcb_keysym_t keysym;
-  void (*function) (void);
-} shortcut_t;
-
 fwindow(0);
 fwindow(1);
 fwindow(2);
@@ -65,8 +59,5 @@ void enlarge_width(void);
 void enlarge_height(void);
 void shrink_width(void);
 void shrink_height(void);
-
-extern size_t spawn_order[24];
-extern uint32_t gaps;
 
 #endif

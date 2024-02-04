@@ -6,7 +6,7 @@
 #include "window.h"
 #include "bar.h"
 
-#define LENGTH(x) (sizeof(x)/sizeof(x[0]))
+#define LENGTH(x) (sizeof((x))/sizeof((x)[0]))
 #ifdef DEBUG
 #undef DEBUG
 #define DEBUG for(int _i=1; _i; _i=0, fflush(stdout))
@@ -26,6 +26,8 @@ typedef struct internal_shortcut_t {
 } internal_shortcut_t;
 
 typedef struct view_t {
+  size_t *spawn_order;
+  size_t spawn_order_len;
   workspace_t workspaces[10];
   size_t focus;
   monitor_t *monitors;

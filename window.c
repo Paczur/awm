@@ -1,5 +1,6 @@
 #include "global.h"
 #include "config.h"
+#include "user_config.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -65,10 +66,10 @@ void expand_horizontally(size_t m, uint* values) {
       workspace->grid[m*4+i].origin =
         workspace->grid[m*4+COMB(!X(i), Y(i))].origin;
       values[COMB(!X(i), Y(i))*4+2] +=
-        values[i*4+2]+gaps*2;
+        values[i*4+2]+CONFIG_GAPS*2;
       if(X(i) == 0) {
         values[COMB(!X(i), Y(i))*4+0] -=
-          values[i*4+2]+gaps*2;
+          values[i*4+2]+CONFIG_GAPS*2;
       }
     }
   }
@@ -84,10 +85,10 @@ void expand_vertically(size_t m, uint* values) {
       workspace->grid[m*4+i].origin =
         workspace->grid[m*4+COMB(X(i), !Y(i))].origin;
       values[COMB(X(i), !Y(i))*4+3] +=
-        values[i*4+3]+gaps*2;
+        values[i*4+3]+CONFIG_GAPS*2;
       if(Y(i) == 0) {
         values[COMB(X(i), !Y(i))*4+1] -=
-          values[i*4+3]+gaps*2;
+          values[i*4+3]+CONFIG_GAPS*2;
       }
     }
   }
@@ -100,17 +101,18 @@ void update_layout(size_t m) {
     if(workspace->grid[m*4+i].origin != m*4+i) {
       workspace->grid[m*4+i].window = NULL;
     }
-    newstate[i*4+0] = view.monitors[m].x + gaps + (X(i)==0 ? 0 :
+    newstate[i*4+0] = view.monitors[m].x + CONFIG_GAPS + (X(i)==0 ? 0 :
                                                    (view.monitors[m].w/2 +
                                                     workspace->cross[m*2+0]));
-    newstate[i*4+1] = view.monitors[m].y + gaps +
+    newstate[i*4+1] = view.monitors[m].y + CONFIG_GAPS +
       (Y(i)==0 ? view.bar_settings.height :
        (view.bar_settings.height/2 + view.monitors[m].h/2 +
         workspace->cross[m*2+1]));
-    newstate[i*4+2] = view.monitors[m].w/2 - gaps*2 + (X(i)==0 ?
+    newstate[i*4+2] = view.monitors[m].w/2 - CONFIG_GAPS*2 + (X(i)==0 ?
                                                        workspace->cross[m*2+0] :
                                                        -workspace->cross[m*2+0]);
-    newstate[i*4+3] = view.monitors[m].h/2 - view.bar_settings.height/2 - gaps*2 +
+    newstate[i*4+3] = view.monitors[m].h/2 - view.bar_settings.height/2 -
+      CONFIG_GAPS*2 +
       (Y(i)==0 ?
        workspace->cross[m*2+1] :
        -workspace->cross[m*2+1]);
@@ -127,10 +129,10 @@ void update_layout(size_t m) {
   }
 
   if(workspace->focus/4 == m) {
-    newstate[workspace->focus%4*4+0] -= gaps;
-    newstate[workspace->focus%4*4+1] -= gaps;
-    newstate[workspace->focus%4*4+2] += gaps*2;
-    newstate[workspace->focus%4*4+3] += gaps*2;
+    newstate[workspace->focus%4*4+0] -= CONFIG_GAPS;
+    newstate[workspace->focus%4*4+1] -= CONFIG_GAPS;
+    newstate[workspace->focus%4*4+2] += CONFIG_GAPS*2;
+    newstate[workspace->focus%4*4+3] += CONFIG_GAPS*2;
   }
   DEBUG {
     print_grid();
@@ -186,7 +188,7 @@ void swap_windows(size_t n, size_t m) {
 void resize_h(size_t m, int h) {
   workspace_t* workspace = view.workspaces+view.focus;
   size_t ph = view.monitors[m].h/2 - view.bar_settings.height/2
-    - gaps*2 - workspace->cross[m*2+1];
+    - CONFIG_GAPS*2 - workspace->cross[m*2+1];
   if((h > 0 && (ph - h > ph || ph - h == 0)) ||
      (h < 0 && (ph + workspace->cross[m*2+1]*2 + h >
                 ph + workspace->cross[m*2+1]*2 ||
@@ -198,7 +200,7 @@ void resize_h(size_t m, int h) {
 
 void resize_w(size_t m, int w) {
   workspace_t* workspace = view.workspaces+view.focus;
-  size_t pw = view.monitors[m].w/2 - gaps*2 - workspace->cross[m*2+0];
+  size_t pw = view.monitors[m].w/2 - CONFIG_GAPS*2 - workspace->cross[m*2+0];
   if((w > 0 && (pw - w > pw || pw - w == 0)) ||
      (w < 0 && (pw + workspace->cross[m*2+0]*2 + w >
                 pw + workspace->cross[m*2+0]*2 ||
@@ -280,10 +282,10 @@ void focus_in(xcb_window_t window) {
   }
   if(grid_i < view.monitor_count*4 &&
      workspace->grid[grid_i].window != NULL) {
-    prevstate[grid_i*4+0] += gaps;
-    prevstate[grid_i*4+1] += gaps;
-    prevstate[grid_i*4+2] -= gaps*2;
-    prevstate[grid_i*4+3] -= gaps*2;
+    prevstate[grid_i*4+0] += CONFIG_GAPS;
+    prevstate[grid_i*4+1] += CONFIG_GAPS;
+    prevstate[grid_i*4+2] -= CONFIG_GAPS*2;
+    prevstate[grid_i*4+3] -= CONFIG_GAPS*2;
     xcb_configure_window(conn,
                          workspace->grid[grid_i].window->id,
                          XCB_CONFIG_WINDOW_X |
@@ -292,10 +294,10 @@ void focus_in(xcb_window_t window) {
                          prevstate+grid_i*4);
   }
   if(temp < view.monitor_count*4) {
-    prevstate[temp*4+0] -= gaps;
-    prevstate[temp*4+1] -= gaps;
-    prevstate[temp*4+2] += gaps*2;
-    prevstate[temp*4+3] += gaps*2;
+    prevstate[temp*4+0] -= CONFIG_GAPS;
+    prevstate[temp*4+1] -= CONFIG_GAPS;
+    prevstate[temp*4+2] += CONFIG_GAPS*2;
+    prevstate[temp*4+3] += CONFIG_GAPS*2;
     xcb_configure_window(conn,
                          window,
                          XCB_CONFIG_WINDOW_X |
@@ -335,10 +337,10 @@ void map_request(xcb_window_t window) {
   workspace_t *workspace = view.workspaces+view.focus;
   window_t *win = get_window(window);
   size_t m;
-  for(size_t i=0; i<LENGTH(spawn_order); i++) {
-    if(spawn_order[i] < view.monitor_count*4 &&
-       workspace->grid[spawn_order[i]].origin != spawn_order[i]) {
-      grid_i = spawn_order[i];
+  for(size_t i=0; i<view.spawn_order_len; i++) {
+    if(view.spawn_order[i] < view.monitor_count*4 &&
+       workspace->grid[view.spawn_order[i]].origin != view.spawn_order[i]) {
+      grid_i = view.spawn_order[i];
       break;
     }
   }

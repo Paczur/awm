@@ -1,7 +1,7 @@
 #include "config.h"
 #include "window.h"
-#include "user_config.h"
 #include "global.h"
+#include "user_config.h"
 #include "bar.h"
 #include <stdlib.h> //calloc
 #include <string.h> //memmove
@@ -20,6 +20,12 @@
     swap_windows(n, view.workspaces[view.focus].focus); \
   }
 
+typedef struct shortcut_t {
+  MODIFIER modifier;
+  xcb_keysym_t keysym;
+  void (*function) (void);
+} shortcut_t;
+
 xcb_keycode_t keysym_to_keycode(xcb_keysym_t keysym) {
   for(int i=setup->min_keycode; i<setup->max_keycode; i++) {
     if(keysyms[(i-setup->min_keycode) * kmapping->keysyms_per_keycode] == keysym)
@@ -32,8 +38,9 @@ void convert_shortcuts(void) {
   int start = 0;
   xcb_keycode_t index;
   internal_shortcut_t *sh;
+  shortcut_t shortcuts[] = CONFIG_SHORTCUTS;
 
-  normal_code = keysym_to_keycode(normal_shortcut);
+  normal_code = keysym_to_keycode(CONFIG_NORMAL_SHORTCUT);
 
   shortcut_lookup_l = setup->max_keycode-setup->min_keycode;
   shortcut_lookup_offset = setup->min_keycode;
@@ -96,6 +103,7 @@ void convert_shortcuts(void) {
   }
 }
 
+//TODO: SUPPORT LOWERCASE LETTERS
 uint32_t hex_to_uint(char* str, size_t start, size_t end) {
   uint32_t mul = 1;
   uint32_t ret = 0;
@@ -118,30 +126,35 @@ void hex_to_cairo_color(char *str, double *cairo) {
 
 void config_parse(void) {
   convert_shortcuts();
-  view.bar_settings.height = bar_height;
-  view.bar_settings.font = bar_font;
-  view.bar_settings.component_padding = bar_component_padding;
-  view.bar_settings.component_separator = bar_component_separator;
-  view.bar_settings.mode_min_width = bar_mode_min_width;
-  view.bar_settings.workspace_min_width = bar_workspace_min_width;
+  view.spawn_order = malloc(sizeof((size_t[])CONFIG_SPAWN_ORDER));
+  view.spawn_order_len = LENGTH((size_t[])CONFIG_SPAWN_ORDER);
+  memcpy(view.spawn_order, (size_t[])CONFIG_SPAWN_ORDER,
+         sizeof((size_t[])CONFIG_SPAWN_ORDER));
 
-  view.bar_settings.background = hex_to_uint(bar_background, 0, 6);
+  view.bar_settings.height = CONFIG_BAR_HEIGHT;
+  view.bar_settings.font = CONFIG_BAR_FONT;
+  view.bar_settings.component_padding = CONFIG_BAR_COMPONENT_PADDING;
+  view.bar_settings.component_separator = CONFIG_BAR_COMPONENT_SEPARATOR;
+  view.bar_settings.mode_min_width = CONFIG_BAR_MODE_MIN_WIDTH;
+  view.bar_settings.workspace_min_width = CONFIG_BAR_WORKSPACE_MIN_WIDTH;
+
+  view.bar_settings.background = hex_to_uint(CONFIG_BAR_BACKGROUND, 0, 6);
   view.bar_settings.mode_insert.background =
-    hex_to_uint(bar_mode_insert_background, 0, 6);
+    hex_to_uint(CONFIG_BAR_MODE_INSERT_BACKGROUND, 0, 6);
   view.bar_settings.mode_normal.background =
-    hex_to_uint(bar_mode_normal_background, 0, 6);
-  hex_to_cairo_color(bar_mode_insert_foreground,
+    hex_to_uint(CONFIG_BAR_MODE_NORMAL_BACKGROUND, 0, 6);
+  hex_to_cairo_color(CONFIG_BAR_MODE_INSERT_FOREGROUND,
                      view.bar_settings.mode_insert.foreground);
-  hex_to_cairo_color(bar_mode_normal_foreground,
+  hex_to_cairo_color(CONFIG_BAR_MODE_NORMAL_FOREGROUND,
                      view.bar_settings.mode_normal.foreground);
 
   view.bar_settings.workspace_focused.background =
-    hex_to_uint(bar_workspace_focused_background, 0, 6);
+    hex_to_uint(CONFIG_BAR_WORKSPACE_FOCUSED_BACKGROUND, 0, 6);
   view.bar_settings.workspace_unfocused.background =
-    hex_to_uint(bar_workspace_unfocused_background, 0, 6);
-  hex_to_cairo_color(bar_workspace_focused_foreground,
+    hex_to_uint(CONFIG_BAR_WORKSPACE_UNFOCUSED_BACKGROUND, 0, 6);
+  hex_to_cairo_color(CONFIG_BAR_WORKSPACE_FOCUSED_FOREGROUND,
                      view.bar_settings.workspace_focused.foreground);
-  hex_to_cairo_color(bar_workspace_unfocused_foreground,
+  hex_to_cairo_color(CONFIG_BAR_WORKSPACE_UNFOCUSED_FOREGROUND,
                      view.bar_settings.workspace_unfocused.foreground);
 }
 
