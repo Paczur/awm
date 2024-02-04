@@ -46,11 +46,17 @@ size_t spawn_order[] = {
 
 uint32_t gaps = 15;
 
-int bar_height = 20;
+int bar_height = 30;
 uint bar_component_padding = 5;
-char bar_font[] = "CodeNewRoman Nerd Font 12";
+char bar_font[] = "CodeNewRoman Nerd Font 14";
+
 char bar_background[6] = "111111";
-char bar_mode_insert_background[6] = "333333";
+char bar_mode_insert_background[6] = "111111";
 char bar_mode_insert_foreground[6] = "FFFFFF";
-char bar_mode_normal_background[6] = "333333";
-char bar_mode_normal_foreground[6] = "FFFFFF";
+char bar_mode_normal_background[6] = "111111";
+char bar_mode_normal_foreground[6] = "f3f36e";
+
+char bar_workspace_focused_background[6] = "111111";
+char bar_workspace_focused_foreground[6] = "f3f36e";
+char bar_workspace_unfocused_background[6] = "111111";
+char bar_workspace_unfocused_foreground[6] = "333333";

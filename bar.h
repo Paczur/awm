@@ -14,6 +14,7 @@ typedef struct bar_component_t {
 typedef struct bar_t {
   xcb_window_t id;
   bar_component_t mode;
+  bar_component_t workspaces[10];
 } bar_t;
 
 typedef struct bar_component_settings_t {
@@ -28,6 +29,8 @@ typedef struct bar_settings_t {
   uint32_t background;
   bar_component_settings_t mode_insert;
   bar_component_settings_t mode_normal;
+  bar_component_settings_t workspace_focused;
+  bar_component_settings_t workspace_unfocused;
 } bar_settings_t;
 
 void place_bars(void);

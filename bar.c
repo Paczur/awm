@@ -21,8 +21,16 @@ void place_bars(void) {
                       view.bars[i].id, 0, 0, 1, view.bar_settings.height, 0,
                       XCB_WINDOW_CLASS_INPUT_OUTPUT,
                       screen->root_visual, mask, values);
+    for(size_t j=0; j<10; j++) {
+      view.bars[i].workspaces[j].id = xcb_generate_id(conn);
+      xcb_create_window(conn, screen->root_depth, view.bars[i].workspaces[j].id,
+                        view.bars[i].id, 0, 0, 1, view.bar_settings.height, 0,
+                        XCB_WINDOW_CLASS_INPUT_OUTPUT,
+                        screen->root_visual, mask, values);
+    }
     xcb_map_window(conn, view.bars[i].id);
     xcb_map_window(conn, view.bars[i].mode.id);
+    xcb_map_window(conn, view.bars[i].workspaces[0].id);
   }
 
   desc = pango_font_description_from_string(view.bar_settings.font);
@@ -35,17 +43,30 @@ void place_bars(void) {
     view.bars[i].mode.cairo = cairo_create(view.bars[i].mode.surface);
     view.bars[i].mode.pango = pango_cairo_create_layout(view.bars[i].mode.cairo);
     pango_layout_set_font_description(view.bars[i].mode.pango, desc);
+
+    for(size_t j=0; j<10; j++) {
+      view.bars[i].workspaces[j].surface =
+        cairo_xcb_surface_create(conn,
+                                 view.bars[i].workspaces[j].id,
+                                 view.visual_type, 1, view.bar_settings.height);
+      view.bars[i].workspaces[j].cairo =
+        cairo_create(view.bars[i].workspaces[j].surface);
+      view.bars[i].workspaces[j].pango =
+        pango_cairo_create_layout(view.bars[i].workspaces[j].cairo);
+      pango_layout_set_font_description(view.bars[i].workspaces[j].pango, desc);
+    }
   }
   redraw_bars();
 
   pango_font_description_free(desc);
 }
 
-//TODO: CENTER VERTICALLY
-void redraw_component(char *text, bar_component_t *component,
-                      bar_component_settings_t *settings, size_t m) {
+//TODO: OPTIMIZE CALCULATIONS TO HAPPEN ONLY FOR ONE MONITOR
+uint32_t redraw_component(char *text, bar_component_t *component,
+                          bar_component_settings_t *settings, size_t m,
+                          uint32_t x) {
   PangoRectangle t;
-
+  uint32_t vals[2];
   for(size_t i=0; i<view.monitor_count; i++) {
     xcb_clear_area(conn, 0, component->id, 0, 0,
                    view.monitors[m].w, view.bar_settings.height);
@@ -56,33 +77,60 @@ void redraw_component(char *text, bar_component_t *component,
     pango_layout_set_text(component->pango, text, -1);
     pango_layout_get_extents(component->pango, &t, NULL);
     pango_extents_to_pixels(&t, NULL);
+    if((uint)t.height < view.bar_settings.height) {
+      t.height = view.bar_settings.height - t.height;
+      t.height /= 2;
+      t.height -= t.y;
+    }
     if((uint)t.x > view.bar_settings.component_padding) {
       t.width += t.x*2;
-      cairo_move_to(component->cairo, t.x, 0);
+      cairo_move_to(component->cairo, t.x, t.height);
     } else {
       t.width += view.bar_settings.component_padding*2;
       cairo_move_to(component->cairo,
-                    view.bar_settings.component_padding - t.x, 0);
+                    view.bar_settings.component_padding - t.x, t.height);
     }
-    xcb_configure_window(conn, component->id, XCB_CONFIG_WINDOW_WIDTH, &t.width);
+    vals[0] = x;
+    vals[1] = t.width;
+    xcb_configure_window(conn, component->id,
+                         XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_WIDTH, vals);
     xcb_change_window_attributes(conn, component->id,
                                  XCB_CW_BACK_PIXEL, &settings->background);
     cairo_xcb_surface_set_size(component->surface, t.width,
                                view.bar_settings.height);
     pango_cairo_show_layout(component->cairo, component->pango);
   }
+  return t.width;
+}
+
+void redraw_workspace(uint32_t x) {
+  char num[2] = { '1', 0 };
+  for(size_t i=0; i<10; i++) {
+    num[0] = i+'1';
+    if(i == view.focus) {
+      redraw_component(num, view.bars[i].workspaces+i,
+                       &view.bar_settings.workspace_focused, i/4, x);
+    } else if(view.workspaces[i].grid[0].window != NULL) {
+      redraw_component(num, view.bars[i].workspaces+i,
+                       &view.bar_settings.workspace_unfocused, i/4, x);
+    }
+  }
 }
 
 void redraw_mode(void) {
+  uint32_t x = 0;
   if(mode == MODE_NORMAL) {
     for(size_t i=0; i<view.monitor_count; i++) {
-      redraw_component("󰆾", &view.bars[i].mode, &view.bar_settings.mode_normal, i);
+      x = redraw_component("󰆾", &view.bars[i].mode, &view.bar_settings.mode_normal,
+                           i, 0);
     }
   } else {
     for(size_t i=0; i<view.monitor_count; i++) {
-      redraw_component("󰗧", &view.bars[i].mode, &view.bar_settings.mode_insert, i);
+      x = redraw_component("󰗧", &view.bars[i].mode, &view.bar_settings.mode_insert,
+                           i, 0);
     }
   }
+  redraw_workspace(x);
 }
 
 void redraw_bars(void) {

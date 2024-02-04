@@ -121,8 +121,9 @@ void config_parse(void) {
   view.bar_settings.height = bar_height;
   view.bar_settings.font = bar_font;
   view.bar_settings.component_padding = bar_component_padding;
-    view.bar_settings.background = hex_to_uint(bar_background, 0, 6);
-    view.bar_settings.mode_insert.background =
+
+  view.bar_settings.background = hex_to_uint(bar_background, 0, 6);
+  view.bar_settings.mode_insert.background =
     hex_to_uint(bar_mode_insert_background, 0, 6);
   view.bar_settings.mode_normal.background =
     hex_to_uint(bar_mode_normal_background, 0, 6);
@@ -130,6 +131,15 @@ void config_parse(void) {
                      view.bar_settings.mode_insert.foreground);
   hex_to_cairo_color(bar_mode_normal_foreground,
                      view.bar_settings.mode_normal.foreground);
+
+  view.bar_settings.workspace_focused.background =
+    hex_to_uint(bar_workspace_focused_background, 0, 6);
+  view.bar_settings.workspace_unfocused.background =
+    hex_to_uint(bar_workspace_unfocused_background, 0, 6);
+  hex_to_cairo_color(bar_workspace_focused_foreground,
+                     view.bar_settings.workspace_focused.foreground);
+  hex_to_cairo_color(bar_workspace_unfocused_foreground,
+                     view.bar_settings.workspace_unfocused.foreground);
 }
 
 void focus_window_down(void) {
