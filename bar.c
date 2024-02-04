@@ -111,16 +111,19 @@ uint32_t redraw_component(char *text, bar_component_t *component,
 
 void redraw_workspace(uint32_t x) {
   char num[2] = { '1', 0 };
+  uint32_t acc_x = x;
   for(size_t i=0; i<10; i++) {
     num[0] = i+'1';
     if(i == view.focus) {
-      redraw_component(num, view.bars[i].workspaces+i,
-                       &view.bar_settings.workspace_focused, i/4, x,
-                       view.bar_settings.workspace_min_width);
+      acc_x += redraw_component(num, view.bars[i].workspaces+i,
+                                &view.bar_settings.workspace_focused,
+                                i/4, acc_x,
+                                view.bar_settings.workspace_min_width);
     } else if(view.workspaces[i].grid[0].window != NULL) {
-      redraw_component(num, view.bars[i].workspaces+i,
-                       &view.bar_settings.workspace_unfocused, i/4, x,
-                       view.bar_settings.workspace_min_width);
+      acc_x += redraw_component(num, view.bars[i].workspaces+i,
+                                &view.bar_settings.workspace_unfocused,
+                                i/4, acc_x,
+                                view.bar_settings.workspace_min_width);
     }
   }
 }
