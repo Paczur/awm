@@ -54,7 +54,7 @@ void shrink_width(void) {
 void shrink_height(void) {
   resize_h(view.workspaces[view.focus].focus/4, -CONFIG_RESIZE_STEP);
 }
-void terminal(void) { sh("mlterm"); }
+void terminal(void) { sh(CONFIG_TERMINAL_CMD); }
 void destroy_current_window(void) {
   destroy_n(view.workspaces[view.focus].focus);
 }
@@ -107,7 +107,6 @@ void convert_shortcuts(void) {
   shortcut_lookup_l = setup->max_keycode-setup->min_keycode;
   shortcut_lookup_offset = setup->min_keycode;
   shortcut_lookup = calloc(shortcut_lookup_l, sizeof(internal_shortcut_t*));
-
 
   // get keycodes from keysyms
   for(size_t i=0; i<LENGTH(shortcuts); i++) {
