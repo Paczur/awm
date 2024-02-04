@@ -13,8 +13,14 @@ CFLAGS=$(WARN) -march=native -std=gnu99 $(LIBS)
 SOURCE=$(wildcard *.c)
 $(VERBOSE).SILENT:
 
+release: CFLAGS += $(RELEASE)
+release: main
+
+debug: CFLAGS += $(DEBUG)
+debug: main
+
 main: main.c config.c global.c window.c bar.c
-	$(CC) $(DEBUG) $(CFLAGS) -o $(BIN)/$@ $^
+	$(CC) $(CFLAGS) -o $(BIN)/$@ $^
 
 clean:
 	rm -f $(wildcard bin/*)
@@ -26,4 +32,4 @@ uninstall:
 	rm /home/paczur/main
 	rm /home/paczur/out
 
-test: main uninstall install
+test: debug uninstall install
