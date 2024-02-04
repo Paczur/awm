@@ -34,6 +34,7 @@ typedef struct workspace_t {
 void window_init(void);
 void resize_w(size_t, int);
 void resize_h(size_t, int);
+void reset_cross(size_t);
 void destroy_n(size_t);
 void swap_windows(size_t, size_t);
 void focus_window_n(size_t);

@@ -47,18 +47,19 @@ void swap_window_left(void) {
 void swap_window_right(void) {
   swap_windows(view.workspaces[view.focus].focus, window_to_right());
 }
-void enlarge_width(void) {
+void enlarge_right(void) {
   resize_w(view.workspaces[view.focus].focus/4, CONFIG_RESIZE_STEP);
 }
-void enlarge_height(void) {
+void enlarge_down(void) {
   resize_h(view.workspaces[view.focus].focus/4, CONFIG_RESIZE_STEP);
 }
-void shrink_width(void) {
+void enlarge_left(void) {
   resize_w(view.workspaces[view.focus].focus/4, -CONFIG_RESIZE_STEP);
 }
-void shrink_height(void) {
+void enlarge_up(void) {
   resize_h(view.workspaces[view.focus].focus/4, -CONFIG_RESIZE_STEP);
 }
+void equal_sizes(void) { reset_cross(view.workspaces[view.focus].focus/4); }
 void terminal(void) { sh(CONFIG_TERMINAL_CMD); }
 void destroy_current_window(void) {
   destroy_n(view.workspaces[view.focus].focus);

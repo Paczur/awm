@@ -22,14 +22,12 @@
   CONFIG_NUMBER_PATTERN(MOD_ALT,      workspace),    \
   CONFIG_DIRECTION_PATTERN(MOD_NONE,  focus_window), \
   CONFIG_DIRECTION_PATTERN(MOD_SHIFT, swap_window),  \
+  CONFIG_DIRECTION_PATTERN(MOD_ALT, enlarge), \
   {MOD_NONE,  XK_q,      destroy_current_window}, \
   {MOD_NONE,  XK_Escape, insert_mode},            \
   {MOD_NONE,  XK_i,      insert_mode},            \
+  {MOD_NONE,  XK_equal,  equal_sizes},            \
   {MOD_NONE,  XK_Return, terminal},               \
-  {MOD_NONE,  XK_Left,   shrink_width},           \
-  {MOD_NONE,  XK_Up,     shrink_height},          \
-  {MOD_NONE,  XK_Right,  enlarge_width},          \
-  {MOD_NONE,  XK_Down,   enlarge_height},         \
   {MOD_NONE,  XK_f,      librewolf}               \
 }
 

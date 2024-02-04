@@ -218,6 +218,14 @@ void resize_w(size_t m, int w) {
   update_layout(m);
 }
 
+void reset_cross(size_t m) {
+  workspace_t* workspace = view.workspaces+view.focus;
+  for(size_t i=0; i<2; i++) {
+    workspace->cross[m*2+i] = 0;
+  }
+  update_layout(m);
+}
+
 size_t window_to_right(void) {
   workspace_t *workspace = view.workspaces+view.focus;
   window_t *next = workspace->grid[workspace->focus].window;
