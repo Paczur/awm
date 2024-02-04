@@ -39,6 +39,8 @@
   {MOD_NONE,  XK_f,      librewolf} \
 }
 
+#define CONFIG_RESIZE_STEP 10
+
 #define CONFIG_SPAWN_ORDER { 0, 4, 6, 1, 7, 3, 5, 2 }
 #define CONFIG_GAPS 15
 

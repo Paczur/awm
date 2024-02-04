@@ -23,69 +23,48 @@
   void swap_window_ ## n (void) { \
     swap_windows(n, view.workspaces[view.focus].focus); \
   }
+#define TIMES10(x) x(0) x(1) x(2) x(3) x(4) x(5) x(6) x(7) x(8) x(9)
+TIMES10(window_n)
 
-window_n(0)
-window_n(1)
-window_n(2)
-window_n(3)
-window_n(4)
-window_n(5)
-window_n(6)
-window_n(7)
-window_n(8)
-window_n(9)
-
-void focus_window_down(void) {
-  focus_window_n(window_below());
-}
-
-void focus_window_up(void) {
-  focus_window_n(window_above());
-}
-
-void focus_window_left(void) {
-  focus_window_n(window_to_left());
-}
-
-void focus_window_right(void) {
-  focus_window_n(window_to_right());
-}
-
+void focus_window_down(void) { focus_window_n(window_below()); }
+void focus_window_up(void) { focus_window_n(window_above()); }
+void focus_window_left(void) { focus_window_n(window_to_left()); }
+void focus_window_right(void) { focus_window_n(window_to_right()); }
 void swap_window_down(void) {
   swap_windows(view.workspaces[view.focus].focus, window_below());
 }
-
 void swap_window_up(void) {
   swap_windows(view.workspaces[view.focus].focus, window_above());
 }
-
 void swap_window_left(void) {
   swap_windows(view.workspaces[view.focus].focus, window_to_left());
 }
-
 void swap_window_right(void) {
   swap_windows(view.workspaces[view.focus].focus, window_to_right());
 }
-
 void enlarge_width(void) {
-  resize_w(view.workspaces[view.focus].focus/4, 10);
+  resize_w(view.workspaces[view.focus].focus/4, CONFIG_RESIZE_STEP);
 }
-
 void enlarge_height(void) {
-  resize_h(view.workspaces[view.focus].focus/4, 10);
+  resize_h(view.workspaces[view.focus].focus/4, CONFIG_RESIZE_STEP);
 }
-
 void shrink_width(void) {
-  resize_w(view.workspaces[view.focus].focus/4, -10);
+  resize_w(view.workspaces[view.focus].focus/4, -CONFIG_RESIZE_STEP);
 }
-
 void shrink_height(void) {
-  resize_h(view.workspaces[view.focus].focus/4, -10);
+  resize_h(view.workspaces[view.focus].focus/4, -CONFIG_RESIZE_STEP);
 }
+void terminal(void) { sh("mlterm"); }
+void destroy_current_window(void) {
+  destroy_n(view.workspaces[view.focus].focus);
+}
+void librewolf(void) { sh("lb"); }
 
-void terminal(void) {
-  sh("mlterm");
-}
+typedef struct shortcut_t {
+  MODIFIER modifier;
+  xcb_keysym_t keysym;
+  void (*function) (void);
+} shortcut_t;
 
 void normal_mode(void) {
   internal_shortcut_t *sh;
@@ -108,20 +87,6 @@ void insert_mode(void) {
                XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
   redraw_mode();
 }
-
-void destroy_current_window(void) {
-  destroy_n(view.workspaces[view.focus].focus);
-}
-
-void librewolf(void) {
-  sh("lb");
-}
-
-typedef struct shortcut_t {
-  MODIFIER modifier;
-  xcb_keysym_t keysym;
-  void (*function) (void);
-} shortcut_t;
 
 xcb_keycode_t keysym_to_keycode(xcb_keysym_t keysym) {
   for(int i=setup->min_keycode; i<setup->max_keycode; i++) {
