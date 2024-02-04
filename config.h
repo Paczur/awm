@@ -1,9 +1,6 @@
 #ifndef H_CONFIG
 #define H_CONFIG
 
-#include <xcb/xcb.h>
-#include "window.h"
-
 typedef enum {
   MOD_NONE,
   MOD_SHIFT,
