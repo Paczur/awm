@@ -219,6 +219,7 @@ int main(int argc, char *argv[], char *envp[]) {
 
   setup_wm();
   normal_mode();
+  window_init();
   event_loop();
 
   return 0;

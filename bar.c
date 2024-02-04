@@ -113,13 +113,12 @@ uint32_t redraw_component(char *text, bar_component_t *component,
 }
 
 void redraw_workspaces(void) {
-  char num[3] = { '1' };
+  char num[2] = { '1', 0 };
   size_t iterator = 1;
   uint32_t xs[11] = { workspace_x, 0 };
   for(size_t i=0; i<10; i++) {
     if(i == 9) {
-      num[0] = '1';
-      num[1] = '0';
+      num[0] = '0';
     } else {
       num[0] = i+'1';
     }

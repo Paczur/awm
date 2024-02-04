@@ -20,6 +20,10 @@ size_t get_index(xcb_window_t w) {
   return -1;
 }
 
+void window_init(void) {
+  prevstate = calloc(view.monitor_count*16, sizeof(uint32_t));
+}
+
 void print_grid(void) {
   workspace_t *workspace = view.workspaces+view.focus;
   puts("grid:");
@@ -375,9 +379,6 @@ void map_request(xcb_window_t window) {
     fflush(stdout);
     return;
   }
-
-  if(prevstate == NULL)
-    prevstate = calloc(view.monitor_count*16, sizeof(uint32_t));
 
   m = grid_i/4;
   workspace->grid[grid_i].window = win;

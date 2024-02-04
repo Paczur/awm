@@ -31,6 +31,7 @@ typedef struct workspace_t {
   int *cross;
 } workspace_t;
 
+void window_init(void);
 void resize_w(size_t, int);
 void resize_h(size_t, int);
 void destroy_n(size_t);
