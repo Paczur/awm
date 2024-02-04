@@ -112,6 +112,8 @@ uint32_t redraw_component(char *text, bar_component_t *component,
   return vals[0] + vals[1];
 }
 
+void redraw_minimized(void) {} //TODO: IMPLEMENT THIS
+
 void redraw_workspaces(void) {
   char num[2] = { '1', 0 };
   size_t iterator = 1;
@@ -175,4 +177,5 @@ void redraw_mode(void) {
 
 void redraw_bars(void) {
   redraw_mode();
+  redraw_minimized();
 }

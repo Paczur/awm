@@ -105,15 +105,15 @@ void calculate_layout(size_t m, uint32_t* values, size_t offset) {
       workspace->grid[m*4+i].window = NULL;
     }
     values[offset+i*4+0] = view.monitors[m].x + CONFIG_GAPS + (X(i)==0 ? 0 :
-                                                   (view.monitors[m].w/2 +
-                                                    workspace->cross[m*2+0]));
+                                                               (view.monitors[m].w/2 +
+                                                                workspace->cross[m*2+0]));
     values[offset+i*4+1] = view.monitors[m].y + CONFIG_GAPS +
       (Y(i)==0 ? view.bar_settings.height :
        (view.bar_settings.height/2 + view.monitors[m].h/2 +
         workspace->cross[m*2+1]));
     values[offset+i*4+2] = view.monitors[m].w/2 - CONFIG_GAPS*2 + (X(i)==0 ?
-                                                       workspace->cross[m*2+0] :
-                                                       -workspace->cross[m*2+0]);
+                                                                   workspace->cross[m*2+0] :
+                                                                   -workspace->cross[m*2+0]);
     values[offset+i*4+3] = view.monitors[m].h/2 - view.bar_settings.height/2 -
       CONFIG_GAPS*2 +
       (Y(i)==0 ?
@@ -165,6 +165,42 @@ void update_layout(size_t m) {
   }
 
   memcpy(prevstate+m*16, newstate, sizeof(newstate));
+}
+
+size_t next_window_location(void) {
+  size_t grid_i = SIZE_MAX;
+  workspace_t *workspace = view.workspaces+view.focus;
+  for(size_t i=0; i<view.spawn_order_len; i++) {
+    if(view.spawn_order[i] < view.monitor_count*4 &&
+       workspace->grid[view.spawn_order[i]].origin != view.spawn_order[i]) {
+      grid_i = view.spawn_order[i];
+      break;
+    }
+  }
+  return grid_i;
+}
+
+void place_window(window_t *window, size_t grid_i) {
+  size_t m = grid_i/4;
+  int mask = XCB_EVENT_MASK_FOCUS_CHANGE | XCB_EVENT_MASK_ENTER_WINDOW;
+  workspace_t *workspace = view.workspaces+view.focus;
+  workspace->grid[grid_i].window = window;
+  workspace->grid[grid_i].origin = grid_i;
+  xcb_map_window(conn, window->id);
+  update_layout(m);
+  xcb_change_window_attributes(conn, window->id, XCB_CW_EVENT_MASK, &mask);
+  xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT,
+                      window->id, XCB_CURRENT_TIME);
+}
+
+//unmapping done before this function call
+void minimize_window(window_t *window) {
+  window_list_t *min;
+  min = malloc(sizeof(window_list_t));
+  min->next = view.minimized;
+  view.minimized = min;
+  min->window = window;
+  redraw_minimized();
 }
 
 void destroy_n(size_t n) {
@@ -224,6 +260,35 @@ void reset_cross(size_t m) {
     workspace->cross[m*2+i] = 0;
   }
   update_layout(m);
+}
+
+void minimize_n(size_t n) {
+  workspace_t *workspace = view.workspaces+view.focus;
+  if(workspace->grid[n].window != NULL) {
+    xcb_unmap_window(conn, workspace->grid[n].window->id);
+    minimize_window(workspace->grid[n].window);
+  }
+}
+
+void show_n(size_t n) {
+  window_list_t *next;
+  window_list_t *list = view.minimized;
+  size_t grid_i = next_window_location();
+  if(grid_i == SIZE_MAX) {
+    return;
+  }
+  if(n == 0) {
+    next = list->next;
+    place_window(list->window, grid_i);
+    free(view.minimized);
+    view.minimized = next;
+  } else {
+    while(list->next != NULL && --n != 0) list = list->next;
+    next = list->next->next;
+    place_window(list->next->window, grid_i);
+    free(list->next);
+    list->next = next;
+  }
 }
 
 size_t window_to_right(void) {
@@ -370,32 +435,14 @@ void destroy_notify(xcb_window_t window) {
 }
 
 void map_request(xcb_window_t window) {
-  int mask = XCB_EVENT_MASK_FOCUS_CHANGE | XCB_EVENT_MASK_ENTER_WINDOW;
-  size_t grid_i = SIZE_MAX;
-  workspace_t *workspace = view.workspaces+view.focus;
-  window_t *win = get_window(window);
-  size_t m;
-  for(size_t i=0; i<view.spawn_order_len; i++) {
-    if(view.spawn_order[i] < view.monitor_count*4 &&
-       workspace->grid[view.spawn_order[i]].origin != view.spawn_order[i]) {
-      grid_i = view.spawn_order[i];
-      break;
-    }
-  }
+  size_t grid_i = next_window_location();
+  window_t* win = get_window(window);
   if(grid_i == SIZE_MAX) {
-    puts("TODO: MINIMIZE");
-    fflush(stdout);
+    minimize_window(win);
     return;
   }
 
-  m = grid_i/4;
-  workspace->grid[grid_i].window = win;
-  workspace->grid[grid_i].origin = grid_i;
-  xcb_map_window(conn, window);
-  update_layout(m);
-  xcb_change_window_attributes(conn, window, XCB_CW_EVENT_MASK, &mask);
-  xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT,
-                      window, XCB_CURRENT_TIME);
+  place_window(win, grid_i);
   DEBUG {
     print_grid();
   }

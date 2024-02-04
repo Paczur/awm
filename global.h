@@ -34,6 +34,7 @@ typedef struct view_t {
   size_t monitor_count;
   bar_t *bars;
   bar_settings_t bar_settings;
+  window_list_t *minimized;
   xcb_visualtype_t *visual_type;
 } view_t;
 

@@ -20,15 +20,17 @@
   CONFIG_NUMBER_PATTERN(MOD_NONE,     focus_window), \
   CONFIG_NUMBER_PATTERN(MOD_SHIFT,    swap_window),  \
   CONFIG_NUMBER_PATTERN(MOD_ALT,      workspace),    \
+  CONFIG_NUMBER_PATTERN(MOD_CTRL,     show),         \
   CONFIG_DIRECTION_PATTERN(MOD_NONE,  focus_window), \
   CONFIG_DIRECTION_PATTERN(MOD_SHIFT, swap_window),  \
-  CONFIG_DIRECTION_PATTERN(MOD_ALT, enlarge), \
-  {MOD_NONE,  XK_q,      destroy_current_window}, \
-  {MOD_NONE,  XK_Escape, insert_mode},            \
-  {MOD_NONE,  XK_i,      insert_mode},            \
-  {MOD_NONE,  XK_equal,  equal_sizes},            \
-  {MOD_NONE,  XK_Return, terminal},               \
-  {MOD_NONE,  XK_f,      librewolf}               \
+  CONFIG_DIRECTION_PATTERN(MOD_ALT,   enlarge),      \
+  {MOD_NONE, XK_q,      destroy},     \
+  {MOD_NONE, XK_m,      minimize},    \
+  {MOD_NONE, XK_Escape, insert_mode}, \
+  {MOD_NONE, XK_i,      insert_mode}, \
+  {MOD_NONE, XK_equal,  equal_sizes}, \
+  {MOD_NONE, XK_Return, terminal},    \
+  {MOD_NONE, XK_f,      librewolf}    \
 }
 
 #define CONFIG_TERMINAL_CMD "mlterm"

@@ -31,11 +31,18 @@ typedef struct workspace_t {
   int *cross;
 } workspace_t;
 
+typedef struct window_list_t {
+  window_t *window;
+  struct window_list_t *next;
+} window_list_t;
+
 void window_init(void);
 void resize_w(size_t, int);
 void resize_h(size_t, int);
 void reset_cross(size_t);
 void destroy_n(size_t);
+void minimize_n(size_t);
+void show_n(size_t);
 void swap_windows(size_t, size_t);
 void focus_window_n(size_t);
 void workspace_n(size_t);

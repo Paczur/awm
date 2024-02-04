@@ -26,7 +26,12 @@
   void workspace_ ## n (void) { \
     workspace_n(n); \
     redraw_workspaces(); \
+  } \
+  void show_ ## n (void) { \
+    show_n(n); \
+    redraw_minimized(); \
   }
+
 
 #define TIMES10(x) x(0) x(1) x(2) x(3) x(4) x(5) x(6) x(7) x(8) x(9)
 TIMES10(window_n)
@@ -61,9 +66,8 @@ void enlarge_up(void) {
 }
 void equal_sizes(void) { reset_cross(view.workspaces[view.focus].focus/4); }
 void terminal(void) { sh(CONFIG_TERMINAL_CMD); }
-void destroy_current_window(void) {
-  destroy_n(view.workspaces[view.focus].focus);
-}
+void destroy(void) { destroy_n(view.workspaces[view.focus].focus); }
+void minimize(void) { minimize_n(view.workspaces[view.focus].focus); }
 void librewolf(void) { sh("lb"); }
 
 typedef struct shortcut_t {
