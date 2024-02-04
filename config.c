@@ -22,7 +22,12 @@
   } \
   void swap_window_ ## n (void) { \
     swap_windows(n, view.workspaces[view.focus].focus); \
+  } \
+  void workspace_ ## n (void) { \
+    workspace_n(n); \
+    redraw_workspaces(); \
   }
+
 #define TIMES10(x) x(0) x(1) x(2) x(3) x(4) x(5) x(6) x(7) x(8) x(9)
 TIMES10(window_n)
 
@@ -134,6 +139,9 @@ void convert_shortcuts(void) {
     break;
     case MOD_SUPER:
       sh->mod_mask = XCB_MOD_MASK_4;
+    break;
+    case MOD_CTRL:
+      sh->mod_mask = XCB_MOD_MASK_CONTROL;
     break;
     }
   }

@@ -37,6 +37,7 @@ typedef struct bar_settings_t {
 } bar_settings_t;
 
 void place_bars(void);
+void redraw_workspaces(void);
 void redraw_mode(void);
 void redraw_bars(void);
 
