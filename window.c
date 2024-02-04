@@ -241,7 +241,7 @@ size_t window_to_left(void) {
   size_t t = workspace->focus;
   while(prev == next) {
     if(t == 0 || t == 2) {
-      t = COMB(0, Y(t)) + (view.monitor_count-1)*4;
+      t = COMB(1, Y(t)) + (view.monitor_count-1)*4;
     } else {
       t -= X(t) == 0 ? 3 : 1;
     }

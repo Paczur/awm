@@ -1,43 +1,27 @@
+#define CONFIG_NUMBER_PATTERN(mod, f) \
+{mod, XK_1, f ## _0}, \
+{mod, XK_2, f ## _1}, \
+{mod, XK_3, f ## _2}, \
+{mod, XK_4, f ## _3}, \
+{mod, XK_5, f ## _4}, \
+{mod, XK_6, f ## _5}, \
+{mod, XK_7, f ## _6}, \
+{mod, XK_8, f ## _7}, \
+{mod, XK_9, f ## _8}, \
+{mod, XK_0, f ## _9}
+#define CONFIG_DIRECTION_PATTERN(mod, f) \
+{mod, XK_h, f ## _left}, \
+{mod, XK_j, f ## _down}, \
+{mod, XK_k, f ## _up},   \
+{mod, XK_l, f ## _right}
+
 #define CONFIG_NORMAL_SHORTCUT XK_Super_L
 #define CONFIG_SHORTCUTS { \
-  {MOD_NONE,  XK_1,      focus_window_0},         \
-  {MOD_NONE,  XK_2,      focus_window_1},         \
-  {MOD_NONE,  XK_3,      focus_window_2},         \
-  {MOD_NONE,  XK_4,      focus_window_3},         \
-  {MOD_NONE,  XK_5,      focus_window_4},         \
-  {MOD_NONE,  XK_6,      focus_window_5},         \
-  {MOD_NONE,  XK_7,      focus_window_6},         \
-  {MOD_NONE,  XK_8,      focus_window_7},         \
-  {MOD_NONE,  XK_9,      focus_window_8},         \
-  {MOD_NONE,  XK_0,      focus_window_9},         \
-  {MOD_SHIFT, XK_1,      swap_window_0},          \
-  {MOD_SHIFT, XK_2,      swap_window_1},          \
-  {MOD_SHIFT, XK_3,      swap_window_2},          \
-  {MOD_SHIFT, XK_4,      swap_window_3},          \
-  {MOD_SHIFT, XK_5,      swap_window_4},          \
-  {MOD_SHIFT, XK_6,      swap_window_5},          \
-  {MOD_SHIFT, XK_7,      swap_window_6},          \
-  {MOD_SHIFT, XK_8,      swap_window_7},          \
-  {MOD_SHIFT, XK_9,      swap_window_8},          \
-  {MOD_SHIFT, XK_0,      swap_window_9},          \
-  {MOD_CTRL,  XK_1,      workspace_0},            \
-  {MOD_CTRL,  XK_2,      workspace_1},            \
-  {MOD_CTRL,  XK_3,      workspace_2},            \
-  {MOD_CTRL,  XK_4,      workspace_3},            \
-  {MOD_CTRL,  XK_5,      workspace_4},            \
-  {MOD_CTRL,  XK_6,      workspace_5},            \
-  {MOD_CTRL,  XK_7,      workspace_6},            \
-  {MOD_CTRL,  XK_8,      workspace_7},            \
-  {MOD_CTRL,  XK_9,      workspace_8},            \
-  {MOD_CTRL,  XK_0,      workspace_9},            \
-  {MOD_NONE,  XK_h,      focus_window_left},      \
-  {MOD_NONE,  XK_j,      focus_window_down},      \
-  {MOD_NONE,  XK_k,      focus_window_up},        \
-  {MOD_NONE,  XK_l,      focus_window_right},     \
-  {MOD_SHIFT, XK_h,      swap_window_left},       \
-  {MOD_SHIFT, XK_j,      swap_window_down},       \
-  {MOD_SHIFT, XK_k,      swap_window_up},         \
-  {MOD_SHIFT, XK_l,      swap_window_right},      \
+  CONFIG_NUMBER_PATTERN(MOD_NONE,     focus_window), \
+  CONFIG_NUMBER_PATTERN(MOD_SHIFT,    swap_window),  \
+  CONFIG_NUMBER_PATTERN(MOD_ALT,      workspace),    \
+  CONFIG_DIRECTION_PATTERN(MOD_NONE,  focus_window), \
+  CONFIG_DIRECTION_PATTERN(MOD_SHIFT, swap_window),  \
   {MOD_NONE,  XK_q,      destroy_current_window}, \
   {MOD_NONE,  XK_Escape, insert_mode},            \
   {MOD_NONE,  XK_i,      insert_mode},            \
