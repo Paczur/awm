@@ -26,4 +26,4 @@ uninstall:
 	rm /home/paczur/main
 	rm /home/paczur/out
 
-test: uninstall install
+test: main uninstall install

@@ -121,6 +121,9 @@ void config_parse(void) {
   view.bar_settings.height = bar_height;
   view.bar_settings.font = bar_font;
   view.bar_settings.component_padding = bar_component_padding;
+  view.bar_settings.component_separator = bar_component_separator;
+  view.bar_settings.mode_min_width = bar_mode_min_width;
+  view.bar_settings.workspace_min_width = bar_workspace_min_width;
 
   view.bar_settings.background = hex_to_uint(bar_background, 0, 6);
   view.bar_settings.mode_insert.background =

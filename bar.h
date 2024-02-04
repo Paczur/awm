@@ -25,8 +25,11 @@ typedef struct bar_component_settings_t {
 typedef struct bar_settings_t {
   uint32_t height;
   char *font;
-  uint component_padding;
   uint32_t background;
+  uint component_padding;
+  uint component_separator;
+  uint mode_min_width;
+  uint workspace_min_width;
   bar_component_settings_t mode_insert;
   bar_component_settings_t mode_normal;
   bar_component_settings_t workspace_focused;
