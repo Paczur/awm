@@ -267,8 +267,8 @@ void focus_in(xcb_window_t window) {
   workspace_t *workspace = view.workspaces+view.focus;
   size_t grid_i = workspace->focus;
   size_t in = get_index(window);
-  size_t temp = workspace->grid[get_index(window)].origin;
   if(in >= view.monitor_count*4) return;
+  size_t temp = workspace->grid[in].origin;
   if(grid_i < view.monitor_count * 4 &&
      temp < view.monitor_count*4 &&
      workspace->grid[grid_i].window == workspace->grid[temp].window) return;
@@ -362,6 +362,7 @@ void map_request(xcb_window_t window) {
   }
 }
 
+//TODO: FIX BUG WITH FOCUS AND WINDOW POSITIONING WHILE UNMAPPING
 void unmap_notify(xcb_window_t window) {
   workspace_t *workspace = view.workspaces+view.focus;
   int count = 0;
