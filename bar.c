@@ -61,12 +61,11 @@ void place_bars(void) {
   pango_font_description_free(desc);
 }
 
-//TODO: OPTIMIZE CALCULATIONS TO HAPPEN ONLY FOR ONE MONITOR
 uint32_t redraw_component(char *text, bar_component_t *component,
                           bar_component_settings_t *settings, size_t m,
                           uint32_t x, uint32_t min_width) {
   PangoRectangle t;
-  uint32_t vals[2];
+  uint32_t vals[3];
   for(size_t i=0; i<view.monitor_count; i++) {
     xcb_clear_area(conn, 0, component->id, 0, 0,
                    view.monitors[m].w, view.bar_settings.height);
@@ -75,28 +74,30 @@ uint32_t redraw_component(char *text, bar_component_t *component,
                          settings->foreground[1],
                          settings->foreground[2]);
     pango_layout_set_text(component->pango, text, -1);
-    pango_layout_get_extents(component->pango, &t, NULL);
-    pango_extents_to_pixels(&t, NULL);
-    if((uint)t.height < view.bar_settings.height) {
-      t.height = view.bar_settings.height - t.height;
-      t.height /= 2;
-      t.height -= t.y;
+    if(i == 0) {
+      pango_layout_get_extents(component->pango, &t, NULL);
+      pango_extents_to_pixels(&t, NULL);
+      if((uint)t.height < view.bar_settings.height) {
+        t.height = view.bar_settings.height - t.height;
+        t.height /= 2;
+        t.height -= t.y;
+      }
+      if((uint)t.x > view.bar_settings.component_padding) {
+        vals[1] = t.width + t.x*2;
+        vals[2] = t.x;
+      } else {
+        vals[1] = t.width + view.bar_settings.component_padding*2;
+        vals[2] = view.bar_settings.component_padding - t.x;
+      }
+      if(vals[1] < min_width) {
+        vals[2] = (min_width - t.width)/2 - t.x;
+        vals[1] = min_width;
+      }
+      if(x != 0)
+        x += view.bar_settings.component_separator;
+      vals[0] = x;
     }
-    if((uint)t.x > view.bar_settings.component_padding) {
-      vals[1] = t.width + t.x*2;
-      vals[0] = t.x;
-    } else {
-      vals[1] = t.width + view.bar_settings.component_padding*2;
-      vals[0] = view.bar_settings.component_padding - t.x;
-    }
-    if(vals[1] < min_width) {
-      vals[0] = (min_width - t.width)/2 - t.x;
-      vals[1] = min_width;
-    }
-    cairo_move_to(component->cairo, vals[0], t.height);
-    if(x != 0)
-      x += view.bar_settings.component_separator;
-    vals[0] = x;
+    cairo_move_to(component->cairo, vals[2], t.height);
     xcb_configure_window(conn, component->id,
                          XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_WIDTH, vals);
     xcb_change_window_attributes(conn, component->id,
