@@ -451,18 +451,19 @@ void destroy_notify(xcb_window_t window) {
   if(w->next != NULL) {
     w->next->prev = w->prev;
   }
-  xcb_kill_client(conn, window);
   free(w);
 }
 
 void map_request(xcb_window_t window) {
+  if(get_index(window) != (size_t)-1) return; //duplicate
   size_t grid_i = next_window_location();
   window_t* win = get_window(window);
   if(win == NULL) {
     DEBUG {
       printf("MAPPING NOT EXISTANT WINDOW: %u\n", window);
     }
-    return;
+    create_notify(window);
+    win = get_window(window);
   }
   if(grid_i == SIZE_MAX) {
     minimize_window(win);
