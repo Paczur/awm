@@ -27,10 +27,6 @@ typedef struct bar_settings_t {
   uint32_t height;
   char *font;
   uint32_t background;
-  uint component_padding;
-  uint component_separator;
-  uint mode_min_width;
-  uint workspace_min_width;
   bar_component_settings_t mode_insert;
   bar_component_settings_t mode_normal;
   bar_component_settings_t workspace_focused;
@@ -38,7 +34,7 @@ typedef struct bar_settings_t {
   bar_component_settings_t minimized;
 } bar_settings_t;
 
-void place_bars(void);
+void bar_init(void);
 void redraw_workspaces(void);
 void redraw_minimized(void);
 void redraw_mode(void);

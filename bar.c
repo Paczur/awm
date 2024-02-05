@@ -1,13 +1,15 @@
 #include "global.h"
 #include <cairo/cairo-xcb.h>
 #include <pango/pangocairo.h>
-#include "user_config.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include "user_config.h"
 
 uint32_t workspace_x;
 bool prev_workspaces[10] = { true, false };
 bool prev_minimized[10] = { false };
+xcb_atom_t wm_name = 0;
+xcb_atom_t _net_wm_name = 0;
 
 typedef struct comp_geom {
   uint32_t x;
@@ -15,6 +17,23 @@ typedef struct comp_geom {
   uint32_t text_x;
   uint32_t text_y;
 } comp_geom;
+
+void intern_atoms(void) {
+  char wm_name_str[] = "WM_NAME";
+  char _net_wm_name_str[] = "_NET_WM_NAME";
+  xcb_intern_atom_reply_t *reply;
+  xcb_intern_atom_cookie_t cookie;
+  xcb_intern_atom_cookie_t _cookie;
+  cookie = xcb_intern_atom(conn, 0, LENGTH(wm_name_str)-1, wm_name_str);
+  _cookie =
+    xcb_intern_atom(conn, 0, LENGTH(_net_wm_name_str)-1, _net_wm_name_str);
+  reply = xcb_intern_atom_reply(conn, cookie, NULL);
+  wm_name = reply->atom;
+  free(reply);
+  reply = xcb_intern_atom_reply(conn, _cookie, NULL);
+  _net_wm_name = reply->atom;
+  free(reply);
+}
 
 //TODO: SIMPLIFY THIS FUNCTION
 void place_bars(void) {
@@ -93,6 +112,11 @@ void place_bars(void) {
   pango_font_description_free(desc);
 }
 
+void bar_init(void) {
+  place_bars();
+  intern_atoms();
+}
+
 void component_geom(char *text, bar_component_t *component,
                     uint32_t min_width, comp_geom *geom) {
   PangoRectangle t;
@@ -106,12 +130,12 @@ void component_geom(char *text, bar_component_t *component,
   } else {
     geom->text_y = 0;
   }
-  if((uint)t.x > view.bar_settings.component_padding) {
+  if((uint)t.x > CONFIG_BAR_COMPONENT_PADDING) {
     geom->width = t.width + t.x*2;
     geom->text_x = t.x;
   } else {
-    geom->width = t.width + view.bar_settings.component_padding*2;
-    geom->text_x = view.bar_settings.component_padding - t.x;
+    geom->width = t.width + CONFIG_BAR_COMPONENT_PADDING*2;
+    geom->text_x = CONFIG_BAR_COMPONENT_PADDING - t.x;
   }
   if(geom->width < min_width) {
     geom->text_x = (min_width - t.width)/2 - t.x;
@@ -144,12 +168,41 @@ uint32_t redraw_left_align(char *text, bar_component_t *component,
   comp_geom geom;
   geom.x = x;
   if(x != 0)
-    geom.x += view.bar_settings.component_separator;
+    geom.x += CONFIG_BAR_COMPONENT_SEPARATOR;
   component_geom(text, component, min_width, &geom);
   for(size_t i=0; i<view.monitor_count; i++) {
     redraw_component(&geom, component, settings, i);
   }
   return geom.x + geom.width;
+}
+
+void populate_name(window_t *window) {
+  xcb_get_property_reply_t *reply;
+  size_t length;
+  window->name = calloc(CONFIG_BAR_MINIMIZED_NAME_MAX_LENGTH, sizeof(char));
+  xcb_get_property_cookie_t _cookie =
+    xcb_get_property(conn, 0, window->id, _net_wm_name, XCB_GET_PROPERTY_TYPE_ANY,
+                     0, 6);
+  xcb_get_property_cookie_t cookie =
+    xcb_get_property(conn, 0, window->id, wm_name, XCB_ATOM_STRING,
+                     0, 6);
+  reply = xcb_get_property_reply(conn, _cookie, NULL);
+  if(reply == NULL || xcb_get_property_value_length(reply) == 0) {
+    free(reply);
+    reply = xcb_get_property_reply(conn, cookie, NULL);
+    if(reply == NULL || xcb_get_property_value_length(reply) == 0) {
+      free(reply);
+      return;
+    }
+  }
+  length = xcb_get_property_value_length(reply);
+  if(length > CONFIG_BAR_MINIMIZED_NAME_MAX_LENGTH) {
+    memcpy(window->name, xcb_get_property_value(reply),
+           CONFIG_BAR_MINIMIZED_NAME_MAX_LENGTH);
+    window->name[CONFIG_BAR_MINIMIZED_NAME_MAX_LENGTH-1] = 0;
+  } else {
+    memcpy(window->name, xcb_get_property_value(reply), length);
+  }
 }
 
 void redraw_minimized(void) {
@@ -158,7 +211,10 @@ void redraw_minimized(void) {
   size_t width = 0;
   window_list_t *node = view.minimized;
   while(node != NULL) {
-    component_geom(CONFIG_BAR_MINIMIZED_UNKNOWN,
+    //synchronous because windows are added one by one
+    if(node->window->name == NULL)
+      populate_name(node->window);
+    component_geom(node->window->name,
                    view.bars[0].minimized+len,
                    CONFIG_BAR_MINIMIZED_MIN_WIDTH,
                    geom+len);
@@ -194,7 +250,7 @@ void redraw_minimized(void) {
                        &view.bar_settings.minimized, i);
     }
   }
-} //TODO: IMPLEMENT THIS
+}
 
 void redraw_workspaces(void) {
   char num[2] = { '1', 0 };
@@ -215,7 +271,7 @@ void redraw_workspaces(void) {
         xs[iterator] = redraw_left_align(num, view.bars[j].workspaces+i,
                                          &view.bar_settings.workspace_focused,
                                          xs[iterator-1],
-                                         view.bar_settings.workspace_min_width);
+                                         CONFIG_BAR_WORKSPACE_MIN_WIDTH);
       }
       prev_workspaces[i] = true;
       iterator++;
@@ -228,7 +284,7 @@ void redraw_workspaces(void) {
         xs[iterator] = redraw_left_align(num, view.bars[j].workspaces+i,
                                          &view.bar_settings.workspace_unfocused,
                                          xs[iterator-1],
-                                         view.bar_settings.workspace_min_width);
+                                         CONFIG_BAR_WORKSPACE_MIN_WIDTH);
       }
       prev_workspaces[i] = true;
       iterator++;
@@ -245,13 +301,13 @@ void redraw_mode(void) {
     for(size_t i=0; i<view.monitor_count; i++) {
       workspace_x = redraw_left_align("󰆾", &view.bars[i].mode,
                                       &view.bar_settings.mode_normal, 0,
-                                      view.bar_settings.mode_min_width);
+                                      CONFIG_BAR_WORKSPACE_MIN_WIDTH);
     }
   } else {
     for(size_t i=0; i<view.monitor_count; i++) {
       workspace_x = redraw_left_align("󰗧", &view.bars[i].mode,
                                       &view.bar_settings.mode_insert, 0,
-                                      view.bar_settings.mode_min_width);
+                                      CONFIG_BAR_WORKSPACE_MIN_WIDTH);
     }
   }
   redraw_workspaces();

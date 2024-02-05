@@ -15,7 +15,7 @@ typedef struct monitor_t {
 
 typedef struct window_t {
   xcb_window_t id;
-  //icon
+  char *name;
   struct window_t *next;
   struct window_t *prev;
 } window_t;

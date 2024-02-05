@@ -109,7 +109,7 @@ void setup_wm(void) {
   }
 
   config_parse();
-  place_bars();
+  bar_init();
 
   fflush(stdout);
   xcb_flush(conn);

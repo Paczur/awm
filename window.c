@@ -264,7 +264,7 @@ void reset_cross(size_t m) {
 
 void minimize_n(size_t n) {
   workspace_t *workspace = view.workspaces+view.focus;
-  if(workspace->grid[n].window != NULL) {
+  if(n < view.monitor_count*4 && workspace->grid[n].window != NULL) {
     xcb_unmap_window(conn, workspace->grid[n].window->id);
     minimize_window(workspace->grid[n].window);
   }
@@ -278,7 +278,7 @@ void show_n(size_t n) {
   if(grid_i == SIZE_MAX) {
     return;
   }
-  if(list->next == NULL) {
+  if(list->next == NULL || n == 0) {
     next = list->next;
     place_window(list->window, grid_i);
     free(view.minimized);
@@ -416,6 +416,7 @@ void focus_in(xcb_window_t window) {
 void create_notify(xcb_window_t window) {
   window_t *w = malloc(sizeof(window_t));
   w->id = window;
+  w->name = NULL;
   w->next = windows;
   w->prev = NULL;
   windows = w;

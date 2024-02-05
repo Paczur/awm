@@ -208,10 +208,6 @@ void config_parse(void) {
 
   view.bar_settings.height = CONFIG_BAR_HEIGHT;
   view.bar_settings.font = CONFIG_BAR_FONT;
-  view.bar_settings.component_padding = CONFIG_BAR_COMPONENT_PADDING;
-  view.bar_settings.component_separator = CONFIG_BAR_COMPONENT_SEPARATOR;
-  view.bar_settings.mode_min_width = CONFIG_BAR_MODE_MIN_WIDTH;
-  view.bar_settings.workspace_min_width = CONFIG_BAR_WORKSPACE_MIN_WIDTH;
 
   view.bar_settings.background = hex_to_uint(CONFIG_BAR_BACKGROUND, 0, 6);
   view.bar_settings.mode_insert.background =
