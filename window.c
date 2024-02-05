@@ -298,13 +298,15 @@ size_t window_to_right(void) {
   window_t *next = workspace->grid[workspace->focus].window;
   window_t *prev = next;
   size_t t = workspace->focus;
-  while(prev == next) {
+  size_t i = 0;
+  while(prev == next && i < view.monitor_count*2) {
     if(t == view.monitor_count*4-1 || t == view.monitor_count*4-3) {
       t = COMB(0, Y(t));
     } else {
       t += X(t) == 1 ? 3 : 1;
     }
     next = workspace->grid[t].window;
+    i++;
   }
   return t;
 }
@@ -314,13 +316,15 @@ size_t window_to_left(void) {
   window_t *next = workspace->grid[workspace->focus].window;
   window_t *prev = next;
   size_t t = workspace->focus;
-  while(prev == next) {
+  size_t i = 0;
+  while(prev == next && i < view.monitor_count*2) {
     if(t == 0 || t == 2) {
       t = COMB(1, Y(t)) + (view.monitor_count-1)*4;
     } else {
       t -= X(t) == 0 ? 3 : 1;
     }
     next = workspace->grid[t].window;
+    i++;
   }
   return t;
 }
@@ -383,7 +387,7 @@ void focus_in(xcb_window_t window) {
      workspace->grid[grid_i].window == workspace->grid[temp].window) return;
   DEBUG {
     printf("grid_i: %lu focus: %lu\n",
-           grid_i, workspace->focus);
+           grid_i, in);
   }
   if(grid_i < view.monitor_count*4 &&
      workspace->grid[grid_i].window != NULL) {
@@ -391,6 +395,13 @@ void focus_in(xcb_window_t window) {
     prevstate[grid_i*4+1] += CONFIG_GAPS;
     prevstate[grid_i*4+2] -= CONFIG_GAPS*2;
     prevstate[grid_i*4+3] -= CONFIG_GAPS*2;
+    DEBUG {
+      printf("old focus: %ux%u+%ux%u\n",
+             prevstate[grid_i*4+2],
+             prevstate[grid_i*4+3],
+             prevstate[grid_i*4+0],
+             prevstate[grid_i*4+1]);
+    }
     xcb_configure_window(conn,
                          workspace->grid[grid_i].window->id,
                          XCB_CONFIG_WINDOW_X |
@@ -403,6 +414,13 @@ void focus_in(xcb_window_t window) {
     prevstate[temp*4+1] -= CONFIG_GAPS;
     prevstate[temp*4+2] += CONFIG_GAPS*2;
     prevstate[temp*4+3] += CONFIG_GAPS*2;
+    DEBUG {
+      printf("new focus: %ux%u+%ux%u\n",
+             prevstate[temp*4+2],
+             prevstate[temp*4+3],
+             prevstate[temp*4+0],
+             prevstate[temp*4+1]);
+    }
     xcb_configure_window(conn,
                          window,
                          XCB_CONFIG_WINDOW_X |
@@ -440,6 +458,12 @@ void destroy_notify(xcb_window_t window) {
 void map_request(xcb_window_t window) {
   size_t grid_i = next_window_location();
   window_t* win = get_window(window);
+  if(win == NULL) {
+    DEBUG {
+      printf("MAPPING NOT EXISTANT WINDOW: %u\n", window);
+    }
+    return;
+  }
   if(grid_i == SIZE_MAX) {
     minimize_window(win);
     return;
@@ -453,13 +477,14 @@ void map_request(xcb_window_t window) {
 
 void unmap_notify(xcb_window_t window) {
   workspace_t *workspace = view.workspaces+view.focus;
-  int pos = get_index(window);
-  if(pos == -1) return;
+  size_t pos = get_index(window);
+  if(pos == (size_t)-1) return;
   pos = workspace->grid[pos].origin;
   workspace->grid[pos].window = NULL;
   workspace->grid[pos].origin = -1;
+  if(workspace->focus == pos)
+    workspace->focus = -1;
   update_layout(pos/4);
-  workspace->focus = -1;
   if(workspace->grid[pos].window != NULL) {
     focus_window_n(pos);
     return;

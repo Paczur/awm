@@ -79,6 +79,7 @@ typedef struct shortcut_t {
 void normal_mode(void) {
   internal_shortcut_t *sh;
   mode = MODE_NORMAL;
+  xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, XCB_MOD_MASK_ANY);
   for(size_t i=0; i<shortcut_lookup_l; i++) {
     sh = shortcut_lookup[i];
     while(sh != NULL) {

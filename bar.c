@@ -9,6 +9,7 @@ uint32_t workspace_x;
 bool prev_workspaces[10] = { true, false };
 bool prev_minimized[10] = { false };
 xcb_atom_t wm_name = 0;
+xcb_atom_t wm_class = 0;
 xcb_atom_t _net_wm_name = 0;
 
 typedef struct comp_geom {
@@ -19,14 +20,20 @@ typedef struct comp_geom {
 } comp_geom;
 
 void intern_atoms(void) {
+  char wm_class_str[] = "WM_CLASS";
   char wm_name_str[] = "WM_NAME";
   char _net_wm_name_str[] = "_NET_WM_NAME";
   xcb_intern_atom_reply_t *reply;
   xcb_intern_atom_cookie_t cookie;
+  xcb_intern_atom_cookie_t ccookie;
   xcb_intern_atom_cookie_t _cookie;
+  ccookie = xcb_intern_atom(conn, 0, LENGTH(wm_class_str)-1, wm_class_str);
   cookie = xcb_intern_atom(conn, 0, LENGTH(wm_name_str)-1, wm_name_str);
   _cookie =
     xcb_intern_atom(conn, 0, LENGTH(_net_wm_name_str)-1, _net_wm_name_str);
+  reply = xcb_intern_atom_reply(conn, ccookie, NULL);
+  wm_class = reply->atom;
+  free(reply);
   reply = xcb_intern_atom_reply(conn, cookie, NULL);
   wm_name = reply->atom;
   free(reply);
@@ -178,14 +185,46 @@ uint32_t redraw_left_align(char *text, bar_component_t *component,
 
 void populate_name(window_t *window) {
   xcb_get_property_reply_t *reply;
+  char *classes[][2] = CONFIG_BAR_MINIMIZED_NAME_REPLACEMENTS;
+  size_t iter = 0;
+  size_t curr_class = 0;
+  size_t i = 0;
   size_t length;
+  char *class;
   window->name = calloc(CONFIG_BAR_MINIMIZED_NAME_MAX_LENGTH, sizeof(char));
+  xcb_get_property_cookie_t ccookie =
+    xcb_get_property(conn, 0, window->id, wm_class, XCB_ATOM_STRING,
+                     0, 6);
   xcb_get_property_cookie_t _cookie =
     xcb_get_property(conn, 0, window->id, _net_wm_name, XCB_GET_PROPERTY_TYPE_ANY,
                      0, 6);
   xcb_get_property_cookie_t cookie =
     xcb_get_property(conn, 0, window->id, wm_name, XCB_ATOM_STRING,
                      0, 6);
+  reply = xcb_get_property_reply(conn, ccookie, NULL);
+  class = xcb_get_property_value(reply);
+  for(;classes[curr_class][0]!=0; curr_class++) {
+    i=0;
+    for(;; i++) {
+      if(class[i] == 0)
+        goto found;
+      if(classes[curr_class][0][i] == 0 ||
+         classes[curr_class][0][i] != class[i])
+        break;
+    }
+    while(class[i] != 0) i++;
+    i++;
+    iter=0;
+    while(true) {
+      if(class[i] == 0)
+        goto found;
+      if(classes[curr_class][0][iter] == 0 ||
+         classes[curr_class][0][iter] != class[i])
+        break;
+      iter++;
+      i++;
+    }
+  }
   reply = xcb_get_property_reply(conn, _cookie, NULL);
   if(reply == NULL || xcb_get_property_value_length(reply) == 0) {
     free(reply);
@@ -199,10 +238,18 @@ void populate_name(window_t *window) {
   if(length > CONFIG_BAR_MINIMIZED_NAME_MAX_LENGTH) {
     memcpy(window->name, xcb_get_property_value(reply),
            CONFIG_BAR_MINIMIZED_NAME_MAX_LENGTH);
-    window->name[CONFIG_BAR_MINIMIZED_NAME_MAX_LENGTH-1] = 0;
+    if(window->name[CONFIG_BAR_MINIMIZED_NAME_MAX_LENGTH-1] != 0) {
+      window->name[CONFIG_BAR_MINIMIZED_NAME_MAX_LENGTH-1] = 0;
+      window->name[CONFIG_BAR_MINIMIZED_NAME_MAX_LENGTH-2] = '.';
+      window->name[CONFIG_BAR_MINIMIZED_NAME_MAX_LENGTH-3] = '.';
+      window->name[CONFIG_BAR_MINIMIZED_NAME_MAX_LENGTH-4] = '.';
+    }
   } else {
     memcpy(window->name, xcb_get_property_value(reply), length);
   }
+  return;
+found:
+  strcpy(window->name, classes[curr_class][1]);
 }
 
 void redraw_minimized(void) {

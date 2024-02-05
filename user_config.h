@@ -61,3 +61,9 @@
 #define CONFIG_BAR_MINIMIZED_FOREGROUND "FFFFFF"
 #define CONFIG_BAR_MINIMIZED_MIN_WIDTH 32
 #define CONFIG_BAR_MINIMIZED_NAME_MAX_LENGTH 40
+#define CONFIG_BAR_MINIMIZED_NAME_REPLACEMENTS { \
+  {"mlterm", "󰆍"}, \
+  {"librewolf", ""}, \
+  {"gimp", ""}, \
+  {0} \
+}
