@@ -1,11 +1,13 @@
 #include "global.h"
 #include <cairo/cairo-xcb.h>
 #include <pango/pangocairo.h>
+#include "user_config.h"
 #include <stdlib.h>
 #include <stdio.h>
 
 uint32_t workspace_x;
 bool prev_workspaces[10] = { true, false };
+bool prev_minimized[10] = { false };
 
 typedef struct comp_geom {
   uint32_t x;
@@ -14,6 +16,7 @@ typedef struct comp_geom {
   uint32_t text_y;
 } comp_geom;
 
+//TODO: SIMPLIFY THIS FUNCTION
 void place_bars(void) {
   PangoFontDescription *desc;
   uint32_t mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
@@ -34,6 +37,13 @@ void place_bars(void) {
     for(size_t j=0; j<10; j++) {
       view.bars[i].workspaces[j].id = xcb_generate_id(conn);
       xcb_create_window(conn, screen->root_depth, view.bars[i].workspaces[j].id,
+                        view.bars[i].id, 0, 0, 1, view.bar_settings.height, 0,
+                        XCB_WINDOW_CLASS_INPUT_OUTPUT,
+                        screen->root_visual, mask, values);
+    }
+    for(size_t j=0; j<10; j++) {
+      view.bars[i].minimized[j].id = xcb_generate_id(conn);
+      xcb_create_window(conn, screen->root_depth, view.bars[i].minimized[j].id,
                         view.bars[i].id, 0, 0, 1, view.bar_settings.height, 0,
                         XCB_WINDOW_CLASS_INPUT_OUTPUT,
                         screen->root_visual, mask, values);
@@ -65,6 +75,18 @@ void place_bars(void) {
         pango_cairo_create_layout(view.bars[i].workspaces[j].cairo);
       pango_layout_set_font_description(view.bars[i].workspaces[j].pango, desc);
     }
+
+    for(size_t j=0; j<10; j++) {
+      view.bars[i].minimized[j].surface =
+        cairo_xcb_surface_create(conn,
+                                 view.bars[i].minimized[j].id,
+                                 view.visual_type, 1, view.bar_settings.height);
+      view.bars[i].minimized[j].cairo =
+        cairo_create(view.bars[i].minimized[j].surface);
+      view.bars[i].minimized[j].pango =
+        pango_cairo_create_layout(view.bars[i].minimized[j].cairo);
+      pango_layout_set_font_description(view.bars[i].minimized[j].pango, desc);
+    }
   }
   redraw_bars();
 
@@ -81,6 +103,8 @@ void component_geom(char *text, bar_component_t *component,
     geom->text_y = view.bar_settings.height - t.height;
     geom->text_y /= 2;
     geom->text_y -= t.y;
+  } else {
+    geom->text_y = 0;
   }
   if((uint)t.x > view.bar_settings.component_padding) {
     geom->width = t.width + t.x*2;
@@ -115,8 +139,8 @@ void redraw_component(comp_geom *geom, bar_component_t *component,
 }
 
 uint32_t redraw_left_align(char *text, bar_component_t *component,
-                       bar_component_settings_t *settings,
-                       uint32_t x, uint32_t min_width) {
+                           bar_component_settings_t *settings,
+                           uint32_t x, uint32_t min_width) {
   comp_geom geom;
   geom.x = x;
   if(x != 0)
@@ -128,7 +152,49 @@ uint32_t redraw_left_align(char *text, bar_component_t *component,
   return geom.x + geom.width;
 }
 
-void redraw_minimized(void) {} //TODO: IMPLEMENT THIS
+void redraw_minimized(void) {
+  comp_geom geom[10];
+  size_t len = 0;
+  size_t width = 0;
+  window_list_t *node = view.minimized;
+  while(node != NULL) {
+    component_geom(CONFIG_BAR_MINIMIZED_UNKNOWN,
+                   view.bars[0].minimized+len,
+                   CONFIG_BAR_MINIMIZED_MIN_WIDTH,
+                   geom+len);
+    width += geom[len].width;
+    node = node->next;
+    len++;
+  }
+  width += CONFIG_BAR_COMPONENT_SEPARATOR*(len-1);
+
+  for(size_t j=0; j<len; j++) {
+    if(!prev_minimized[j]) {
+      for(size_t i=0; i<view.monitor_count; i++)
+        xcb_map_window(conn, view.bars[i].minimized[j].id);
+      prev_minimized[j] = true;
+    }
+  }
+  for(size_t j=len; j<10; j++) {
+    if(prev_minimized[j]) {
+      for(size_t i=0; i<view.monitor_count; i++)
+        xcb_unmap_window(conn, view.bars[i].minimized[j].id);
+      prev_minimized[j] = false;
+    }
+  }
+
+  if(len == 0) return;
+  for(size_t i=0; i<view.monitor_count; i++) {
+    geom[0].x = (view.monitors[i].w - width)/2;
+    redraw_component(geom, view.bars[i].minimized,
+                     &view.bar_settings.minimized, i);
+    for(size_t j=1; j<len; j++) {
+      geom[j].x = geom[j-1].x + geom[j-1].width + CONFIG_BAR_COMPONENT_SEPARATOR;
+      redraw_component(geom+j, view.bars[i].minimized+j,
+                       &view.bar_settings.minimized, i);
+    }
+  }
+} //TODO: IMPLEMENT THIS
 
 void redraw_workspaces(void) {
   char num[2] = { '1', 0 };
@@ -147,9 +213,9 @@ void redraw_workspaces(void) {
       }
       for(size_t j=0; j<view.monitor_count; j++) {
         xs[iterator] = redraw_left_align(num, view.bars[j].workspaces+i,
-                                        &view.bar_settings.workspace_focused,
-                                        xs[iterator-1],
-                                        view.bar_settings.workspace_min_width);
+                                         &view.bar_settings.workspace_focused,
+                                         xs[iterator-1],
+                                         view.bar_settings.workspace_min_width);
       }
       prev_workspaces[i] = true;
       iterator++;
@@ -160,9 +226,9 @@ void redraw_workspaces(void) {
       }
       for(size_t j=0; j<view.monitor_count; j++) {
         xs[iterator] = redraw_left_align(num, view.bars[j].workspaces+i,
-                                        &view.bar_settings.workspace_unfocused,
-                                        xs[iterator-1],
-                                        view.bar_settings.workspace_min_width);
+                                         &view.bar_settings.workspace_unfocused,
+                                         xs[iterator-1],
+                                         view.bar_settings.workspace_min_width);
       }
       prev_workspaces[i] = true;
       iterator++;
@@ -178,14 +244,14 @@ void redraw_mode(void) {
   if(mode == MODE_NORMAL) {
     for(size_t i=0; i<view.monitor_count; i++) {
       workspace_x = redraw_left_align("󰆾", &view.bars[i].mode,
-                                     &view.bar_settings.mode_normal, 0,
-                                     view.bar_settings.mode_min_width);
+                                      &view.bar_settings.mode_normal, 0,
+                                      view.bar_settings.mode_min_width);
     }
   } else {
     for(size_t i=0; i<view.monitor_count; i++) {
       workspace_x = redraw_left_align("󰗧", &view.bars[i].mode,
-                                     &view.bar_settings.mode_insert, 0,
-                                     view.bar_settings.mode_min_width);
+                                      &view.bar_settings.mode_insert, 0,
+                                      view.bar_settings.mode_min_width);
     }
   }
   redraw_workspaces();

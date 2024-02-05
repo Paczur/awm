@@ -278,19 +278,19 @@ void show_n(size_t n) {
   if(grid_i == SIZE_MAX) {
     return;
   }
-  if(n == 0) {
+  if(list->next == NULL) {
     next = list->next;
     place_window(list->window, grid_i);
     free(view.minimized);
     view.minimized = next;
   } else {
-    while(--n != 0) list = list->next;
-    if(list == NULL) return;
+    while(list->next->next != NULL && --n != 0) list = list->next;
     next = list->next->next;
     place_window(list->next->window, grid_i);
     free(list->next);
     list->next = next;
   }
+  redraw_minimized();
 }
 
 size_t window_to_right(void) {
