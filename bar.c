@@ -183,6 +183,7 @@ uint32_t redraw_left_align(char *text, bar_component_t *component,
   return geom.x + geom.width;
 }
 
+//TODO: THINK ABOUT ONLY DISPLAYING CLASS AND NOT NAME
 void populate_name(window_t *window) {
   xcb_get_property_reply_t *reply;
   char *classes[][2] = CONFIG_BAR_MINIMIZED_NAME_REPLACEMENTS;

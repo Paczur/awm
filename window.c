@@ -476,6 +476,7 @@ void map_request(xcb_window_t window) {
   }
 }
 
+//TODO: REORDER WINDOWS TO FIT LAYOUT
 void unmap_notify(xcb_window_t window) {
   workspace_t *workspace = view.workspaces+view.focus;
   size_t pos = get_index(window);
