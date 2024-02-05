@@ -7,6 +7,13 @@
 uint32_t workspace_x;
 bool prev_workspaces[10] = { true, false };
 
+typedef struct comp_geom {
+  uint32_t x;
+  uint32_t width;
+  uint32_t text_x;
+  uint32_t text_y;
+} comp_geom;
+
 void place_bars(void) {
   PangoFontDescription *desc;
   uint32_t mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
@@ -64,52 +71,61 @@ void place_bars(void) {
   pango_font_description_free(desc);
 }
 
-uint32_t redraw_component(char *text, bar_component_t *component,
-                          bar_component_settings_t *settings, size_t m,
-                          uint32_t x, uint32_t min_width) {
+void component_geom(char *text, bar_component_t *component,
+                    uint32_t min_width, comp_geom *geom) {
   PangoRectangle t;
-  uint32_t vals[3];
-  for(size_t i=0; i<view.monitor_count; i++) {
-    xcb_clear_area(conn, 0, component->id, 0, 0,
-                   view.monitors[m].w, view.bar_settings.height);
-    cairo_set_source_rgb(component->cairo,
-                         settings->foreground[0],
-                         settings->foreground[1],
-                         settings->foreground[2]);
-    pango_layout_set_text(component->pango, text, -1);
-    if(i == 0) {
-      pango_layout_get_extents(component->pango, &t, NULL);
-      pango_extents_to_pixels(&t, NULL);
-      if((uint)t.height < view.bar_settings.height) {
-        t.height = view.bar_settings.height - t.height;
-        t.height /= 2;
-        t.height -= t.y;
-      }
-      if((uint)t.x > view.bar_settings.component_padding) {
-        vals[1] = t.width + t.x*2;
-        vals[2] = t.x;
-      } else {
-        vals[1] = t.width + view.bar_settings.component_padding*2;
-        vals[2] = view.bar_settings.component_padding - t.x;
-      }
-      if(vals[1] < min_width) {
-        vals[2] = (min_width - t.width)/2 - t.x;
-        vals[1] = min_width;
-      }
-      if(x != 0)
-        x += view.bar_settings.component_separator;
-      vals[0] = x;
-    }
-    cairo_move_to(component->cairo, vals[2], t.height);
-    xcb_configure_window(conn, component->id,
-                         XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_WIDTH, vals);
-    xcb_change_window_attributes(conn, component->id,
-                                 XCB_CW_BACK_PIXEL, &settings->background);
-    cairo_xcb_surface_set_size(component->surface, vals[1],
-                               view.bar_settings.height);
-    pango_cairo_show_layout(component->cairo, component->pango);
+  pango_layout_set_text(component->pango, text, -1);
+  pango_layout_get_extents(component->pango, &t, NULL);
+  pango_extents_to_pixels(&t, NULL);
+  if((uint)t.height < view.bar_settings.height) {
+    geom->text_y = view.bar_settings.height - t.height;
+    geom->text_y /= 2;
+    geom->text_y -= t.y;
   }
-  return vals[0] + vals[1];
+  if((uint)t.x > view.bar_settings.component_padding) {
+    geom->width = t.width + t.x*2;
+    geom->text_x = t.x;
+  } else {
+    geom->width = t.width + view.bar_settings.component_padding*2;
+    geom->text_x = view.bar_settings.component_padding - t.x;
+  }
+  if(geom->width < min_width) {
+    geom->text_x = (min_width - t.width)/2 - t.x;
+    geom->width = min_width;
+  }
+}
+
+void redraw_component(comp_geom *geom, bar_component_t *component,
+                      bar_component_settings_t *settings, size_t m) {
+  uint32_t vals[2] = { geom->x, geom->width };
+  cairo_move_to(component->cairo, geom->text_x, geom->text_y);
+  xcb_clear_area(conn, 0, component->id, 0, 0,
+                 view.monitors[m].w, view.bar_settings.height);
+  cairo_set_source_rgb(component->cairo,
+                       settings->foreground[0],
+                       settings->foreground[1],
+                       settings->foreground[2]);
+  xcb_configure_window(conn, component->id,
+                       XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_WIDTH, vals);
+  xcb_change_window_attributes(conn, component->id,
+                               XCB_CW_BACK_PIXEL, &settings->background);
+  cairo_xcb_surface_set_size(component->surface, geom->width,
+                             view.bar_settings.height);
+  pango_cairo_show_layout(component->cairo, component->pango);
+}
+
+uint32_t redraw_left_align(char *text, bar_component_t *component,
+                       bar_component_settings_t *settings,
+                       uint32_t x, uint32_t min_width) {
+  comp_geom geom;
+  geom.x = x;
+  if(x != 0)
+    geom.x += view.bar_settings.component_separator;
+  component_geom(text, component, min_width, &geom);
+  for(size_t i=0; i<view.monitor_count; i++) {
+    redraw_component(&geom, component, settings, i);
+  }
+  return geom.x + geom.width;
 }
 
 void redraw_minimized(void) {} //TODO: IMPLEMENT THIS
@@ -130,9 +146,9 @@ void redraw_workspaces(void) {
           xcb_map_window(conn, view.bars[j].workspaces[i].id);
       }
       for(size_t j=0; j<view.monitor_count; j++) {
-        xs[iterator] = redraw_component(num, view.bars[j].workspaces+i,
+        xs[iterator] = redraw_left_align(num, view.bars[j].workspaces+i,
                                         &view.bar_settings.workspace_focused,
-                                        j, xs[iterator-1],
+                                        xs[iterator-1],
                                         view.bar_settings.workspace_min_width);
       }
       prev_workspaces[i] = true;
@@ -143,9 +159,9 @@ void redraw_workspaces(void) {
           xcb_map_window(conn, view.bars[j].workspaces[i].id);
       }
       for(size_t j=0; j<view.monitor_count; j++) {
-        xs[iterator] = redraw_component(num, view.bars[j].workspaces+i,
+        xs[iterator] = redraw_left_align(num, view.bars[j].workspaces+i,
                                         &view.bar_settings.workspace_unfocused,
-                                        j, xs[iterator-1],
+                                        xs[iterator-1],
                                         view.bar_settings.workspace_min_width);
       }
       prev_workspaces[i] = true;
@@ -161,14 +177,14 @@ void redraw_workspaces(void) {
 void redraw_mode(void) {
   if(mode == MODE_NORMAL) {
     for(size_t i=0; i<view.monitor_count; i++) {
-      workspace_x = redraw_component("󰆾", &view.bars[i].mode,
-                                     &view.bar_settings.mode_normal, i, 0,
+      workspace_x = redraw_left_align("󰆾", &view.bars[i].mode,
+                                     &view.bar_settings.mode_normal, 0,
                                      view.bar_settings.mode_min_width);
     }
   } else {
     for(size_t i=0; i<view.monitor_count; i++) {
-      workspace_x = redraw_component("󰗧", &view.bars[i].mode,
-                                     &view.bar_settings.mode_insert, i, 0,
+      workspace_x = redraw_left_align("󰗧", &view.bars[i].mode,
+                                     &view.bar_settings.mode_insert, 0,
                                      view.bar_settings.mode_min_width);
     }
   }

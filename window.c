@@ -273,6 +273,7 @@ void minimize_n(size_t n) {
 void show_n(size_t n) {
   window_list_t *next;
   window_list_t *list = view.minimized;
+  if(list == NULL) return;
   size_t grid_i = next_window_location();
   if(grid_i == SIZE_MAX) {
     return;
@@ -283,7 +284,8 @@ void show_n(size_t n) {
     free(view.minimized);
     view.minimized = next;
   } else {
-    while(list->next != NULL && --n != 0) list = list->next;
+    while(--n != 0) list = list->next;
+    if(list == NULL) return;
     next = list->next->next;
     place_window(list->next->window, grid_i);
     free(list->next);
