@@ -77,11 +77,10 @@ void setup_wm(void) {
   uint32_t values;
 
   conn = xcb_connect(NULL, NULL);
-  DEBUG {
-    if(xcb_connection_has_error(conn)) {
-      xcb_disconnect(conn);
+  while(xcb_connection_has_error(conn)) {
+    conn = xcb_connect(NULL, NULL);
+    DEBUG {
       puts("CONNECTION ERROR");
-      exit(1);
     }
   }
   setup = xcb_get_setup(conn);
@@ -93,8 +92,8 @@ void setup_wm(void) {
   values = XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT |
     XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY |
     XCB_EVENT_MASK_STRUCTURE_NOTIFY;
-  xcb_change_window_attributes_checked(conn, screen->root,
-                                       XCB_CW_EVENT_MASK, &values);
+  xcb_change_window_attributes(conn, screen->root,
+                               XCB_CW_EVENT_MASK, &values);
   xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, XCB_MOD_MASK_ANY);
 
   kmapping = xcb_get_keyboard_mapping_reply(conn, kmap_cookie, NULL);
@@ -203,8 +202,8 @@ int main(int argc, char *argv[], char *envp[]) {
 
   setup_wm();
   config_parse();
-  window_init();
   bar_init();
+  window_init();
   normal_mode();
   event_loop();
 

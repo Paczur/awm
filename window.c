@@ -185,13 +185,15 @@ size_t next_window_location(void) {
   return grid_i;
 }
 
-void place_window(window_t *window, size_t grid_i) {
+void place_window(window_t *window, size_t grid_i, bool assume_map) {
   size_t m = grid_i/4;
   int mask = XCB_EVENT_MASK_FOCUS_CHANGE | XCB_EVENT_MASK_ENTER_WINDOW;
   workspace_t *workspace = view.workspaces+view.focus;
   workspace->grid[grid_i].window = window;
   workspace->grid[grid_i].origin = grid_i;
-  xcb_map_window(conn, window->id);
+  if(!assume_map) {
+    xcb_map_window(conn, window->id);
+  }
   update_layout(m);
   xcb_change_window_attributes(conn, window->id, XCB_CW_EVENT_MASK, &mask);
   xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT,
@@ -314,13 +316,13 @@ void show_n(size_t n) {
   }
   if(list->next == NULL || n == 0) {
     next = list->next;
-    place_window(list->window, grid_i);
+    place_window(list->window, grid_i, false);
     free(view.minimized);
     view.minimized = next;
   } else {
     while(list->next->next != NULL && --n != 0) list = list->next;
     next = list->next->next;
-    place_window(list->next->window, grid_i);
+    place_window(list->next->window, grid_i, false);
     free(list->next);
     list->next = next;
   }
@@ -514,7 +516,7 @@ void map_request(xcb_window_t window) {
     return;
   }
 
-  place_window(win, grid_i);
+  place_window(win, grid_i, false);
   DEBUG {
     print_grid();
   }
@@ -548,33 +550,46 @@ void window_init(void) {
   xcb_query_tree_cookie_t cookie;
   xcb_query_tree_reply_t *reply;
   xcb_get_geometry_cookie_t gcookie;
-  xcb_get_geometry_reply_t *greply;
+  xcb_get_geometry_reply_t *greply = NULL;
+  xcb_get_window_attributes_cookie_t acookie;
+  xcb_get_window_attributes_reply_t *areply;
   size_t len;
   bool found;
   xcb_window_t *children;
   prevstate = calloc(view.monitor_count*16, sizeof(uint32_t));
-  cookie = xcb_query_tree(conn, screen->root);
+
+  cookie = xcb_query_tree_unchecked(conn, screen->root);
   reply = xcb_query_tree_reply(conn, cookie, NULL);
   len = xcb_query_tree_children_length(reply);
   children = xcb_query_tree_children(reply);
+
   for(size_t i=0; i<len; i++) {
-    gcookie = xcb_get_geometry(conn, children[i]);
-  }
-  for(size_t i=0; i<len; i++) {
-    greply = xcb_get_geometry_reply(conn, gcookie, NULL);
-    if(greply) {
+    acookie = xcb_get_window_attributes_unchecked(conn, children[i]);
+    gcookie = xcb_get_geometry_unchecked(conn, children[i]);
+    create_notify(children[i]);
+    areply = xcb_get_window_attributes_reply(conn, acookie, NULL);
+    if(!areply->override_redirect && areply->map_state != XCB_MAP_STATE_UNVIEWABLE) {
+      greply = xcb_get_geometry_reply(conn, gcookie, NULL);
       found = false;
       for(size_t j=0; j<view.monitor_count; j++) {
         if(greply->x == view.monitors[j].x && greply->y == view.monitors[j].y) {
-          xcb_destroy_window(conn, children[i]);
+          if(children[i] != view.bars[j].id)
+            xcb_destroy_window(conn, children[i]);
           found = true;
           break;
         }
       }
-      if(!found)
-        map_request(children[i]);
       free(greply);
+      greply = NULL;
+      if(!found) {
+        if(areply->map_state == XCB_MAP_STATE_UNMAPPED)
+          minimize_window(get_window(children[i]));
+        else
+          map_request(children[i]);
+      }
     }
+    free(areply);
+    areply = NULL;
   }
   free(reply);
 }
