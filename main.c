@@ -9,10 +9,8 @@
 #include <stdlib.h> //malloc
 
 extern char **environ;
-bool restart;
 
 //TODO: OPTIMIZE MAKING QUERIES
-
 void setup_monitors(void) {
   xcb_randr_get_screen_resources_cookie_t randr_cookie;
   xcb_randr_get_screen_resources_reply_t *screen_res;
@@ -42,7 +40,6 @@ void setup_monitors(void) {
       view.monitor_count = i;
   }
   view.monitors = malloc(sizeof(monitor_t) * view.monitor_count);
-  view.bars = malloc(sizeof(bar_t) * view.monitor_count);
   for(size_t i=0; i<view.monitor_count; i++) {
     view.monitors[i].w = randr_crtcs[i]->width;
     view.monitors[i].h = randr_crtcs[i]->height;
@@ -80,6 +77,13 @@ void setup_wm(void) {
   uint32_t values;
 
   conn = xcb_connect(NULL, NULL);
+  DEBUG {
+    if(xcb_connection_has_error(conn)) {
+      xcb_disconnect(conn);
+      puts("CONNECTION ERROR");
+      exit(1);
+    }
+  }
   setup = xcb_get_setup(conn);
   screen = xcb_setup_roots_iterator(setup).data;
 
@@ -106,9 +110,6 @@ void setup_wm(void) {
       view.workspaces[i].grid[j].origin = -1;
     }
   }
-
-  config_parse();
-  bar_init();
 
   fflush(stdout);
   xcb_flush(conn);
@@ -145,67 +146,51 @@ void event_loop(void) {
     event = xcb_wait_for_event(conn);
     switch(event->response_type) {
     case XCB_KEY_PRESS:
-      DEBUG {
-        puts("KEY PRESS");
-      }
+      DEBUG { puts("KEY PRESS"); }
       handle_shortcut((xcb_key_press_event_t*)event);
     break;
 
     case XCB_MAP_REQUEST:
-      DEBUG {
-        puts("MAP REQUEST");
-      }
+      DEBUG { puts("MAP REQUEST"); }
       map_request(((xcb_map_request_event_t *)event)->window);
     break;
 
     case XCB_CREATE_NOTIFY:
-      DEBUG {
-        puts("CREATE NOTIFY");
-      }
+      DEBUG { puts("CREATE NOTIFY"); }
       create_notify(((xcb_create_notify_event_t *)event)->window);
     break;
 
     case XCB_DESTROY_NOTIFY:
-      DEBUG {
-        puts("DESTROY NOTIFY");
-      }
+      DEBUG { puts("DESTROY NOTIFY"); }
       destroy_notify(((xcb_destroy_notify_event_t *)event)->window);
     break;
 
     case XCB_MAP_NOTIFY:
-      DEBUG {
-        puts("MAP NOTIFY");
-      }
+      DEBUG { puts("MAP NOTIFY"); }
     break;
 
     case XCB_UNMAP_NOTIFY:
-      DEBUG {
-        puts("UNMAP NOTIFY");
-      }
+      DEBUG { puts("UNMAP NOTIFY"); }
       unmap_notify(((xcb_unmap_notify_event_t *)event)->window);
     break;
 
     case XCB_FOCUS_IN:
-      if(((xcb_focus_in_event_t *)event)->detail == XCB_NOTIFY_DETAIL_POINTER) continue;
-      DEBUG {
-        puts("FOCUS_IN");
+      if(((xcb_focus_in_event_t *)event)->detail != XCB_NOTIFY_DETAIL_POINTER) {
+        DEBUG { puts("FOCUS_IN"); }
+        focus_in(((xcb_focus_in_event_t *)event)->event);
       }
-      focus_in(((xcb_focus_in_event_t *)event)->event);
     break;
 
     case XCB_FOCUS_OUT:
-      DEBUG {
-        puts("FOCUS OUT");
-      }
+      DEBUG { puts("FOCUS OUT"); }
     break;
 
     case XCB_EXPOSE:
-      DEBUG {
-        puts("EXPOSE");
-      }
+      DEBUG { puts("EXPOSE"); }
       redraw_bars();
     break;
     }
+    free(event);
     fflush(stdout);
     xcb_flush(conn);
   }
@@ -217,9 +202,35 @@ int main(int argc, char *argv[], char *envp[]) {
   environ = envp;
 
   setup_wm();
-  normal_mode();
+  config_parse();
   window_init();
+  bar_init();
+  normal_mode();
   event_loop();
 
+  DEBUG {
+    puts("SHUTTING DOWN");
+  }
+  bar_deinit();
+  window_deinit();
+
+  xcb_disconnect(conn);
+  screen = NULL;
+  conn = NULL;
+  setup = NULL;
+
+  internal_shortcut_t *sh;
+  internal_shortcut_t *t;
+  for(size_t i=0; i<shortcut_lookup_l; i++) {
+    sh = shortcut_lookup[i];
+    while(sh != NULL) {
+      t = sh;
+      sh = sh->next;
+      free(t);
+    }
+  }
+  free(shortcut_lookup);
+  free(view.monitors);
+  free(view.spawn_order);
   return 0;
 }

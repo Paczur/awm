@@ -37,6 +37,7 @@ typedef struct window_list_t {
 } window_list_t;
 
 void window_init(void);
+void window_deinit(void);
 void resize_w(size_t, int);
 void resize_h(size_t, int);
 void reset_cross(size_t);

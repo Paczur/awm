@@ -50,6 +50,7 @@ extern size_t shortcut_lookup_offset;
 extern size_t shortcut_lookup_l;
 extern xcb_keycode_t normal_code;
 extern MODE mode;
+extern bool restart;
 
 extern window_t *windows;
 extern view_t view;

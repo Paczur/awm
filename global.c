@@ -11,6 +11,7 @@ size_t shortcut_lookup_offset;
 size_t shortcut_lookup_l;
 xcb_keycode_t normal_code;
 MODE mode = MODE_NORMAL;
+bool restart = false;
 
 window_t *windows;
 view_t view;

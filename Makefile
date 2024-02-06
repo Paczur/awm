@@ -5,7 +5,7 @@ DEBUG=-D DEBUG -Og -ggdb3 -fsanitize=address -fsanitize=pointer-compare \
 -fsanitize=pointer-subtract -fsanitize=undefined \
 -fsanitize-address-use-after-scope -fstack-check \
 -fno-stack-clash-protection
-TEXT=$(shell pkg-config --cflags --libs pangocairo)
+TEXT=$(shell pkg-config --cflags --libs pangocairo fontconfig)
 LIBS=-lxcb -lxcb-randr $(TEXT)
 RELEASE=-O2 -s -pipe -flto=4
 CFLAGS=$(WARN) -march=native -std=gnu99 $(LIBS)
@@ -25,11 +25,4 @@ main: main.c config.c global.c window.c bar.c
 clean:
 	rm -f $(wildcard bin/*)
 
-install: main
-	cp bin/main /home/paczur/main
-
-uninstall:
-	rm /home/paczur/main
-	rm /home/paczur/out
-
-test: debug uninstall install
+test: clean debug

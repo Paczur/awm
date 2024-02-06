@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "user_config.h"
+#include <fontconfig/fontconfig.h>
 
 uint32_t workspace_x;
 bool prev_workspaces[10] = { true, false };
@@ -23,7 +24,7 @@ void intern_atoms(void) {
   char wm_class_str[] = "WM_CLASS";
   char wm_name_str[] = "WM_NAME";
   char _net_wm_name_str[] = "_NET_WM_NAME";
-  xcb_intern_atom_reply_t *reply;
+  xcb_intern_atom_reply_t *reply = NULL;
   xcb_intern_atom_cookie_t cookie;
   xcb_intern_atom_cookie_t ccookie;
   xcb_intern_atom_cookie_t _cookie;
@@ -31,7 +32,12 @@ void intern_atoms(void) {
   cookie = xcb_intern_atom(conn, 0, LENGTH(wm_name_str)-1, wm_name_str);
   _cookie =
     xcb_intern_atom(conn, 0, LENGTH(_net_wm_name_str)-1, _net_wm_name_str);
-  reply = xcb_intern_atom_reply(conn, ccookie, NULL);
+  while(reply == NULL) {
+    reply = xcb_intern_atom_reply(conn, ccookie, NULL);
+    if(reply == NULL) {
+      ccookie = xcb_intern_atom(conn, 0, LENGTH(wm_class_str)-1, wm_class_str);
+    }
+  }
   wm_class = reply->atom;
   free(reply);
   reply = xcb_intern_atom_reply(conn, cookie, NULL);
@@ -98,11 +104,6 @@ void place_bars(void) {
   redraw_bars();
 
   pango_font_description_free(desc);
-}
-
-void bar_init(void) {
-  place_bars();
-  intern_atoms();
 }
 
 void component_geom(char *text, bar_component_t *component,
@@ -207,6 +208,7 @@ void populate_name(window_t *window) {
       i++;
     }
   }
+  free(reply);
   reply = xcb_get_property_reply(conn, _cookie, NULL);
   if(reply == NULL || xcb_get_property_value_length(reply) == 0) {
     free(reply);
@@ -229,8 +231,10 @@ void populate_name(window_t *window) {
   } else {
     memcpy(window->name, xcb_get_property_value(reply), length);
   }
+  free(reply);
   return;
 found:
+  free(reply);
   strcpy(window->name, classes[curr_class][1]);
 }
 
@@ -345,4 +349,34 @@ void redraw_mode(void) {
 void redraw_bars(void) {
   redraw_mode();
   redraw_minimized();
+}
+
+void bar_init(void) {
+  view.bars = malloc(sizeof(bar_t) * view.monitor_count);
+  place_bars();
+  intern_atoms();
+}
+
+void destroy_component(bar_component_t *comp) {
+  cairo_destroy(comp->cairo);
+  comp->cairo = NULL;
+  cairo_surface_destroy(comp->surface);
+  comp->surface = NULL;
+  g_object_unref(comp->pango);
+  comp->pango = NULL;
+}
+
+void bar_deinit(void) {
+  for(size_t i=0; i<view.monitor_count; i++) {
+    destroy_component(&view.bars[i].mode);
+    for(size_t j=0; j<10; j++) {
+      destroy_component(&view.bars[i].workspaces[j]);
+      destroy_component(&view.bars[i].minimized[j]);
+    }
+  }
+  pango_cairo_font_map_set_default(NULL);
+  cairo_debug_reset_static_data();
+  FcFini();
+  free(view.bars);
+  view.bars = NULL;
 }

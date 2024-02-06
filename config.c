@@ -36,6 +36,7 @@
 #define TIMES10(x) x(0) x(1) x(2) x(3) x(4) x(5) x(6) x(7) x(8) x(9)
 TIMES10(window_n)
 
+  void shutdown(void) { restart = true; }
 void focus_window_down(void) { focus_window_n(window_below()); }
 void focus_window_up(void) { focus_window_n(window_above()); }
 void focus_window_left(void) { focus_window_n(window_to_left()); }
@@ -151,6 +152,9 @@ void convert_shortcuts(void) {
     break;
     }
   }
+
+  //last call to keysym_to_keycode
+  free(kmapping);
 
   if(shortcut_lookup[0] == NULL) {
     // find first used keycode

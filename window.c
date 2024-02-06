@@ -20,10 +20,6 @@ size_t get_index(xcb_window_t w) {
   return -1;
 }
 
-void window_init(void) {
-  prevstate = calloc(view.monitor_count*16, sizeof(uint32_t));
-}
-
 void print_grid(void) {
   workspace_t *workspace = view.workspaces+view.focus;
   puts("grid:");
@@ -35,6 +31,15 @@ void print_grid(void) {
       printf("%d", workspace->grid[i].window->id);
     printf(" origin: %lu\n", workspace->grid[i].origin);
   }
+}
+
+void print_windows(void) {
+  window_t *w = windows;
+  while(w != NULL) {
+    printf("%u ", w->id);
+    w = w->next;
+  }
+  puts("");
 }
 
 window_t* get_window(xcb_window_t w) {
@@ -462,11 +467,16 @@ void focus_in(xcb_window_t window) {
 
 void create_notify(xcb_window_t window) {
   window_t *w = malloc(sizeof(window_t));
+  if(windows != NULL)
+    windows->prev = w;
   w->id = window;
   w->name = NULL;
   w->next = windows;
   w->prev = NULL;
   windows = w;
+  DEBUG {
+    print_windows();
+  }
 }
 
 void destroy_notify(xcb_window_t window) {
@@ -480,7 +490,12 @@ void destroy_notify(xcb_window_t window) {
   if(w->next != NULL) {
     w->next->prev = w->prev;
   }
+  if(w->name != NULL)
+    free(w->name);
   free(w);
+  DEBUG {
+    print_windows();
+  }
 }
 
 void map_request(xcb_window_t window) {
@@ -527,4 +542,64 @@ void unmap_notify(xcb_window_t window) {
       return;
     }
   }
+}
+
+void window_init(void) {
+  xcb_query_tree_cookie_t cookie;
+  xcb_query_tree_reply_t *reply;
+  xcb_get_geometry_cookie_t gcookie;
+  xcb_get_geometry_reply_t *greply;
+  size_t len;
+  bool found;
+  xcb_window_t *children;
+  prevstate = calloc(view.monitor_count*16, sizeof(uint32_t));
+  cookie = xcb_query_tree(conn, screen->root);
+  reply = xcb_query_tree_reply(conn, cookie, NULL);
+  len = xcb_query_tree_children_length(reply);
+  children = xcb_query_tree_children(reply);
+  for(size_t i=0; i<len; i++) {
+    gcookie = xcb_get_geometry(conn, children[i]);
+  }
+  for(size_t i=0; i<len; i++) {
+    greply = xcb_get_geometry_reply(conn, gcookie, NULL);
+    if(greply) {
+      found = false;
+      for(size_t j=0; j<view.monitor_count; j++) {
+        if(greply->x == view.monitors[j].x && greply->y == view.monitors[j].y) {
+          xcb_destroy_window(conn, children[i]);
+          found = true;
+          break;
+        }
+      }
+      if(!found)
+        map_request(children[i]);
+      free(greply);
+    }
+  }
+  free(reply);
+}
+
+void window_deinit(void) {
+  window_t *window = windows;
+  window_t *t;
+  DEBUG {
+    print_windows();
+  }
+  while(window != NULL) {
+    t = window;
+    window = window->next;
+    if(t->name != NULL)
+      free(t->name);
+    free(t);
+  }
+  windows = NULL;
+
+  window_list_t *min = view.minimized;
+  window_list_t *temp;
+  while(min != NULL) {
+    temp = min;
+    min = min->next;
+    free(temp);
+  }
+  view.minimized = NULL;
 }

@@ -35,6 +35,7 @@ typedef struct bar_settings_t {
 } bar_settings_t;
 
 void bar_init(void);
+void bar_deinit(void);
 void redraw_workspaces(void);
 void redraw_minimized(void);
 void redraw_mode(void);

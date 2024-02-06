@@ -24,13 +24,14 @@
   CONFIG_DIRECTION_PATTERN(MOD_NONE,  focus_window), \
   CONFIG_DIRECTION_PATTERN(MOD_SHIFT, swap_window),  \
   CONFIG_DIRECTION_PATTERN(MOD_ALT,   enlarge),      \
-  {MOD_NONE, XK_q,      destroy},     \
-  {MOD_NONE, XK_m,      minimize},    \
-  {MOD_NONE, XK_Escape, insert_mode}, \
-  {MOD_NONE, XK_i,      insert_mode}, \
-  {MOD_NONE, XK_equal,  equal_sizes}, \
-  {MOD_NONE, XK_Return, terminal},    \
-  {MOD_NONE, XK_f,      librewolf}    \
+  {MOD_NONE,  XK_q,      destroy},     \
+  {MOD_SHIFT, XK_q,      shutdown},    \
+  {MOD_NONE,  XK_m,      minimize},    \
+  {MOD_NONE,  XK_Escape, insert_mode}, \
+  {MOD_NONE,  XK_i,      insert_mode}, \
+  {MOD_NONE,  XK_equal,  equal_sizes}, \
+  {MOD_NONE,  XK_Return, terminal},    \
+  {MOD_NONE,  XK_f,      librewolf}    \
 }
 
 #define CONFIG_TERMINAL_CMD "mlterm"
