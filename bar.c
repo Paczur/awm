@@ -42,7 +42,26 @@ void intern_atoms(void) {
   free(reply);
 }
 
-//TODO: SIMPLIFY THIS FUNCTION
+void create_component(size_t m, uint32_t *id) {
+  uint32_t mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
+  uint32_t values[2] = { view.bar_settings.background, XCB_EVENT_MASK_EXPOSURE };
+  *id = xcb_generate_id(conn);
+  xcb_create_window(conn, screen->root_depth, *id,
+                    view.bars[m].id, 0, 0, 1, view.bar_settings.height, 0,
+                    XCB_WINDOW_CLASS_INPUT_OUTPUT,
+                    screen->root_visual, mask, values);
+}
+
+void create_text_context(PangoFontDescription *desc, bar_component_t *comp) {
+  comp->surface =
+    cairo_xcb_surface_create(conn,
+                             comp->id,
+                             view.visual_type, 1, view.bar_settings.height);
+  comp->cairo = cairo_create(comp->surface);
+  comp->pango = pango_cairo_create_layout(comp->cairo);
+  pango_layout_set_font_description(comp->pango, desc);
+}
+
 void place_bars(void) {
   PangoFontDescription *desc;
   uint32_t mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
@@ -55,24 +74,11 @@ void place_bars(void) {
                       view.monitors[i].y, view.monitors[i].w,
                       view.bar_settings.height, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT,
                       screen->root_visual, mask, values);
-    view.bars[i].mode.id = xcb_generate_id(conn);
-    xcb_create_window(conn, screen->root_depth, view.bars[i].mode.id,
-                      view.bars[i].id, 0, 0, 1, view.bar_settings.height, 0,
-                      XCB_WINDOW_CLASS_INPUT_OUTPUT,
-                      screen->root_visual, mask, values);
+
+    create_component(i, &view.bars[i].mode.id);
     for(size_t j=0; j<10; j++) {
-      view.bars[i].workspaces[j].id = xcb_generate_id(conn);
-      xcb_create_window(conn, screen->root_depth, view.bars[i].workspaces[j].id,
-                        view.bars[i].id, 0, 0, 1, view.bar_settings.height, 0,
-                        XCB_WINDOW_CLASS_INPUT_OUTPUT,
-                        screen->root_visual, mask, values);
-    }
-    for(size_t j=0; j<10; j++) {
-      view.bars[i].minimized[j].id = xcb_generate_id(conn);
-      xcb_create_window(conn, screen->root_depth, view.bars[i].minimized[j].id,
-                        view.bars[i].id, 0, 0, 1, view.bar_settings.height, 0,
-                        XCB_WINDOW_CLASS_INPUT_OUTPUT,
-                        screen->root_visual, mask, values);
+      create_component(i, &view.bars[i].workspaces[j].id);
+      create_component(i, &view.bars[i].minimized[j].id);
     }
     xcb_map_window(conn, view.bars[i].id);
     xcb_map_window(conn, view.bars[i].mode.id);
@@ -82,36 +88,11 @@ void place_bars(void) {
   desc = pango_font_description_from_string(view.bar_settings.font);
 
   for(size_t i=0; i<view.monitor_count; i++) {
-    view.bars[i].mode.surface =
-      cairo_xcb_surface_create(conn,
-                               view.bars[i].mode.id,
-                               view.visual_type, 1, view.bar_settings.height);
-    view.bars[i].mode.cairo = cairo_create(view.bars[i].mode.surface);
-    view.bars[i].mode.pango = pango_cairo_create_layout(view.bars[i].mode.cairo);
-    pango_layout_set_font_description(view.bars[i].mode.pango, desc);
+    create_text_context(desc, &view.bars[i].mode);
 
     for(size_t j=0; j<10; j++) {
-      view.bars[i].workspaces[j].surface =
-        cairo_xcb_surface_create(conn,
-                                 view.bars[i].workspaces[j].id,
-                                 view.visual_type, 1, view.bar_settings.height);
-      view.bars[i].workspaces[j].cairo =
-        cairo_create(view.bars[i].workspaces[j].surface);
-      view.bars[i].workspaces[j].pango =
-        pango_cairo_create_layout(view.bars[i].workspaces[j].cairo);
-      pango_layout_set_font_description(view.bars[i].workspaces[j].pango, desc);
-    }
-
-    for(size_t j=0; j<10; j++) {
-      view.bars[i].minimized[j].surface =
-        cairo_xcb_surface_create(conn,
-                                 view.bars[i].minimized[j].id,
-                                 view.visual_type, 1, view.bar_settings.height);
-      view.bars[i].minimized[j].cairo =
-        cairo_create(view.bars[i].minimized[j].surface);
-      view.bars[i].minimized[j].pango =
-        pango_cairo_create_layout(view.bars[i].minimized[j].cairo);
-      pango_layout_set_font_description(view.bars[i].minimized[j].pango, desc);
+      create_text_context(desc, &view.bars[i].workspaces[j]);
+      create_text_context(desc, &view.bars[i].minimized[j]);
     }
   }
   redraw_bars();
