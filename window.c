@@ -262,10 +262,39 @@ void reset_cross(size_t m) {
   update_layout(m);
 }
 
+void reset_window_positions(size_t m) {
+  size_t t;
+  size_t moved[4];
+  size_t count = 0;
+  size_t iter = 0;
+  workspace_t* workspace = view.workspaces+view.focus;
+  for(size_t i=0; i<4; i++) {
+    if(workspace->grid[i+m*4].origin == i+m*4)
+      count++;
+  }
+  for(size_t i=0; i<view.spawn_order_len; i++) {
+    t = view.spawn_order[i];
+    if(count == iter) break;
+    if(t/4 != m) continue;
+    if(workspace->grid[t].origin == t) {
+      iter++;
+      continue;
+    }
+    if(!moved[t/4]) {
+      workspace->grid[workspace->grid[t].origin].origin = t;
+      workspace->grid[t].origin = t;
+      moved[t/4] = true;
+      iter++;
+    }
+  }
+  calculate_layout(m, prevstate, 0);
+}
+
 void minimize_n(size_t n) {
   workspace_t *workspace = view.workspaces+view.focus;
   if(n < view.monitor_count*4 && workspace->grid[n].window != NULL) {
     xcb_unmap_window(conn, workspace->grid[n].window->id);
+    reset_window_positions(n/4);
     minimize_window(workspace->grid[n].window);
   }
 }
@@ -476,7 +505,6 @@ void map_request(xcb_window_t window) {
   }
 }
 
-//TODO: REORDER WINDOWS TO FIT LAYOUT
 void unmap_notify(xcb_window_t window) {
   workspace_t *workspace = view.workspaces+view.focus;
   size_t pos = get_index(window);
@@ -486,6 +514,8 @@ void unmap_notify(xcb_window_t window) {
   workspace->grid[pos].origin = -1;
   if(workspace->focus == pos)
     workspace->focus = -1;
+  calculate_layout(pos/4, prevstate, 0);
+  reset_window_positions(pos/4);
   update_layout(pos/4);
   if(workspace->grid[pos].window != NULL) {
     focus_window_n(pos);
