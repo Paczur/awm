@@ -233,8 +233,13 @@ void config_parse(void) {
   hex_to_cairo_color(CONFIG_BAR_WORKSPACE_UNFOCUSED_FOREGROUND,
                      view.bar_settings.workspace_unfocused.foreground);
 
-  view.bar_settings.minimized.background =
-    hex_to_uint(CONFIG_BAR_MINIMIZED_BACKGROUND, 0, 6);
-  hex_to_cairo_color(CONFIG_BAR_MINIMIZED_FOREGROUND,
-                     view.bar_settings.minimized.foreground);
+  view.bar_settings.minimized_odd.background =
+    hex_to_uint(CONFIG_BAR_MINIMIZED_ODD_BACKGROUND, 0, 6);
+  hex_to_cairo_color(CONFIG_BAR_MINIMIZED_ODD_FOREGROUND,
+                     view.bar_settings.minimized_odd.foreground);
+
+  view.bar_settings.minimized_even.background =
+    hex_to_uint(CONFIG_BAR_MINIMIZED_EVEN_BACKGROUND, 0, 6);
+  hex_to_cairo_color(CONFIG_BAR_MINIMIZED_EVEN_FOREGROUND,
+                     view.bar_settings.minimized_even.foreground);
 }

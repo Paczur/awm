@@ -31,7 +31,8 @@ typedef struct bar_settings_t {
   bar_component_settings_t mode_normal;
   bar_component_settings_t workspace_focused;
   bar_component_settings_t workspace_unfocused;
-  bar_component_settings_t minimized;
+  bar_component_settings_t minimized_odd;
+  bar_component_settings_t minimized_even;
 } bar_settings_t;
 
 void bar_init(void);

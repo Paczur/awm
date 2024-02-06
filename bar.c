@@ -177,28 +177,29 @@ void populate_name(window_t *window) {
   window->name = calloc(CONFIG_BAR_MINIMIZED_NAME_MAX_LENGTH, sizeof(char));
   xcb_get_property_cookie_t ccookie =
     xcb_get_property(conn, 0, window->id, wm_class, XCB_ATOM_STRING,
-                     0, 6);
+                     0, 50);
   xcb_get_property_cookie_t _cookie =
     xcb_get_property(conn, 0, window->id, _net_wm_name, XCB_GET_PROPERTY_TYPE_ANY,
-                     0, 6);
+                     0, 50);
   xcb_get_property_cookie_t cookie =
     xcb_get_property(conn, 0, window->id, wm_name, XCB_ATOM_STRING,
-                     0, 6);
+                     0, 50);
   reply = xcb_get_property_reply(conn, ccookie, NULL);
   class = xcb_get_property_value(reply);
+  length = xcb_get_property_value_length(reply);
   for(;classes[curr_class][0]!=0; curr_class++) {
     i=0;
-    for(;; i++) {
+    for(;i<length; i++) {
       if(class[i] == 0)
         goto found;
       if(classes[curr_class][0][i] == 0 ||
          classes[curr_class][0][i] != class[i])
         break;
     }
-    while(class[i] != 0) i++;
-    i++;
+    while(i<length && class[i] != 0) i++;
+    if(i<length) i++;
     iter=0;
-    while(true) {
+    while(i<length) {
       if(class[i] == 0)
         goto found;
       if(classes[curr_class][0][iter] == 0 ||
@@ -230,6 +231,10 @@ void populate_name(window_t *window) {
     }
   } else {
     memcpy(window->name, xcb_get_property_value(reply), length);
+  }
+  if(window->name[0] == 0) {
+    window->name[0] = '?';
+    window->name[1] = 0;
   }
   free(reply);
   return;
@@ -276,11 +281,16 @@ void redraw_minimized(void) {
   for(size_t i=0; i<view.monitor_count; i++) {
     geom[0].x = (view.monitors[i].w - width)/2;
     redraw_component(geom, view.bars[i].minimized,
-                     &view.bar_settings.minimized, i);
+                     &view.bar_settings.minimized_odd, i);
     for(size_t j=1; j<len; j++) {
       geom[j].x = geom[j-1].x + geom[j-1].width + CONFIG_BAR_COMPONENT_SEPARATOR;
-      redraw_component(geom+j, view.bars[i].minimized+j,
-                       &view.bar_settings.minimized, i);
+      if(j%2 != 0) {
+        redraw_component(geom+j, view.bars[i].minimized+j,
+                         &view.bar_settings.minimized_even, i);
+      } else {
+        redraw_component(geom+j, view.bars[i].minimized+j,
+                         &view.bar_settings.minimized_odd, i);
+      }
     }
   }
 }
