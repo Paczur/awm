@@ -590,7 +590,8 @@ void window_init(void) {
     gcookie = xcb_get_geometry_unchecked(conn, children[i]);
     create_notify(children[i]);
     areply = xcb_get_window_attributes_reply(conn, acookie, NULL);
-    if(!areply->override_redirect && areply->map_state != XCB_MAP_STATE_UNVIEWABLE) {
+    if(!areply->override_redirect && areply->map_state != XCB_MAP_STATE_UNVIEWABLE &&
+       areply->_class != XCB_WINDOW_CLASS_INPUT_ONLY) {
       greply = xcb_get_geometry_reply(conn, gcookie, NULL);
       found = false;
       for(size_t j=0; j<view.monitor_count; j++) {
