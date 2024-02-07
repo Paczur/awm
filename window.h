@@ -16,6 +16,7 @@ typedef struct monitor_t {
 typedef struct window_t {
   xcb_window_t id;
   char *name;
+  int pos; //-2 not existant, -1 minimized, 0-10 workspace
   struct window_t *next;
   struct window_t *prev;
 } window_t;
@@ -29,6 +30,7 @@ typedef struct workspace_t {
   grid_cell_t *grid;
   size_t focus;
   int *cross;
+  bool *update;
 } workspace_t;
 
 typedef struct window_list_t {

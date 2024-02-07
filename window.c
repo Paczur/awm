@@ -143,9 +143,6 @@ void calculate_layout(size_t m, uint32_t* values, size_t offset) {
 void update_layout(size_t m) {
   workspace_t *workspace = view.workspaces+view.focus;
   uint32_t newstate[16];
-  DEBUG {
-    print_grid();
-  }
   calculate_layout(m, newstate, 0);
   DEBUG {
     print_grid();
@@ -191,6 +188,7 @@ void place_window(window_t *window, size_t grid_i, bool assume_map) {
   workspace_t *workspace = view.workspaces+view.focus;
   workspace->grid[grid_i].window = window;
   workspace->grid[grid_i].origin = grid_i;
+  window->pos = view.focus;
   if(!assume_map) {
     xcb_map_window(conn, window->id);
   }
@@ -203,6 +201,7 @@ void place_window(window_t *window, size_t grid_i, bool assume_map) {
 //unmapping done before this function call
 void minimize_window(window_t *window) {
   window_list_t *min;
+  window->pos = -1;
   min = malloc(sizeof(window_list_t));
   min->next = view.minimized;
   view.minimized = min;
@@ -404,7 +403,12 @@ void workspace_n(size_t n) {
     }
   }
   for(size_t i=0; i<view.monitor_count; i++) {
-    calculate_layout(i, prevstate, i*16);
+    if(view.workspaces[n].update[i]) {
+      update_layout(i);
+      view.workspaces[n].update[i] = false;
+    } else {
+      calculate_layout(i, prevstate, i*16);
+    }
   }
   DEBUG {
     printf("workspace changed to: %lu\n", n);
@@ -473,6 +477,7 @@ void create_notify(xcb_window_t window) {
     windows->prev = w;
   w->id = window;
   w->name = NULL;
+  w->pos = -2;
   w->next = windows;
   w->prev = NULL;
   windows = w;
@@ -482,6 +487,9 @@ void create_notify(xcb_window_t window) {
 }
 
 void destroy_notify(xcb_window_t window) {
+  window_list_t *t;
+  window_list_t *wlist = view.minimized;
+  workspace_t *workspace;
   window_t *w = get_window(window);
   if(w == NULL) return;
   if(w->prev != NULL) {
@@ -494,6 +502,30 @@ void destroy_notify(xcb_window_t window) {
   }
   if(w->name != NULL)
     free(w->name);
+  if(w->pos == -1) {
+    if(wlist->window == w) {
+      view.minimized = wlist->next;
+      free(wlist);
+    } else {
+      while(wlist->next->window != w)
+        wlist = wlist->next;
+      t = wlist->next;
+      wlist->next = wlist->next->next;
+      free(t);
+    }
+    redraw_bars();
+  } else if(w->pos >= 0) {
+    workspace = view.workspaces+w->pos;
+    for(size_t i=0; i<view.monitor_count; i++) {
+      if(workspace->grid[i].window == w) {
+        workspace->grid[workspace->grid[i].origin].window = NULL;
+        workspace->grid[workspace->grid[i].origin].origin = -1;
+        workspace->update[i] = true;
+        break;
+      }
+    }
+    redraw_bars();
+  }
   free(w);
   DEBUG {
     print_windows();
@@ -527,11 +559,12 @@ void unmap_notify(xcb_window_t window) {
   size_t pos = get_index(window);
   if(pos == (size_t)-1) return;
   pos = workspace->grid[pos].origin;
+  workspace->grid[pos].window->pos = -2;
   workspace->grid[pos].window = NULL;
   workspace->grid[pos].origin = -1;
   if(workspace->focus == pos)
     workspace->focus = -1;
-  calculate_layout(pos/4, prevstate, 0);
+  update_layout(pos/4);
   reset_window_positions(pos/4);
   update_layout(pos/4);
   if(workspace->grid[pos].window != NULL) {
@@ -556,6 +589,10 @@ void window_init(void) {
   size_t len;
   bool found;
   xcb_window_t *children;
+
+  for(size_t i=0; i<10; i++)
+    view.workspaces[i].update = calloc(view.monitor_count, sizeof(bool));
+
   prevstate = calloc(view.monitor_count*16, sizeof(uint32_t));
 
   cookie = xcb_query_tree_unchecked(conn, screen->root);
