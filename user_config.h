@@ -68,5 +68,6 @@
   {"mlterm", "󰆍"}, \
   {"librewolf", ""}, \
   {"gimp", ""}, \
+  {"telegram-desktop", ""}, \
   {0} \
 }
