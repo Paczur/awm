@@ -32,6 +32,7 @@ void radix_gen_hints(const radix_node_t*, char*, size_t);
 void radix_10_shortest_sr(const search_node_t*, char*, size_t);
 void radix_gen_hints_sr(const search_node_t*, char*, size_t);
 search_node_t *radix_search(const radix_node_t*, const char*, size_t);
+search_node_t *radix_search_sr(const search_node_t*, const char*, size_t);
 void radix_cleanup(radix_node_t*);
 void radix_clear(radix_node_t*);
 void radix_unmark(radix_node_t*);

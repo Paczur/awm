@@ -10,10 +10,17 @@
 #include <fontconfig/fontconfig.h>
 
 radix_node_t *tree;
+
 char launcher_prompt[256];
+size_t prompt_i = 0;
 uchar launcher_prompt_size[256];
 size_t launcher_prompt_size_i = 0;
-size_t prompt_i = 0;
+uchar proper_search[256];
+size_t proper_i = 0;
+uchar proper_search_size[256];
+size_t proper_search_size_i = 0;
+
+search_node_t *last_search;
 size_t hint_no = 10;
 size_t selected = 0;
 uint32_t workspace_x;
@@ -378,13 +385,14 @@ void redraw_hints(void) {
     for(size_t j=0; j<view.monitor_count; j++) {
       if(width + geom[i].width + CONFIG_BAR_COMPONENT_SEPARATOR
          > view.monitors[j].w - prompt_x) {
-        break;
+        goto skip_hints;
       }
       set_text(radix_hints[i], view.bars[j].launcher.hints+i);
     }
     width += geom[i].width + CONFIG_BAR_COMPONENT_SEPARATOR;
     hint_no++;
   }
+  skip_hints:
 
   for(size_t i=0; i<hint_no; i++) {
     if(!prev_hints[i]) {
@@ -403,42 +411,44 @@ void redraw_hints(void) {
     }
   }
 
-  for(size_t i=0; i<view.monitor_count; i++) {
-    geom[0].x = (view.monitors[i].w - width)/2;
-    geom[0].x = (geom[0].x < prompt_x) ? prompt_x : geom[0].x;
-    if(selected == 0) {
-      redraw_component(geom, view.bars[i].launcher.hints,
-                       &view.bar_settings.launcher_hint_selected, i);
-    } else {
-      redraw_component(geom, view.bars[i].launcher.hints,
-                       &view.bar_settings.launcher_hint, i);
-    }
-    if(selected < hint_no && selected > 0) {
-      for(size_t j=1; j<selected; j++) {
-        geom[j].x = geom[j-1].x + geom[j-1].width + CONFIG_BAR_COMPONENT_SEPARATOR;
-        redraw_component(geom+j, view.bars[i].launcher.hints+j,
+  if(hint_no > 0) {
+    for(size_t i=0; i<view.monitor_count; i++) {
+      geom[0].x = (view.monitors[i].w - width)/2;
+      geom[0].x = (geom[0].x < prompt_x) ? prompt_x : geom[0].x;
+      if(selected == 0) {
+        redraw_component(geom, view.bars[i].launcher.hints,
+                         &view.bar_settings.launcher_hint_selected, i);
+      } else {
+        redraw_component(geom, view.bars[i].launcher.hints,
                          &view.bar_settings.launcher_hint, i);
       }
-      geom[selected].x = geom[selected-1].x + geom[selected-1].width
-        + CONFIG_BAR_COMPONENT_SEPARATOR;
-      redraw_component(geom+selected, view.bars[i].launcher.hints+selected,
-                       &view.bar_settings.launcher_hint_selected, i);
-      for(size_t j=selected+1; j<hint_no; j++) {
-        geom[j].x = geom[j-1].x + geom[j-1].width + CONFIG_BAR_COMPONENT_SEPARATOR;
-        redraw_component(geom+j, view.bars[i].launcher.hints+j,
-                         &view.bar_settings.launcher_hint, i);
+      if(selected < hint_no && selected > 0) {
+        for(size_t j=1; j<selected; j++) {
+          geom[j].x = geom[j-1].x + geom[j-1].width + CONFIG_BAR_COMPONENT_SEPARATOR;
+          redraw_component(geom+j, view.bars[i].launcher.hints+j,
+                           &view.bar_settings.launcher_hint, i);
+        }
+        geom[selected].x = geom[selected-1].x + geom[selected-1].width
+          + CONFIG_BAR_COMPONENT_SEPARATOR;
+        redraw_component(geom+selected, view.bars[i].launcher.hints+selected,
+                         &view.bar_settings.launcher_hint_selected, i);
+        for(size_t j=selected+1; j<hint_no; j++) {
+          geom[j].x = geom[j-1].x + geom[j-1].width + CONFIG_BAR_COMPONENT_SEPARATOR;
+          redraw_component(geom+j, view.bars[i].launcher.hints+j,
+                           &view.bar_settings.launcher_hint, i);
+        }
+      } else {
+        for(size_t j=1; j<hint_no; j++) {
+          geom[j].x = geom[j-1].x + geom[j-1].width + CONFIG_BAR_COMPONENT_SEPARATOR;
+          redraw_component(geom+j, view.bars[i].launcher.hints+j,
+                           &view.bar_settings.launcher_hint, i);
+        }
       }
-    } else {
-      for(size_t j=1; j<hint_no; j++) {
-        geom[j].x = geom[j-1].x + geom[j-1].width + CONFIG_BAR_COMPONENT_SEPARATOR;
-        redraw_component(geom+j, view.bars[i].launcher.hints+j,
-                         &view.bar_settings.launcher_hint, i);
+      //TODO: No idea why it doesn't work when i remove this loop
+      for(size_t j=0; j<hint_no; j++) {
+        pango_cairo_show_layout(view.bars[i].launcher.hints[j].cairo,
+                                view.bars[i].launcher.hints[j].pango);
       }
-    }
-    //TODO: No idea why it doesn't work when i remove this loop
-    for(size_t j=0; j<hint_no; j++) {
-      pango_cairo_show_layout(view.bars[i].launcher.hints[j].cairo,
-                              view.bars[i].launcher.hints[j].pango);
     }
   }
 }
@@ -493,6 +503,7 @@ void redraw_launcher(void) {
 void show_launcher(void) {
   char buff[LENGTH(launcher_prompt)];
   prompt_i = 0;
+  proper_i = 0;
   selected = 0;
   for(size_t i=0; i<view.monitor_count; i++) {
     xcb_map_window(conn, view.bars[i].launcher.id);
@@ -530,17 +541,21 @@ void launcher_keypress(const xcb_key_press_event_t *event) {
     redraw_hints();
   } else if(keycode == keys[KEY_BACKSPACE]) {
     if(launcher_prompt_size_i-1 < launcher_prompt_size_i) {
-      prompt_i -= launcher_prompt_size[launcher_prompt_size_i-1];
+      prompt_i -= launcher_prompt_size[--launcher_prompt_size_i];
+      proper_i -= proper_search_size[--proper_search_size_i];
       launcher_prompt[prompt_i] = 0;
-      launcher_prompt_size_i--;
-      if(prompt_i > 0) {
+      proper_search[proper_i] = 0;
+      if(last_search != NULL) {
+        free(last_search);
+      }
+      if(proper_i > 0) {
         selected = 0;
-        memcpy(buff, launcher_prompt, prompt_i);
-        search = radix_search(tree, buff, prompt_i);
-        radix_gen_hints_sr(search, buff, prompt_i);
-        free(search);
+        memcpy(buff, proper_search, proper_i);
+        last_search = radix_search(tree, buff, proper_i);
+        radix_gen_hints_sr(last_search, buff, proper_i);
       } else {
-        radix_gen_hints(tree, buff, prompt_i);
+        last_search = NULL;
+        radix_gen_hints(tree, buff, 0);
       }
       redraw_launcher();
     }
@@ -551,8 +566,7 @@ void launcher_keypress(const xcb_key_press_event_t *event) {
       .keycode = keycode,
       .state = event->state
     };
-    Xutf8LookupString(xic, &keyev, buff, sizeof(buff), NULL, NULL);
-    len = strnlen(buff, sizeof(buff));
+    len = Xutf8LookupString(xic, &keyev, buff, sizeof(buff), NULL, NULL);
     if(len > 0) {
       selected = 0;
       launcher_prompt_size[launcher_prompt_size_i++] = len;
@@ -562,10 +576,30 @@ void launcher_keypress(const xcb_key_press_event_t *event) {
         memcpy(launcher_prompt+prompt_i, buff, len);
       }
       prompt_i += len;
-      memcpy(buff, launcher_prompt, prompt_i);
-      search = radix_search(tree, buff, prompt_i);
-      radix_gen_hints_sr(search, buff, prompt_i);
-      free(search);
+      if(prompt_i < LENGTH(launcher_prompt)) {
+        launcher_prompt[prompt_i] = 0;
+      }
+
+      if(last_search != NULL) {
+        search = radix_search_sr(last_search, buff, len);
+      } else {
+        search = radix_search(tree, buff, len);
+      }
+
+      if(search != NULL) {
+        if(last_search != search)
+          free(last_search);
+        last_search = search;
+        memcpy(proper_search+proper_i, buff, len-last_search->wrong);
+        proper_i += len-last_search->wrong;
+        proper_search_size[proper_search_size_i++] = len-last_search->wrong;
+        memcpy(buff, proper_search, proper_i);
+        proper_search[proper_i] = 0;
+        printf("PROPER: %s\n", proper_search);
+        radix_gen_hints_sr(last_search, buff, proper_i);
+      } else {
+        proper_search_size[proper_search_size_i++] = 0;
+      }
       redraw_launcher();
     }
   }

@@ -258,7 +258,7 @@ void radix_print(const radix_node_t *node) {
 
 search_node_t *radix_search(const radix_node_t *tree,
                             const char *word, size_t length) {
-  search_node_t *search = malloc(sizeof(search_node_t));
+  search_node_t *search;
   const radix_node_t *curr = tree;
   size_t j;
   for(size_t i=0;;) {
@@ -282,17 +282,37 @@ search_node_t *radix_search(const radix_node_t *tree,
     if(j == curr->length && i != length) {
       curr = curr->next;
     } else {
-      if(j == curr->length) {
-        search->node = curr->next;
-        search->position = 0;
-        search->wrong = 0;
-        return search;
-      } else {
-        search->node = curr;
-        search->position = j;
-        search->wrong = length-i;
-        return search;
-      }
+      search = malloc(sizeof(search_node_t));
+      search->node = curr;
+      search->position = j;
+      search->wrong = length-i;
+      return search;
+    }
+  }
+}
+
+search_node_t *radix_search_sr(const search_node_t *node,
+                               const char *word, size_t length) {
+  const radix_node_t *curr = node->node;
+  search_node_t *search;
+  size_t j;
+  for(size_t i=0;;) {
+    j = node->position;
+    while(j != curr->length && i != length &&
+          ((curr->length <= RADIX_NODE_ARRAY_SIZE &&
+            curr->value.array[j] == word[i]) ||
+           (curr->length > RADIX_NODE_ARRAY_SIZE &&
+            curr->value.pointer[j] == word[i]))){
+      j++; i++;
+    }
+    if(j == curr->length && i != length) {
+      return radix_search(curr->next, word+i, length-i);
+    } else {
+      search = malloc(sizeof(search_node_t));
+      search->node = curr;
+      search->position = j;
+      search->wrong = length-i;
+      return search;
     }
   }
 }
@@ -333,7 +353,12 @@ void radix_10_shortest_sr(const search_node_t *node, char *buff, size_t length) 
   if(node == NULL) return;
   const radix_node_t *curr = node->node;
   length -= node->wrong;
-  if(node->position > 0) {
+  if(node->position == curr->length) {
+    if(curr->end) {
+      radix_new_shortest(buff, length+curr->length-node->position);
+    }
+    curr = curr->next;
+  } else if(node->position > 0) {
     if(curr->length <= RADIX_NODE_ARRAY_SIZE) {
       memcpy(buff+length, curr->value.array+node->position,
              curr->length-node->position);
@@ -344,7 +369,7 @@ void radix_10_shortest_sr(const search_node_t *node, char *buff, size_t length) 
     if(curr->end) {
       radix_new_shortest(buff, length+curr->length-node->position);
     }
-    length += node->position;
+    length += curr->length-node->position;
     curr = curr->next;
   }
   while(curr != NULL) {
