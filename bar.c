@@ -505,6 +505,9 @@ void show_launcher(void) {
   prompt_i = 0;
   proper_i = 0;
   selected = 0;
+  last_search = NULL;
+  launcher_prompt_size_i = 0;
+  proper_search_size_i = 0;
   for(size_t i=0; i<view.monitor_count; i++) {
     xcb_map_window(conn, view.bars[i].launcher.id);
   }
