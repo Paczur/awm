@@ -330,6 +330,7 @@ void radix_10_shortest(const radix_node_t *node, char* buff, size_t length) {
 }
 
 void radix_10_shortest_sr(const search_node_t *node, char *buff, size_t length) {
+  if(node == NULL) return;
   const radix_node_t *curr = node->node;
   length -= node->wrong;
   if(node->position > 0) {
