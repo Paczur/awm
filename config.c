@@ -7,11 +7,6 @@
 #include <string.h> //memmove
 #include <stdio.h> //printf
 
-#define XK_LATIN1 //letters
-#define XK_MISCELLANY //modifiers and special
-#include <X11/keysymdef.h>
-#include <X11/XF86keysym.h>
-
 #define X(pos) ((pos)%2)
 #define Y(pos) ((pos)%4/2)
 #define COMB(x, y) ((x)+(y)*2)
@@ -70,6 +65,7 @@ void terminal(void) { sh(CONFIG_TERMINAL_CMD); }
 void destroy(void) { destroy_n(view.workspaces[view.focus].focus); }
 void minimize(void) { minimize_n(view.workspaces[view.focus].focus); }
 void librewolf(void) { sh("lb"); }
+void launch(void) { show_launcher(); }
 
 typedef struct shortcut_t {
   MODIFIER modifier;
@@ -100,21 +96,13 @@ void insert_mode(void) {
   redraw_mode();
 }
 
-xcb_keycode_t keysym_to_keycode(xcb_keysym_t keysym) {
-  for(int i=setup->min_keycode; i<setup->max_keycode; i++) {
-    if(keysyms[(i-setup->min_keycode) * kmapping->keysyms_per_keycode] == keysym)
-      return i;
-  }
-  return -1;
-}
-
-void convert_shortcuts(void) {
+void convert_shortcuts(const xcb_get_keyboard_mapping_reply_t *kmapping) {
   int start = 0;
   xcb_keycode_t index;
   internal_shortcut_t *sh;
   shortcut_t shortcuts[] = CONFIG_SHORTCUTS;
 
-  normal_code = keysym_to_keycode(CONFIG_NORMAL_SHORTCUT);
+  normal_code = keysym_to_keycode(CONFIG_NORMAL_SHORTCUT, kmapping);
 
   shortcut_lookup_l = setup->max_keycode-setup->min_keycode;
   shortcut_lookup_offset = setup->min_keycode;
@@ -122,7 +110,8 @@ void convert_shortcuts(void) {
 
   // get keycodes from keysyms
   for(size_t i=0; i<LENGTH(shortcuts); i++) {
-    index = keysym_to_keycode(shortcuts[i].keysym)-shortcut_lookup_offset;
+    index = keysym_to_keycode(shortcuts[i].keysym, kmapping) -
+      shortcut_lookup_offset;
     if(shortcut_lookup[index] == NULL) {
       shortcut_lookup[index] = malloc(sizeof(internal_shortcut_t));
       sh = shortcut_lookup[index];
@@ -153,9 +142,6 @@ void convert_shortcuts(void) {
     }
   }
 
-  //last call to keysym_to_keycode
-  free(kmapping);
-
   if(shortcut_lookup[0] == NULL) {
     // find first used keycode
     for(size_t i=1;i<shortcut_lookup_l;i++) {
@@ -182,7 +168,7 @@ void convert_shortcuts(void) {
   }
 }
 
-uint32_t hex_to_uint(char* str, size_t start, size_t end) {
+uint32_t hex_to_uint(const char* str, size_t start, size_t end) {
   uint32_t mul = 1;
   uint32_t ret = 0;
   while(end --> start) {
@@ -198,14 +184,14 @@ uint32_t hex_to_uint(char* str, size_t start, size_t end) {
   return ret;
 }
 
-void hex_to_cairo_color(char *str, double *cairo) {
+void hex_to_cairo_color(const char *str, double *cairo) {
   cairo[0] = hex_to_uint(str, 0, 2)/255.0;
   cairo[1] = hex_to_uint(str, 2, 4)/255.0;
   cairo[2] = hex_to_uint(str, 4, 6)/255.0;
 }
 
-void config_parse(void) {
-  convert_shortcuts();
+void config_parse(const xcb_get_keyboard_mapping_reply_t *kmapping) {
+  convert_shortcuts(kmapping);
   view.spawn_order = malloc(sizeof((size_t[])CONFIG_SPAWN_ORDER));
   view.spawn_order_len = LENGTH((size_t[])CONFIG_SPAWN_ORDER);
   memcpy(view.spawn_order, (size_t[])CONFIG_SPAWN_ORDER,
@@ -242,4 +228,19 @@ void config_parse(void) {
     hex_to_uint(CONFIG_BAR_MINIMIZED_EVEN_BACKGROUND, 0, 6);
   hex_to_cairo_color(CONFIG_BAR_MINIMIZED_EVEN_FOREGROUND,
                      view.bar_settings.minimized_even.foreground);
+
+  view.bar_settings.launcher_prompt.background =
+    hex_to_uint(CONFIG_BAR_LAUNCHER_PROMPT_BACKGROUND, 0, 6);
+  hex_to_cairo_color(CONFIG_BAR_LAUNCHER_PROMPT_FOREGROUND,
+                     view.bar_settings.launcher_prompt.foreground);
+
+  view.bar_settings.launcher_hint.background =
+    hex_to_uint(CONFIG_BAR_LAUNCHER_HINT_BACKGROUND, 0, 6);
+  hex_to_cairo_color(CONFIG_BAR_LAUNCHER_HINT_FOREGROUND,
+                     view.bar_settings.launcher_hint.foreground);
+
+  view.bar_settings.launcher_hint_selected.background =
+    hex_to_uint(CONFIG_BAR_LAUNCHER_HINT_SELECTED_BACKGROUND, 0, 6);
+  hex_to_cairo_color(CONFIG_BAR_LAUNCHER_HINT_SELECTED_FOREGROUND,
+                     view.bar_settings.launcher_hint_selected.foreground);
 }

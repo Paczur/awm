@@ -9,7 +9,9 @@ typedef enum {
   MOD_CTRL
 } MODIFIER;
 
-void config_parse(void);
+#include <xcb/xcb.h>
+
+void config_parse(const xcb_get_keyboard_mapping_reply_t*);
 void normal_mode(void);
 void insert_mode(void);
 

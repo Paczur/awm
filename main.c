@@ -10,21 +10,40 @@
 
 extern char **environ;
 
-//TODO: OPTIMIZE MAKING QUERIES
-void setup_monitors(void) {
+typedef struct init_query_t {
   xcb_randr_get_screen_resources_cookie_t randr_cookie;
-  xcb_randr_get_screen_resources_reply_t *screen_res;
+  xcb_get_keyboard_mapping_cookie_t kmap_cookie;
+  xcb_randr_get_screen_resources_reply_t *randr_reply;
+  xcb_get_keyboard_mapping_reply_t *kmap_reply;
+} init_query_t;
+
+init_query_t *init_queries(void) {
+  init_query_t *q = malloc(sizeof(init_query_t));
+  q->randr_cookie = xcb_randr_get_screen_resources(conn, screen->root);
+  q->kmap_cookie = xcb_get_keyboard_mapping(conn, setup->min_keycode,
+                                           setup->max_keycode-setup->min_keycode);
+  return q;
+}
+
+void setup_keys(const xcb_get_keyboard_mapping_reply_t *kmap) {
+  keys = malloc(KEY_LENGTH * sizeof(xcb_keycode_t));
+  keys[KEY_ESC] = keysym_to_keycode(XK_Escape, kmap);
+  keys[KEY_RETURN] = keysym_to_keycode(XK_Return, kmap);
+  keys[KEY_BACKSPACE] = keysym_to_keycode(XK_BackSpace, kmap);
+  keys[KEY_LEFT] = keysym_to_keycode(XK_Left, kmap);
+  keys[KEY_RIGHT] = keysym_to_keycode(XK_Right, kmap);
+}
+
+void setup_monitors(init_query_t* q) {
   xcb_randr_crtc_t *firstCrtc;
   xcb_randr_get_crtc_info_cookie_t *randr_cookies;
   xcb_randr_get_crtc_info_reply_t **randr_crtcs;
 
-  randr_cookie = xcb_randr_get_screen_resources(conn, screen->root);
-  screen_res = xcb_randr_get_screen_resources_reply(conn,
-                                                    randr_cookie, 0);
-  view.monitor_count = xcb_randr_get_screen_resources_crtcs_length(screen_res);
-  firstCrtc = xcb_randr_get_screen_resources_crtcs(screen_res);
+  q->randr_reply = xcb_randr_get_screen_resources_reply(conn,
+                                                       q->randr_cookie, 0);
+  view.monitor_count = xcb_randr_get_screen_resources_crtcs_length(q->randr_reply);
   randr_cookies = malloc(view.monitor_count*sizeof(xcb_randr_get_crtc_info_cookie_t));
-
+  firstCrtc = xcb_randr_get_screen_resources_crtcs(q->randr_reply);
   for(size_t i=0; i<view.monitor_count; i++) {
     randr_cookies[i] = xcb_randr_get_crtc_info(conn, *(firstCrtc+i), 0);
   }
@@ -47,8 +66,15 @@ void setup_monitors(void) {
     view.monitors[i].y = randr_crtcs[i]->y;
     free(randr_crtcs[i]);
   }
-  free(screen_res);
   free(randr_crtcs);
+
+  for(size_t i=0; i<LENGTH(view.workspaces); i++) {
+    view.workspaces[i].grid = calloc(4*view.monitor_count, sizeof(grid_cell_t));
+    view.workspaces[i].cross = calloc(2*view.monitor_count, sizeof(int));
+    for(size_t j=0; j<4; j++) {
+      view.workspaces[i].grid[j].origin = -1;
+    }
+  }
 }
 
 void setup_visual(void) {
@@ -72,49 +98,30 @@ void setup_visual(void) {
   }
 }
 
+void setup_xlib(void) {
+  dpy = XOpenDisplay(NULL);
+  XSetEventQueueOwner(dpy, XCBOwnsEventQueue);
+  xim = XOpenIM(dpy, 0, 0, 0);
+  xic = XCreateIC(xim,
+                  XNInputStyle, XIMPreeditNothing | XIMStatusNothing, NULL);
+}
+
 void setup_wm(void) {
-  xcb_get_keyboard_mapping_cookie_t kmap_cookie;
   uint32_t values;
 
-  conn = xcb_connect(NULL, NULL);
-  while(xcb_connection_has_error(conn)) {
-    conn = xcb_connect(NULL, NULL);
-    DEBUG {
-      puts("CONNECTION ERROR");
-    }
-  }
+  setup_xlib();
+  conn = XGetXCBConnection(dpy);
   setup = xcb_get_setup(conn);
   screen = xcb_setup_roots_iterator(setup).data;
-
-  kmap_cookie = xcb_get_keyboard_mapping(conn, setup->min_keycode,
-                                         setup->max_keycode-setup->min_keycode);
 
   values = XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT |
     XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY |
     XCB_EVENT_MASK_STRUCTURE_NOTIFY;
   xcb_change_window_attributes(conn, screen->root,
                                XCB_CW_EVENT_MASK, &values);
-  xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, XCB_MOD_MASK_ANY);
-
-  kmapping = xcb_get_keyboard_mapping_reply(conn, kmap_cookie, NULL);
-  keysyms = xcb_get_keyboard_mapping_keysyms(kmapping);
-
-  setup_monitors();
-  setup_visual();
-
-  for(size_t i=0; i<LENGTH(view.workspaces); i++) {
-    view.workspaces[i].grid = calloc(4*view.monitor_count, sizeof(grid_cell_t));
-    view.workspaces[i].cross = calloc(2*view.monitor_count, sizeof(int));
-    for(size_t j=0; j<4; j++) {
-      view.workspaces[i].grid[j].origin = -1;
-    }
-  }
-
-  fflush(stdout);
-  xcb_flush(conn);
 }
 
-void handle_shortcut(xcb_key_press_event_t *event) {
+void handle_shortcut(const xcb_key_press_event_t *event) {
   xcb_keycode_t keycode;
   internal_shortcut_t *sh;
   size_t lookup;
@@ -140,13 +147,22 @@ void handle_shortcut(xcb_key_press_event_t *event) {
 
 void event_loop(void) {
   xcb_generic_event_t* event;
+  xcb_key_press_event_t *press;
 
   while(!restart) {
     event = xcb_wait_for_event(conn);
     switch(event->response_type) {
     case XCB_KEY_PRESS:
       DEBUG { puts("KEY PRESS"); }
-      handle_shortcut((xcb_key_press_event_t*)event);
+      press = (xcb_key_press_event_t*)event;
+      for(size_t i=0; i<view.monitor_count; i++) {
+        if(press->event == view.bars[i].launcher.prompt.id) {
+          launcher_keypress(press);
+          goto launcher_press;
+        }
+      }
+      handle_shortcut(press);
+      launcher_press:
     break;
 
     case XCB_MAP_REQUEST:
@@ -199,12 +215,24 @@ int main(int argc, char *argv[], char *envp[]) {
   (void)argc;
   (void)argv;
   environ = envp;
+  init_query_t *q;
 
   setup_wm();
-  config_parse();
+  q = init_queries();
+
+  setup_monitors(q);
+  setup_visual();
+
+  q->kmap_reply = xcb_get_keyboard_mapping_reply(conn, q->kmap_cookie, NULL);
+  config_parse(q->kmap_reply);
+  setup_keys(q->kmap_reply);
+  free(q);
+
   bar_init();
   window_init();
   normal_mode();
+  fflush(stdout);
+  xcb_flush(conn);
   event_loop();
 
   DEBUG {
@@ -228,6 +256,7 @@ int main(int argc, char *argv[], char *envp[]) {
       free(t);
     }
   }
+  free(keys);
   free(shortcut_lookup);
   free(view.monitors);
   free(view.spawn_order);

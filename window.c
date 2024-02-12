@@ -348,6 +348,9 @@ size_t window_to_right(void) {
 
 size_t window_to_left(void) {
   workspace_t *workspace = view.workspaces+view.focus;
+  DEBUG {
+    printf("workspace->focus: %lu\n", workspace->focus);
+  }
   window_t *next = workspace->grid[workspace->focus].window;
   window_t *prev = next;
   size_t t = workspace->focus;
@@ -410,6 +413,12 @@ void workspace_n(size_t n) {
       calculate_layout(i, prevstate, i*16);
     }
   }
+  if(view.workspaces[n].focus < view.monitor_count*4 &&
+     view.workspaces[n].grid[view.workspaces[n].focus].window != NULL) {
+    xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT,
+                        view.workspaces[n].grid[view.workspaces[n].focus].window->id,
+                        XCB_CURRENT_TIME);
+  }
   DEBUG {
     printf("workspace changed to: %lu\n", n);
     print_grid();
@@ -455,6 +464,17 @@ void focus_in(xcb_window_t window) {
                          prevstate+temp*4);
     workspace->focus = temp;
   }
+}
+
+void window_focus_random(void) {
+  workspace_t *workspace = view.workspaces+view.focus;
+  for(size_t i=0; i<view.monitor_count; i++) {
+    if(workspace->grid[i*4].window != NULL) {
+      focus_window_n(i*4);
+      return;
+    }
+  }
+  workspace->focus = 0;
 }
 
 void create_notify(xcb_window_t window) {
@@ -552,16 +572,12 @@ void unmap_notify(xcb_window_t window) {
     workspace->focus = -1;
   update_layout(pos/4);
   reset_window_positions(pos/4);
+
   if(workspace->grid[pos].window != NULL) {
     focus_window_n(pos);
     return;
   }
-  for(size_t i=0; i<view.monitor_count; i++) {
-    if(workspace->grid[i*4].window != NULL) {
-      focus_window_n(i*4);
-      return;
-    }
-  }
+  window_focus_random();
 }
 
 void window_init(void) {

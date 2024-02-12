@@ -6,7 +6,8 @@ DEBUG=-D DEBUG -Og -ggdb3 -fsanitize=address -fsanitize=pointer-compare \
 -fsanitize-address-use-after-scope -fstack-check \
 -fno-stack-clash-protection
 TEXT=$(shell pkg-config --cflags --libs pangocairo fontconfig)
-LIBS=-lxcb -lxcb-randr $(TEXT)
+X=$(shell pkg-config --cflags --libs x11-xcb xcb-randr)
+LIBS= $(X) $(TEXT)
 RELEASE=-O2 -s -pipe -flto=4
 CFLAGS=$(WARN) -march=native -std=gnu99 $(LIBS)
 
@@ -19,7 +20,7 @@ release: main
 debug: CFLAGS += $(DEBUG)
 debug: main
 
-main: main.c config.c global.c window.c bar.c
+main: $(SOURCE)
 	$(CC) $(CFLAGS) -o $(BIN)/$@ $^
 
 clean:

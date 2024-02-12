@@ -54,6 +54,7 @@ void map_request(xcb_window_t);
 void create_notify(xcb_window_t);
 void destroy_notify(xcb_window_t);
 void focus_in(xcb_window_t);
+void window_focus_random(void);
 void focus_out(xcb_window_t);
 size_t window_below(void);
 size_t window_above(void);
