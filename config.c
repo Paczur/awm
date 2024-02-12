@@ -61,10 +61,10 @@ void enlarge_up(void) {
   resize_h(view.workspaces[view.focus].focus/4, -CONFIG_RESIZE_STEP);
 }
 void equal_sizes(void) { reset_cross(view.workspaces[view.focus].focus/4); }
-void terminal(void) { sh(CONFIG_TERMINAL_CMD); }
+void terminal(void) { insert_mode(); sh(CONFIG_TERMINAL_CMD); }
 void destroy(void) { destroy_n(view.workspaces[view.focus].focus); }
 void minimize(void) { minimize_n(view.workspaces[view.focus].focus); }
-void librewolf(void) { sh("lb"); }
+void librewolf(void) { insert_mode(); sh("lb"); }
 void launch(void) { show_launcher(); }
 
 typedef struct shortcut_t {

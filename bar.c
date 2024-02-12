@@ -535,6 +535,7 @@ void launcher_keypress(const xcb_key_press_event_t *event) {
     hide_launcher();
   } else if(keycode == keys[KEY_RETURN]) {
     hide_launcher();
+    insert_mode();
     sh(radix_hints[selected]);
   } else if(keycode == keys[KEY_LEFT]) {
     selected = (selected-1+hint_no)%hint_no;
@@ -598,7 +599,10 @@ void launcher_keypress(const xcb_key_press_event_t *event) {
         proper_search_size[proper_search_size_i++] = len-last_search->wrong;
         memcpy(buff, proper_search, proper_i);
         proper_search[proper_i] = 0;
-        printf("PROPER: %s\n", proper_search);
+        last_search->wrong = 0;
+        DEBUG {
+          printf("PROPER: %.*s %lu\n", proper_i, proper_search, proper_i);
+        }
         radix_gen_hints_sr(last_search, buff, proper_i);
       } else {
         proper_search_size[proper_search_size_i++] = 0;
