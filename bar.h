@@ -24,6 +24,7 @@ typedef struct bar_t {
   bar_component_t mode;
   bar_component_t workspaces[10];
   bar_component_t minimized[10];
+  bar_component_t info[10];
 } bar_t;
 
 typedef struct bar_component_settings_t {
@@ -41,6 +42,8 @@ typedef struct bar_settings_t {
   bar_component_settings_t workspace_unfocused;
   bar_component_settings_t minimized_odd;
   bar_component_settings_t minimized_even;
+  bar_component_settings_t info;
+  bar_component_settings_t info_highlighted;
   bar_component_settings_t launcher_prompt;
   bar_component_settings_t launcher_hint;
   bar_component_settings_t launcher_hint_selected;
@@ -56,5 +59,6 @@ void show_launcher(void);
 void launcher_keypress(const xcb_key_press_event_t*);
 void launcher_init(void);
 void launcher_deinit(void);
+void update_info_n(size_t);
 
 #endif

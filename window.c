@@ -519,7 +519,7 @@ void destroy_notify(xcb_window_t window) {
       wlist->next = wlist->next->next;
       free(t);
     }
-    redraw_bars();
+    redraw_minimized();
   } else if(w->pos >= 0) {
     workspace = view.workspaces+w->pos;
     for(size_t i=0; i<view.monitor_count; i++) {
@@ -530,7 +530,7 @@ void destroy_notify(xcb_window_t window) {
         break;
       }
     }
-    redraw_bars();
+    redraw_workspaces();
   }
   free(w);
   DEBUG {

@@ -56,6 +56,7 @@ typedef struct view_t {
   xcb_visualtype_t *visual_type;
 } view_t;
 
+int shout(char*, char*, size_t);
 void sh(char*);
 xcb_keycode_t keysym_to_keycode(xcb_keysym_t,
                                 const xcb_get_keyboard_mapping_reply_t*);

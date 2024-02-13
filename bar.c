@@ -6,28 +6,47 @@
 #include <pango/pangocairo.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <pthread.h>
+#include <unistd.h>
 #include "user_config.h"
 #include <fontconfig/fontconfig.h>
 
 radix_node_t *tree;
 
-char launcher_prompt[256];
+#define PROMPT_LENGTH 128
+
+typedef struct bar_info_t {
+  char *cmd;
+  int timer;
+} bar_info_t;
+
+char *launcher_prompt;
 size_t prompt_i = 0;
-uchar launcher_prompt_size[256];
+uchar *launcher_prompt_size;
 size_t launcher_prompt_size_i = 0;
-uchar proper_search[256];
+uchar *proper_search;
 size_t proper_i = 0;
-uchar proper_search_size[256];
+uchar *proper_search_size;
 size_t proper_search_size_i = 0;
 
 search_node_t *last_search;
 size_t hint_no = 10;
 size_t selected = 0;
+
+pthread_t info_thread;
+char info_text[10][64];
+int info_status[10];
+int info_countdown[10];
+//TODO: PANGO MARKUP SUPPORT
+bar_info_t info_blocks[10] = CONFIG_BAR_INFO_BLOCKS;
+
 uint32_t workspace_x;
 uint32_t prompt_x;
+
 bool prev_workspaces[10] = { true, false };
 bool prev_minimized[10] = { false };
 bool prev_hints[10] = { false };
+bool prev_info[10] = { false };
 xcb_atom_t wm_class = 0;
 
 typedef struct comp_geom {
@@ -90,6 +109,7 @@ void place_bars(void) {
     for(size_t j=0; j<10; j++) {
       create_component(&view.bars[i].workspaces[j].id, view.bars[i].id);
       create_component(&view.bars[i].minimized[j].id, view.bars[i].id);
+      create_component(&view.bars[i].info[j].id, view.bars[i].id);
     }
     view.bars[i].launcher.id = xcb_generate_id(conn);
     xcb_create_window(conn, screen->root_depth, view.bars[i].launcher.id,
@@ -117,6 +137,7 @@ void place_bars(void) {
     for(size_t j=0; j<10; j++) {
       create_text_context(desc, &view.bars[i].workspaces[j]);
       create_text_context(desc, &view.bars[i].minimized[j]);
+      create_text_context(desc, &view.bars[i].info[j]);
       create_text_context(desc, &view.bars[i].launcher.hints[j]);
     }
   }
@@ -134,27 +155,29 @@ void component_geom(const bar_component_t *component,
   PangoRectangle t;
   PangoRectangle t2;
   pango_layout_get_extents(component->pango, &t, &t2);
-  t.height = t2.height;
-  t.y = t2.y;
   pango_extents_to_pixels(&t, NULL);
   pango_extents_to_pixels(&t2, NULL);
-  if((uint)t.height < view.bar_settings.height) {
-    geom->text_y = view.bar_settings.height - t.height;
+  if((uint)t2.height < view.bar_settings.height) {
+    geom->text_y = view.bar_settings.height - t2.height;
     geom->text_y /= 2;
-    geom->text_y -= t.y;
+    geom->text_y -= t2.y;
   } else {
     geom->text_y = 0;
   }
-  if((uint)t.x > CONFIG_BAR_COMPONENT_PADDING) {
-    geom->width = t.width + t.x*2;
-    geom->text_x = t.x;
+  if(t2.width > 0) {
+    if((uint)t.x > CONFIG_BAR_COMPONENT_PADDING) {
+      geom->width = t2.width + t.x*2;
+      geom->text_x = t.x;
+    } else {
+      geom->width = t2.width + CONFIG_BAR_COMPONENT_PADDING*2;
+      geom->text_x = CONFIG_BAR_COMPONENT_PADDING - t.x;
+    }
+    if(geom->width < min_width) {
+      geom->text_x = (min_width - t2.width)/2 - t.x;
+      geom->width = min_width;
+    }
   } else {
-    geom->width = t.width + CONFIG_BAR_COMPONENT_PADDING*2;
-    geom->text_x = CONFIG_BAR_COMPONENT_PADDING - t.x;
-  }
-  if(geom->width < min_width) {
-    geom->text_x = (min_width - t.width)/2 - t.x;
-    geom->width = min_width;
+    geom->width = 1;
   }
 }
 
@@ -180,18 +203,33 @@ void redraw_component(const comp_geom *geom, const bar_component_t *component,
 
 uint32_t redraw_left_align(const char *text, const bar_component_t *component,
                            const bar_component_settings_t *settings,
-                           uint32_t x, uint32_t min_width) {
+                           uint32_t x, uint32_t min_width, size_t m) {
   comp_geom geom;
   geom.x = x;
   if(x != 0)
     geom.x += CONFIG_BAR_COMPONENT_SEPARATOR;
   set_text(text, component);
   component_geom(component, min_width, &geom);
-  for(size_t i=0; i<view.monitor_count; i++) {
-    set_text(text, component);
-    redraw_component(&geom, component, settings, i);
-  }
-  return geom.x + geom.width;
+  redraw_component(&geom, component, settings, m);
+  if(geom.width > 1)
+    geom.x += geom.width;
+  return geom.x;
+}
+
+//TODO: SEPARATE REDRAWING FROM WIDTH CALCULATION AND CALCULATE ONLY ON ONE MONITOR
+uint32_t redraw_right_align(const char *text, const bar_component_t *component,
+                            const bar_component_settings_t *settings,
+                            uint32_t x, uint32_t min_width, size_t m) {
+  comp_geom geom;
+  geom.x = x;
+  if(geom.x != view.monitors[m].w)
+    geom.x -= CONFIG_BAR_COMPONENT_SEPARATOR;
+  set_text(text, component);
+  component_geom(component, min_width, &geom);
+  if(geom.width > 1)
+    geom.x -= geom.width;
+  redraw_component(&geom, component, settings, m);
+  return geom.x;
 }
 
 void populate_name(window_t *window) {
@@ -312,7 +350,8 @@ void redraw_workspaces(void) {
         xs[iterator] = redraw_left_align(num, view.bars[j].workspaces+i,
                                          &view.bar_settings.workspace_focused,
                                          xs[iterator-1],
-                                         CONFIG_BAR_WORKSPACE_MIN_WIDTH);
+                                         CONFIG_BAR_WORKSPACE_MIN_WIDTH,
+                                         j);
       }
       prev_workspaces[i] = true;
       iterator++;
@@ -325,7 +364,8 @@ void redraw_workspaces(void) {
         xs[iterator] = redraw_left_align(num, view.bars[j].workspaces+i,
                                          &view.bar_settings.workspace_unfocused,
                                          xs[iterator-1],
-                                         CONFIG_BAR_WORKSPACE_MIN_WIDTH);
+                                         CONFIG_BAR_WORKSPACE_MIN_WIDTH,
+                                         j);
       }
       prev_workspaces[i] = true;
       iterator++;
@@ -342,21 +382,125 @@ void redraw_mode(void) {
     for(size_t i=0; i<view.monitor_count; i++) {
       workspace_x = redraw_left_align("󰆾", &view.bars[i].mode,
                                       &view.bar_settings.mode_normal, 0,
-                                      CONFIG_BAR_WORKSPACE_MIN_WIDTH);
+                                      CONFIG_BAR_WORKSPACE_MIN_WIDTH,
+                                      i);
     }
   } else {
     for(size_t i=0; i<view.monitor_count; i++) {
       workspace_x = redraw_left_align("󰗧", &view.bars[i].mode,
                                       &view.bar_settings.mode_insert, 0,
-                                      CONFIG_BAR_WORKSPACE_MIN_WIDTH);
+                                      CONFIG_BAR_WORKSPACE_MIN_WIDTH,
+                                      i);
     }
   }
   redraw_workspaces();
 }
 
+void redraw_info(void) {
+  uint32_t x[10];
+  for(int i=9; i>=0; i--) {
+    if(!prev_info[i] && info_text[i][0] != 0) {
+      for(size_t j=0; j<view.monitor_count; j++) {
+        xcb_map_window(conn, view.bars[j].info[i].id);
+      }
+      prev_info[i] = true;
+    } else if(prev_info[i] && info_text[i][0] == 0) {
+      for(size_t j=0; j<view.monitor_count; j++) {
+        xcb_unmap_window(conn, view.bars[j].info[i].id);
+      }
+      prev_info[i] = false;
+    }
+  }
+  for(size_t i=0; i<view.monitor_count; i++) {
+    x[9] = view.monitors[i].w;
+    for(size_t j=9; j>0; j--) {
+      x[j-1] = redraw_right_align(info_text[j], view.bars[i].info+j,
+                                  (info_status[j]==1) ?
+                                  &view.bar_settings.info_highlighted :
+                                  &view.bar_settings.info,
+                                  x[j], CONFIG_BAR_INFO_MIN_WIDTH,
+                                  i);
+    }
+    redraw_right_align(info_text[0], view.bars[i].info,
+                       (info_status[0]==1) ?
+                       &view.bar_settings.info_highlighted :
+                       &view.bar_settings.info,
+                       x[0], CONFIG_BAR_INFO_MIN_WIDTH,
+                       i);
+  }
+}
+
+void update_info_n(size_t n) {
+  info_countdown[n] = 1;
+}
+
+void *update_info(void*) {
+  bool updated;
+  struct timespec ts = (struct timespec){ .tv_nsec = 100000000 };
+  for(size_t i=0; i<10; i++) {
+    if(info_blocks[i].cmd == NULL) {
+      info_countdown[i] = -1;
+    }
+  }
+  while(true) {
+    updated = false;
+    for(size_t i=0; i<10; i++) {
+      if(info_countdown[i] == 0) {
+
+        info_status[i] = shout(info_blocks[i].cmd, info_text[i], 64);
+        printf("STATUS: %d\n", info_status[i]);
+        info_countdown[i] = info_blocks[i].timer*10;
+        updated = true;
+      } else if(info_countdown[i] > 0) {
+        info_countdown[i]--;
+      }
+    }
+    if(updated) {
+      redraw_info();
+      xcb_flush(conn);
+    }
+    nanosleep(&ts, &ts);
+  }
+}
+
 void redraw_bars(void) {
   redraw_mode();
   redraw_minimized();
+  redraw_info();
+}
+
+void bar_init(void) {
+  view.bars = malloc(sizeof(bar_t) * view.monitor_count);
+  place_bars();
+  pthread_create(&info_thread, NULL, update_info, NULL);
+  intern_atoms();
+  radix_populate(&tree);
+}
+
+void destroy_component(bar_component_t *comp) {
+  cairo_destroy(comp->cairo);
+  comp->cairo = NULL;
+  cairo_surface_destroy(comp->surface);
+  comp->surface = NULL;
+  g_object_unref(comp->pango);
+  comp->pango = NULL;
+}
+
+void bar_deinit(void) {
+  for(size_t i=0; i<view.monitor_count; i++) {
+    destroy_component(&view.bars[i].mode);
+    for(size_t j=0; j<10; j++) {
+      destroy_component(&view.bars[i].workspaces[j]);
+      destroy_component(&view.bars[i].minimized[j]);
+    }
+  }
+  pango_cairo_font_map_set_default(NULL);
+  cairo_debug_reset_static_data();
+  FcFini();
+  free(view.bars);
+  view.bars = NULL;
+  radix_clear(tree);
+  tree = NULL;
 }
 
 void redraw_prompt(void) {
@@ -453,43 +597,14 @@ void redraw_hints(void) {
   }
 }
 
-void bar_init(void) {
-  view.bars = malloc(sizeof(bar_t) * view.monitor_count);
-  place_bars();
-  intern_atoms();
-  radix_populate(&tree);
-}
-
-void destroy_component(bar_component_t *comp) {
-  cairo_destroy(comp->cairo);
-  comp->cairo = NULL;
-  cairo_surface_destroy(comp->surface);
-  comp->surface = NULL;
-  g_object_unref(comp->pango);
-  comp->pango = NULL;
-}
-
-void bar_deinit(void) {
-  for(size_t i=0; i<view.monitor_count; i++) {
-    destroy_component(&view.bars[i].mode);
-    for(size_t j=0; j<10; j++) {
-      destroy_component(&view.bars[i].workspaces[j]);
-      destroy_component(&view.bars[i].minimized[j]);
-    }
-  }
-  pango_cairo_font_map_set_default(NULL);
-  cairo_debug_reset_static_data();
-  FcFini();
-  free(view.bars);
-  view.bars = NULL;
-  radix_clear(tree);
-  tree = NULL;
-}
-
 void hide_launcher(void) {
   for(size_t i=0; i<view.monitor_count; i++) {
     xcb_unmap_window(conn, view.bars[i].launcher.id);
   }
+  free(launcher_prompt);
+  free(proper_search);
+  free(launcher_prompt_size);
+  free(proper_search_size);
   redraw_bars();
   window_focus_random();
   normal_mode();
@@ -501,7 +616,13 @@ void redraw_launcher(void) {
 }
 
 void show_launcher(void) {
-  char buff[LENGTH(launcher_prompt)];
+  char buff[PROMPT_LENGTH];
+
+  launcher_prompt = malloc(PROMPT_LENGTH);
+  proper_search = malloc(PROMPT_LENGTH);
+  launcher_prompt_size = malloc(PROMPT_LENGTH);
+  proper_search_size = malloc(PROMPT_LENGTH);
+
   prompt_i = 0;
   proper_i = 0;
   selected = 0;
@@ -511,7 +632,7 @@ void show_launcher(void) {
   for(size_t i=0; i<view.monitor_count; i++) {
     xcb_map_window(conn, view.bars[i].launcher.id);
   }
-  memset(launcher_prompt, 0, LENGTH(launcher_prompt));
+  memset(launcher_prompt, 0, PROMPT_LENGTH);
   radix_unmark(tree);
   radix_populate(&tree);
   radix_gen_hints(tree, buff, 0);
@@ -526,7 +647,7 @@ void show_launcher(void) {
 
 void launcher_keypress(const xcb_key_press_event_t *event) {
   search_node_t *search;
-  char buff[LENGTH(launcher_prompt)];
+  char buff[PROMPT_LENGTH];
   size_t len;
   xcb_keycode_t keycode;
   XKeyEvent keyev;
@@ -563,7 +684,7 @@ void launcher_keypress(const xcb_key_press_event_t *event) {
       }
       redraw_launcher();
     }
-  } else {
+  } else if(prompt_i < PROMPT_LENGTH-1) {
     keyev = (XKeyEvent) {
       .type = KeyPress,
       .display = dpy,
@@ -574,13 +695,13 @@ void launcher_keypress(const xcb_key_press_event_t *event) {
     if(len > 0) {
       selected = 0;
       launcher_prompt_size[launcher_prompt_size_i++] = len;
-      if(prompt_i + len > LENGTH(launcher_prompt)) {
-        memcpy(launcher_prompt+prompt_i, buff, LENGTH(launcher_prompt)-prompt_i);
+      if(prompt_i + len > PROMPT_LENGTH) {
+        memcpy(launcher_prompt+prompt_i, buff, PROMPT_LENGTH-prompt_i);
       } else {
         memcpy(launcher_prompt+prompt_i, buff, len);
       }
       prompt_i += len;
-      if(prompt_i < LENGTH(launcher_prompt)) {
+      if(prompt_i < PROMPT_LENGTH) {
         launcher_prompt[prompt_i] = 0;
       }
 
@@ -601,7 +722,7 @@ void launcher_keypress(const xcb_key_press_event_t *event) {
         proper_search[proper_i] = 0;
         last_search->wrong = 0;
         DEBUG {
-          printf("PROPER: %.*s %lu\n", proper_i, proper_search, proper_i);
+          printf("PROPER: %.*s %lu\n", (int)proper_i, proper_search, proper_i);
         }
         radix_gen_hints_sr(last_search, buff, proper_i);
       } else {

@@ -202,6 +202,7 @@ void event_loop(void) {
 
     case XCB_EXPOSE:
       DEBUG { puts("EXPOSE"); }
+      //TODO: MAKE IT MORE SPECIFIC
       redraw_bars();
     break;
     }

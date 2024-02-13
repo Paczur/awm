@@ -66,6 +66,8 @@ void destroy(void) { destroy_n(view.workspaces[view.focus].focus); }
 void minimize(void) { minimize_n(view.workspaces[view.focus].focus); }
 void librewolf(void) { insert_mode(); sh("lb"); }
 void launch(void) { show_launcher(); }
+void brightness_down(void) { sh("xbacklight -dec 2"); update_info_n(0); }
+void brightness_up(void) { sh("xbacklight -inc 2"); update_info_n(0); }
 
 typedef struct shortcut_t {
   MODIFIER modifier;
@@ -223,11 +225,19 @@ void config_parse(const xcb_get_keyboard_mapping_reply_t *kmapping) {
     hex_to_uint(CONFIG_BAR_MINIMIZED_ODD_BACKGROUND, 0, 6);
   hex_to_cairo_color(CONFIG_BAR_MINIMIZED_ODD_FOREGROUND,
                      view.bar_settings.minimized_odd.foreground);
-
   view.bar_settings.minimized_even.background =
     hex_to_uint(CONFIG_BAR_MINIMIZED_EVEN_BACKGROUND, 0, 6);
   hex_to_cairo_color(CONFIG_BAR_MINIMIZED_EVEN_FOREGROUND,
                      view.bar_settings.minimized_even.foreground);
+
+  view.bar_settings.info.background =
+    hex_to_uint(CONFIG_BAR_INFO_BACKGROUND, 0, 6);
+  hex_to_cairo_color(CONFIG_BAR_INFO_FOREGROUND,
+                     view.bar_settings.info.foreground);
+  view.bar_settings.info_highlighted.background =
+    hex_to_uint(CONFIG_BAR_INFO_HIGHLIGHTED_BACKGROUND, 0, 6);
+  hex_to_cairo_color(CONFIG_BAR_INFO_HIGHLIGHTED_FOREGROUND,
+                     view.bar_settings.info_highlighted.foreground);
 
   view.bar_settings.launcher_prompt.background =
     hex_to_uint(CONFIG_BAR_LAUNCHER_PROMPT_BACKGROUND, 0, 6);
@@ -238,7 +248,6 @@ void config_parse(const xcb_get_keyboard_mapping_reply_t *kmapping) {
     hex_to_uint(CONFIG_BAR_LAUNCHER_HINT_BACKGROUND, 0, 6);
   hex_to_cairo_color(CONFIG_BAR_LAUNCHER_HINT_FOREGROUND,
                      view.bar_settings.launcher_hint.foreground);
-
   view.bar_settings.launcher_hint_selected.background =
     hex_to_uint(CONFIG_BAR_LAUNCHER_HINT_SELECTED_BACKGROUND, 0, 6);
   hex_to_cairo_color(CONFIG_BAR_LAUNCHER_HINT_SELECTED_FOREGROUND,

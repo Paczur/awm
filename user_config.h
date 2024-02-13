@@ -24,6 +24,8 @@
   CONFIG_DIRECTION_PATTERN(MOD_NONE,  focus_window), \
   CONFIG_DIRECTION_PATTERN(MOD_SHIFT, swap_window),  \
   CONFIG_DIRECTION_PATTERN(MOD_ALT,   enlarge),      \
+  {MOD_NONE,  XF86XK_MonBrightnessDown, brightness_down}, \
+  {MOD_NONE,  XF86XK_MonBrightnessUp, brightness_up}, \
   {MOD_NONE,  XK_q,      destroy},     \
   {MOD_SHIFT, XK_q,      shutdown},    \
   {MOD_NONE,  XK_m,      minimize},    \
@@ -65,8 +67,27 @@
 #define CONFIG_BAR_MINIMIZED_EVEN_FOREGROUND "333333"
 #define CONFIG_BAR_MINIMIZED_MIN_WIDTH 32
 #define CONFIG_BAR_MINIMIZED_NAME_MAX_LENGTH 40
+#define CONFIG_BAR_MINIMIZED_NAME_REPLACEMENTS { \
+  {"mlterm", "󰆍"}, \
+  {"librewolf", ""}, \
+  {"gimp", ""}, \
+  {"telegram-desktop", ""}, \
+  {0} \
+}
 
-#define CONFIG_BAR_LAUNCHER_PROMPT_MIN_WIDTH 100
+#define CONFIG_BAR_INFO_MIN_WIDTH 0
+#define CONFIG_BAR_INFO_BACKGROUND "111111"
+#define CONFIG_BAR_INFO_FOREGROUND "FFFFFF"
+#define CONFIG_BAR_INFO_HIGHLIGHTED_BACKGROUND "111111"
+#define CONFIG_BAR_INFO_HIGHLIGHTED_FOREGROUND "FFFFFF"
+#define CONFIG_BAR_INFO_BLOCKS { \
+  {"echo  $(/home/paczur/.config/i3blocks/brightness)", -1}, \
+  {"/home/paczur/.config/i3blocks/battery", 60}, \
+  {"date '+󰃶 %a %d'", 3600}, \
+  {"date '+ %H:%M'", 30}, \
+}
+
+#define CONFIG_BAR_LAUNCHER_PROMPT_MIN_WIDTH 0
 #define CONFIG_BAR_LAUNCHER_PROMPT_FOREGROUND "333333"
 #define CONFIG_BAR_LAUNCHER_PROMPT_BACKGROUND "111111"
 
@@ -76,11 +97,3 @@
 
 #define CONFIG_BAR_LAUNCHER_HINT_SELECTED_FOREGROUND "FFFFFF"
 #define CONFIG_BAR_LAUNCHER_HINT_SELECTED_BACKGROUND "111111"
-
-#define CONFIG_BAR_MINIMIZED_NAME_REPLACEMENTS { \
-  {"mlterm", "󰆍"}, \
-  {"librewolf", ""}, \
-  {"gimp", ""}, \
-  {"telegram-desktop", ""}, \
-  {0} \
-}

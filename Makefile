@@ -7,7 +7,8 @@ DEBUG=-D DEBUG -Og -ggdb3 -fsanitize=address -fsanitize=pointer-compare \
 -fno-stack-clash-protection
 TEXT=$(shell pkg-config --cflags --libs pangocairo fontconfig)
 X=$(shell pkg-config --cflags --libs x11-xcb xcb-randr)
-LIBS= $(X) $(TEXT)
+THREADS=-lpthread
+LIBS= $(X) $(TEXT) $(THREADS)
 RELEASE=-O2 -s -pipe -flto=4
 CFLAGS=$(WARN) -march=native -std=gnu99 $(LIBS)
 
