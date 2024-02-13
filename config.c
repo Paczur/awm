@@ -31,7 +31,7 @@
 #define TIMES10(x) x(0) x(1) x(2) x(3) x(4) x(5) x(6) x(7) x(8) x(9)
 TIMES10(window_n)
 
-  void shutdown(void) { restart = true; }
+  void shutdown_wm(void) { restart = true; }
 void focus_window_down(void) { focus_window_n(window_below()); }
 void focus_window_up(void) { focus_window_n(window_above()); }
 void focus_window_left(void) { focus_window_n(window_to_left()); }
@@ -86,6 +86,8 @@ void brightness_up(void) {
   sh("xbacklight -inc 2");
   update_info_n_highlight(3, 1);
 }
+void suspend(void) { sh("sudo suspend"); }
+void shutdown(void) { sh("notify-send 'Shutting down'; sudo shutdown"); }
 
 typedef struct shortcut_t {
   MODIFIER modifier;
@@ -97,14 +99,16 @@ void normal_mode(void) {
   internal_shortcut_t *sh;
   mode = MODE_NORMAL;
   xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, XCB_MOD_MASK_ANY);
-  for(size_t i=0; i<shortcut_lookup_l; i++) {
-    sh = shortcut_lookup[i];
-    while(sh != NULL) {
-      xcb_grab_key(conn, 1, screen->root, sh->mod_mask, i+shortcut_lookup_offset,
-                   XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
-      sh = sh->next;
-    }
-  }
+  xcb_grab_key(conn, 1, screen->root, XCB_MOD_MASK_ANY, XCB_GRAB_ANY,
+               XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+  // for(size_t i=0; i<shortcut_lookup_l; i++) {
+  //   sh = shortcut_lookup[i];
+  //   while(sh != NULL) {
+  //     xcb_grab_key(conn, 1, screen->root, sh->mod_mask, i+shortcut_lookup_offset,
+  //                  XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+  //     sh = sh->next;
+  //   }
+  // }
   redraw_mode();
 }
 

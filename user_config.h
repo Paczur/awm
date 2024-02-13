@@ -31,11 +31,13 @@
   {MOD_NONE,  XF86XK_AudioMute,         volume_mute},     \
   {MOD_NONE,  XF86XK_AudioLowerVolume,  volume_down},     \
   {MOD_NONE,  XF86XK_AudioRaiseVolume,  volume_up},       \
+  {MOD_SHIFT, XK_s,                     suspend},         \
+  {MOD_ALT,   XK_s,                     shutdown},        \
   {MOD_NONE,  XK_F4,                    volume_mute},     \
   {MOD_NONE,  XK_F5,                    volume_down},     \
   {MOD_NONE,  XK_F6,                    volume_up},       \
   {MOD_NONE,  XK_q,                     destroy},         \
-  {MOD_SHIFT, XK_q,                     shutdown},        \
+  {MOD_SHIFT, XK_q,                     shutdown_wm},     \
   {MOD_NONE,  XK_m,                     minimize},        \
   {MOD_NONE,  XK_Escape,                insert_mode},     \
   {MOD_NONE,  XK_i,                     insert_mode},     \
