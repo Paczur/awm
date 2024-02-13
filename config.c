@@ -61,10 +61,10 @@ void enlarge_up(void) {
   resize_h(view.workspaces[view.focus].focus/4, -CONFIG_RESIZE_STEP);
 }
 void equal_sizes(void) { reset_cross(view.workspaces[view.focus].focus/4); }
-void terminal(void) { insert_mode(); sh(CONFIG_TERMINAL_CMD); }
+void terminal(void) { sh(CONFIG_TERMINAL_CMD); }
 void destroy(void) { destroy_n(view.workspaces[view.focus].focus); }
 void minimize(void) { minimize_n(view.workspaces[view.focus].focus); }
-void librewolf(void) { insert_mode(); sh("lb"); }
+void librewolf(void) { sh("lb"); }
 void launch(void) { show_launcher(); }
 void brightness_down(void) { sh("xbacklight -dec 2"); update_info_n(0); }
 void brightness_up(void) { sh("xbacklight -inc 2"); update_info_n(0); }
@@ -192,6 +192,33 @@ void hex_to_cairo_color(const char *str, double *cairo) {
   cairo[2] = hex_to_uint(str, 4, 6)/255.0;
 }
 
+#define color_parse(comp, def) \
+  do { \
+    comp.background = hex_to_uint(def ## _BACKGROUND, 0, 6); \
+    hex_to_cairo_color(def ## _FOREGROUND, comp.foreground); \
+  } while(0);
+
+void parse_colors(void) {
+  view.bar_settings.background = hex_to_uint(CONFIG_BAR_BACKGROUND, 0, 6);
+  color_parse(view.bar_settings.mode_insert, CONFIG_BAR_MODE_INSERT);
+  color_parse(view.bar_settings.mode_normal, CONFIG_BAR_MODE_NORMAL);
+
+  color_parse(view.bar_settings.workspace_focused, CONFIG_BAR_WORKSPACE_FOCUSED);
+  color_parse(view.bar_settings.workspace_unfocused, CONFIG_BAR_WORKSPACE_UNFOCUSED);
+
+  color_parse(view.bar_settings.minimized_odd, CONFIG_BAR_MINIMIZED_ODD);
+  color_parse(view.bar_settings.minimized_even, CONFIG_BAR_MINIMIZED_EVEN);
+
+  color_parse(view.bar_settings.info, CONFIG_BAR_INFO);
+  color_parse(view.bar_settings.info_highlighted, CONFIG_BAR_INFO_HIGHLIGHTED);
+
+  color_parse(view.bar_settings.launcher_prompt, CONFIG_BAR_LAUNCHER_PROMPT);
+
+  color_parse(view.bar_settings.launcher_hint, CONFIG_BAR_LAUNCHER_HINT);
+  color_parse(view.bar_settings.launcher_hint_selected,
+              CONFIG_BAR_LAUNCHER_HINT_SELECTED);
+}
+
 void config_parse(const xcb_get_keyboard_mapping_reply_t *kmapping) {
   convert_shortcuts(kmapping);
   view.spawn_order = malloc(sizeof((size_t[])CONFIG_SPAWN_ORDER));
@@ -202,54 +229,5 @@ void config_parse(const xcb_get_keyboard_mapping_reply_t *kmapping) {
   view.bar_settings.height = CONFIG_BAR_HEIGHT;
   view.bar_settings.font = CONFIG_BAR_FONT;
 
-  view.bar_settings.background = hex_to_uint(CONFIG_BAR_BACKGROUND, 0, 6);
-  view.bar_settings.mode_insert.background =
-    hex_to_uint(CONFIG_BAR_MODE_INSERT_BACKGROUND, 0, 6);
-  view.bar_settings.mode_normal.background =
-    hex_to_uint(CONFIG_BAR_MODE_NORMAL_BACKGROUND, 0, 6);
-  hex_to_cairo_color(CONFIG_BAR_MODE_INSERT_FOREGROUND,
-                     view.bar_settings.mode_insert.foreground);
-  hex_to_cairo_color(CONFIG_BAR_MODE_NORMAL_FOREGROUND,
-                     view.bar_settings.mode_normal.foreground);
-
-  view.bar_settings.workspace_focused.background =
-    hex_to_uint(CONFIG_BAR_WORKSPACE_FOCUSED_BACKGROUND, 0, 6);
-  view.bar_settings.workspace_unfocused.background =
-    hex_to_uint(CONFIG_BAR_WORKSPACE_UNFOCUSED_BACKGROUND, 0, 6);
-  hex_to_cairo_color(CONFIG_BAR_WORKSPACE_FOCUSED_FOREGROUND,
-                     view.bar_settings.workspace_focused.foreground);
-  hex_to_cairo_color(CONFIG_BAR_WORKSPACE_UNFOCUSED_FOREGROUND,
-                     view.bar_settings.workspace_unfocused.foreground);
-
-  view.bar_settings.minimized_odd.background =
-    hex_to_uint(CONFIG_BAR_MINIMIZED_ODD_BACKGROUND, 0, 6);
-  hex_to_cairo_color(CONFIG_BAR_MINIMIZED_ODD_FOREGROUND,
-                     view.bar_settings.minimized_odd.foreground);
-  view.bar_settings.minimized_even.background =
-    hex_to_uint(CONFIG_BAR_MINIMIZED_EVEN_BACKGROUND, 0, 6);
-  hex_to_cairo_color(CONFIG_BAR_MINIMIZED_EVEN_FOREGROUND,
-                     view.bar_settings.minimized_even.foreground);
-
-  view.bar_settings.info.background =
-    hex_to_uint(CONFIG_BAR_INFO_BACKGROUND, 0, 6);
-  hex_to_cairo_color(CONFIG_BAR_INFO_FOREGROUND,
-                     view.bar_settings.info.foreground);
-  view.bar_settings.info_highlighted.background =
-    hex_to_uint(CONFIG_BAR_INFO_HIGHLIGHTED_BACKGROUND, 0, 6);
-  hex_to_cairo_color(CONFIG_BAR_INFO_HIGHLIGHTED_FOREGROUND,
-                     view.bar_settings.info_highlighted.foreground);
-
-  view.bar_settings.launcher_prompt.background =
-    hex_to_uint(CONFIG_BAR_LAUNCHER_PROMPT_BACKGROUND, 0, 6);
-  hex_to_cairo_color(CONFIG_BAR_LAUNCHER_PROMPT_FOREGROUND,
-                     view.bar_settings.launcher_prompt.foreground);
-
-  view.bar_settings.launcher_hint.background =
-    hex_to_uint(CONFIG_BAR_LAUNCHER_HINT_BACKGROUND, 0, 6);
-  hex_to_cairo_color(CONFIG_BAR_LAUNCHER_HINT_FOREGROUND,
-                     view.bar_settings.launcher_hint.foreground);
-  view.bar_settings.launcher_hint_selected.background =
-    hex_to_uint(CONFIG_BAR_LAUNCHER_HINT_SELECTED_BACKGROUND, 0, 6);
-  hex_to_cairo_color(CONFIG_BAR_LAUNCHER_HINT_SELECTED_FOREGROUND,
-                     view.bar_settings.launcher_hint_selected.foreground);
+  parse_colors();
 }

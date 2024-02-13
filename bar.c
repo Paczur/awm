@@ -16,6 +16,7 @@ radix_node_t *tree;
 #define PROMPT_LENGTH 128
 
 typedef struct bar_info_t {
+  int id;
   char *cmd;
   int timer;
 } bar_info_t;
@@ -34,11 +35,11 @@ size_t hint_no = 10;
 size_t selected = 0;
 
 pthread_t info_thread;
-char info_text[10][64];
-int info_status[10];
-int info_countdown[10];
+char info_text[MAX_INFO_BLOCKS][64];
+int info_status[MAX_INFO_BLOCKS];
+int info_countdown[MAX_INFO_BLOCKS];
 //TODO: PANGO MARKUP SUPPORT
-bar_info_t info_blocks[10] = CONFIG_BAR_INFO_BLOCKS;
+bar_info_t info_blocks[MAX_INFO_BLOCKS] = CONFIG_BAR_INFO_BLOCKS;
 
 uint32_t workspace_x;
 uint32_t prompt_x;
@@ -46,7 +47,7 @@ uint32_t prompt_x;
 bool prev_workspaces[10] = { true, false };
 bool prev_minimized[10] = { false };
 bool prev_hints[10] = { false };
-bool prev_info[10] = { false };
+bool prev_info[MAX_INFO_BLOCKS] = { false };
 xcb_atom_t wm_class = 0;
 
 typedef struct comp_geom {
@@ -109,6 +110,8 @@ void place_bars(void) {
     for(size_t j=0; j<10; j++) {
       create_component(&view.bars[i].workspaces[j].id, view.bars[i].id);
       create_component(&view.bars[i].minimized[j].id, view.bars[i].id);
+    }
+    for(size_t j=0; j<MAX_INFO_BLOCKS; j++) {
       create_component(&view.bars[i].info[j].id, view.bars[i].id);
     }
     view.bars[i].launcher.id = xcb_generate_id(conn);
@@ -137,8 +140,10 @@ void place_bars(void) {
     for(size_t j=0; j<10; j++) {
       create_text_context(desc, &view.bars[i].workspaces[j]);
       create_text_context(desc, &view.bars[i].minimized[j]);
-      create_text_context(desc, &view.bars[i].info[j]);
       create_text_context(desc, &view.bars[i].launcher.hints[j]);
+    }
+    for(size_t j=0; j<MAX_INFO_BLOCKS; j++) {
+      create_text_context(desc, &view.bars[i].info[j]);
     }
   }
   redraw_bars();
@@ -397,8 +402,8 @@ void redraw_mode(void) {
 }
 
 void redraw_info(void) {
-  uint32_t x[10];
-  for(int i=9; i>=0; i--) {
+  uint32_t x[MAX_INFO_BLOCKS];
+  for(int i=MAX_INFO_BLOCKS-1; i>=0; i--) {
     if(!prev_info[i] && info_text[i][0] != 0) {
       for(size_t j=0; j<view.monitor_count; j++) {
         xcb_map_window(conn, view.bars[j].info[i].id);
@@ -413,7 +418,7 @@ void redraw_info(void) {
   }
   for(size_t i=0; i<view.monitor_count; i++) {
     x[9] = view.monitors[i].w;
-    for(size_t j=9; j>0; j--) {
+    for(size_t j=MAX_INFO_BLOCKS-1; j>0; j--) {
       x[j-1] = redraw_right_align(info_text[j], view.bars[i].info+j,
                                   (info_status[j]==1) ?
                                   &view.bar_settings.info_highlighted :
@@ -430,25 +435,28 @@ void redraw_info(void) {
   }
 }
 
-void update_info_n(size_t n) {
-  info_countdown[n] = 1;
+void update_info_n(int n) {
+  for(size_t i=0; i<MAX_INFO_BLOCKS; i++) {
+    if(info_blocks[i].id == n) {
+      info_countdown[i] = 1;
+      break;
+    }
+  }
 }
 
 void *update_info(void*) {
   bool updated;
   struct timespec ts = (struct timespec){ .tv_nsec = 100000000 };
-  for(size_t i=0; i<10; i++) {
+  for(size_t i=0; i<MAX_INFO_BLOCKS; i++) {
     if(info_blocks[i].cmd == NULL) {
       info_countdown[i] = -1;
     }
   }
   while(true) {
     updated = false;
-    for(size_t i=0; i<10; i++) {
+    for(size_t i=0; i<MAX_INFO_BLOCKS; i++) {
       if(info_countdown[i] == 0) {
-
         info_status[i] = shout(info_blocks[i].cmd, info_text[i], 64);
-        printf("STATUS: %d\n", info_status[i]);
         info_countdown[i] = info_blocks[i].timer*10;
         updated = true;
       } else if(info_countdown[i] > 0) {

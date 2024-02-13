@@ -81,10 +81,10 @@
 #define CONFIG_BAR_INFO_HIGHLIGHTED_BACKGROUND "111111"
 #define CONFIG_BAR_INFO_HIGHLIGHTED_FOREGROUND "FFFFFF"
 #define CONFIG_BAR_INFO_BLOCKS { \
-  {"echo  $(/home/paczur/.config/i3blocks/brightness)", -1}, \
-  {"/home/paczur/.config/i3blocks/battery", 60}, \
-  {"date '+󰃶 %a %d'", 3600}, \
-  {"date '+ %H:%M'", 30}, \
+  {0, "echo  $(/home/paczur/.config/i3blocks/brightness)", -1}, \
+  {1, "/home/paczur/.config/i3blocks/battery", 60}, \
+  {2, "date '+󰃶 %a %d'", 3600}, \
+  {3, "date '+ %H:%M'", 30}, \
 }
 
 #define CONFIG_BAR_LAUNCHER_PROMPT_MIN_WIDTH 0
