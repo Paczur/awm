@@ -25,16 +25,24 @@
   CONFIG_DIRECTION_PATTERN(MOD_SHIFT, swap_window),  \
   CONFIG_DIRECTION_PATTERN(MOD_ALT,   enlarge),      \
   {MOD_NONE,  XF86XK_MonBrightnessDown, brightness_down}, \
-  {MOD_NONE,  XF86XK_MonBrightnessUp, brightness_up}, \
-  {MOD_NONE,  XK_q,      destroy},     \
-  {MOD_SHIFT, XK_q,      shutdown},    \
-  {MOD_NONE,  XK_m,      minimize},    \
-  {MOD_NONE,  XK_Escape, insert_mode}, \
-  {MOD_NONE,  XK_i,      insert_mode}, \
-  {MOD_NONE,  XK_equal,  equal_sizes}, \
-  {MOD_NONE,  XK_Return, terminal},    \
-  {MOD_NONE,  XK_f,      librewolf},   \
-  {MOD_NONE,  XK_r,      launch}    \
+  {MOD_NONE,  XF86XK_MonBrightnessUp,   brightness_up},   \
+  {MOD_NONE,  XK_F1,                    brightness_down}, \
+  {MOD_NONE,  XK_F2,                    brightness_up},   \
+  {MOD_NONE,  XF86XK_AudioMute,         volume_mute},     \
+  {MOD_NONE,  XF86XK_AudioLowerVolume,  volume_down},     \
+  {MOD_NONE,  XF86XK_AudioRaiseVolume,  volume_up},       \
+  {MOD_NONE,  XK_F4,                    volume_mute},     \
+  {MOD_NONE,  XK_F5,                    volume_down},     \
+  {MOD_NONE,  XK_F6,                    volume_up},       \
+  {MOD_NONE,  XK_q,                     destroy},         \
+  {MOD_SHIFT, XK_q,                     shutdown},        \
+  {MOD_NONE,  XK_m,                     minimize},        \
+  {MOD_NONE,  XK_Escape,                insert_mode},     \
+  {MOD_NONE,  XK_i,                     insert_mode},     \
+  {MOD_NONE,  XK_equal,                 equal_sizes},     \
+  {MOD_NONE,  XK_Return,                terminal},        \
+  {MOD_NONE,  XK_f,                     librewolf},       \
+  {MOD_NONE,  XK_r,                     launch}           \
 }
 
 #define CONFIG_TERMINAL_CMD "mlterm"
@@ -77,14 +85,18 @@
 
 #define CONFIG_BAR_INFO_MIN_WIDTH 0
 #define CONFIG_BAR_INFO_BACKGROUND "111111"
-#define CONFIG_BAR_INFO_FOREGROUND "FFFFFF"
+#define CONFIG_BAR_INFO_FOREGROUND "333333"
 #define CONFIG_BAR_INFO_HIGHLIGHTED_BACKGROUND "111111"
 #define CONFIG_BAR_INFO_HIGHLIGHTED_FOREGROUND "FFFFFF"
 #define CONFIG_BAR_INFO_BLOCKS { \
-  {0, "echo  $(/home/paczur/.config/i3blocks/brightness)", -1}, \
-  {1, "/home/paczur/.config/i3blocks/battery", 60}, \
-  {2, "date '+󰃶 %a %d'", 3600}, \
-  {3, "date '+ %H:%M'", 30}, \
+  {0, "/home/paczur/.config/i3blocks/net", 60}, \
+  {1, "/home/paczur/.config/i3blocks/volume", -1}, \
+  {2, "/home/paczur/.config/i3blocks/dnd", -1}, \
+  {3, "echo  $(/home/paczur/.config/i3blocks/brightness)", -1}, \
+  {4, "/home/paczur/.config/i3blocks/battery", 60}, \
+  {5, "echo  $(/home/paczur/.config/i3blocks/cpu)", 5}, \
+  {6, "date '+󰃶 %a %d' && exit 1", 3600}, \
+  {7, "date '+ %H:%M' && exit 1", 30}, \
 }
 
 #define CONFIG_BAR_LAUNCHER_PROMPT_MIN_WIDTH 0

@@ -19,6 +19,13 @@ typedef struct bar_info_t {
   int timer;
 } bar_info_t;
 
+typedef struct bar_info_state_t {
+  bool update;
+  int status;
+  int countdown;
+  char text[MAX_INFO_TEXT_LENGTH];
+} bar_info_state_t;
+
 char *launcher_prompt;
 size_t prompt_i;
 uchar *launcher_prompt_size;
@@ -33,10 +40,8 @@ size_t hint_no = MAX_LAUNCHER_HINTS;
 size_t selected;
 
 pthread_t info_thread;
-char info_text[MAX_INFO_BLOCKS][64];
-int info_status[MAX_INFO_BLOCKS];
-int info_countdown[MAX_INFO_BLOCKS];
 //TODO: PANGO MARKUP SUPPORT
+bar_info_state_t info_states[MAX_INFO_BLOCKS] = {0};
 bar_info_t info_blocks[MAX_INFO_BLOCKS] = CONFIG_BAR_INFO_BLOCKS;
 
 uint32_t workspace_x;
@@ -228,6 +233,7 @@ uint32_t redraw_left_align(const char *text, const bar_component_t *component,
   return geom.x;
 }
 
+//TODO: PROBLEM WITH DISPLAYING DND INDICATOR WHEN NOT PREFIXED BY TEXT
 //TODO: SEPARATE REDRAWING FROM WIDTH CALCULATION AND CALCULATE ONLY ON ONE MONITOR
 uint32_t redraw_right_align(const char *text, const bar_component_t *component,
                             const bar_component_settings_t *settings,
@@ -411,12 +417,12 @@ void redraw_mode(void) {
 void redraw_info(void) {
   uint32_t x[MAX_INFO_BLOCKS];
   for(int i=MAX_INFO_BLOCKS-1; i>=0; i--) {
-    if(!prev_info[i] && info_text[i][0] != 0) {
+    if(!prev_info[i] && info_states[i].text[0] != 0) {
       for(size_t j=0; j<view.monitor_count; j++) {
         xcb_map_window(conn, view.bars[j].info[i].id);
       }
       prev_info[i] = true;
-    } else if(prev_info[i] && info_text[i][0] == 0) {
+    } else if(prev_info[i] && info_states[i].text[0] == 0) {
       for(size_t j=0; j<view.monitor_count; j++) {
         xcb_unmap_window(conn, view.bars[j].info[i].id);
       }
@@ -424,17 +430,17 @@ void redraw_info(void) {
     }
   }
   for(size_t i=0; i<view.monitor_count; i++) {
-    x[9] = view.monitors[i].w;
+    x[MAX_INFO_BLOCKS-1] = view.monitors[i].w;
     for(size_t j=MAX_INFO_BLOCKS-1; j>0; j--) {
-      x[j-1] = redraw_right_align(info_text[j], view.bars[i].info+j,
-                                  (info_status[j]==1) ?
+      x[j-1] = redraw_right_align(info_states[j].text, view.bars[i].info+j,
+                                  (info_states[j].status==1) ?
                                   &view.bar_settings.info_highlighted :
                                   &view.bar_settings.info,
                                   x[j], CONFIG_BAR_INFO_MIN_WIDTH,
                                   i);
     }
-    redraw_right_align(info_text[0], view.bars[i].info,
-                       (info_status[0]==1) ?
+    redraw_right_align(info_states[0].text, view.bars[i].info,
+                       (info_states[0].status==1) ?
                        &view.bar_settings.info_highlighted :
                        &view.bar_settings.info,
                        x[0], CONFIG_BAR_INFO_MIN_WIDTH,
@@ -442,10 +448,20 @@ void redraw_info(void) {
   }
 }
 
+void update_info_n_highlight(int n, int delay) {
+  for(size_t i=0; i<MAX_INFO_BLOCKS; i++) {
+    if(info_blocks[i].id == n) {
+      info_states[i].countdown = delay*CLOCK_STEPS_PER_SECOND;
+      info_states[i].update = true;
+      break;
+    }
+  }
+}
+
 void update_info_n(int n) {
   for(size_t i=0; i<MAX_INFO_BLOCKS; i++) {
     if(info_blocks[i].id == n) {
-      info_countdown[i] = 1;
+      info_states[i].countdown = 1;
       break;
     }
   }
@@ -453,21 +469,28 @@ void update_info_n(int n) {
 
 void *update_info(void*) {
   bool updated;
-  struct timespec ts = (struct timespec){ .tv_nsec = 100000000 };
+  struct timespec ts =
+    (struct timespec) { .tv_nsec = 1000000000/CLOCK_STEPS_PER_SECOND };
   for(size_t i=0; i<MAX_INFO_BLOCKS; i++) {
     if(info_blocks[i].cmd == NULL) {
-      info_countdown[i] = -1;
+      info_states[i].countdown = -1;
     }
   }
   while(true) {
     updated = false;
     for(size_t i=0; i<MAX_INFO_BLOCKS; i++) {
-      if(info_countdown[i] == 0) {
-        info_status[i] = shout(info_blocks[i].cmd, info_text[i], 64);
-        info_countdown[i] = info_blocks[i].timer*10;
+      if(info_states[i].update) {
+        shout(info_blocks[i].cmd, info_states[i].text, MAX_INFO_TEXT_LENGTH);
+        info_states[i].status = 1;
+        info_states[i].update = false;
         updated = true;
-      } else if(info_countdown[i] > 0) {
-        info_countdown[i]--;
+      } else if(info_states[i].countdown == 0) {
+        info_states[i].status = shout(info_blocks[i].cmd, info_states[i].text,
+                                      MAX_INFO_TEXT_LENGTH);
+        info_states[i].countdown = info_blocks[i].timer*CLOCK_STEPS_PER_SECOND;
+        updated = true;
+      } else if(info_states[i].countdown > 0) {
+        info_states[i].countdown--;
       }
     }
     if(updated) {
@@ -653,6 +676,7 @@ void show_launcher(void) {
   last_search = NULL;
   launcher_prompt_size_i = 0;
   proper_search_size_i = 0;
+
   for(size_t i=0; i<view.monitor_count; i++) {
     xcb_map_window(conn, view.bars[i].launcher.id);
   }

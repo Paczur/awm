@@ -66,8 +66,26 @@ void destroy(void) { destroy_n(view.workspaces[view.focus].focus); }
 void minimize(void) { minimize_n(view.workspaces[view.focus].focus); }
 void librewolf(void) { sh("lb"); }
 void launch(void) { show_launcher(); }
-void brightness_down(void) { sh("xbacklight -dec 2"); update_info_n(0); }
-void brightness_up(void) { sh("xbacklight -inc 2"); update_info_n(0); }
+void volume_mute(void) {
+  sh("volume m");
+  update_info_n_highlight(1, 1);
+}
+void volume_up(void) {
+  sh("volume +");
+  update_info_n_highlight(1, 1);
+}
+void volume_down(void) {
+  sh("volume -");
+  update_info_n_highlight(1, 1);
+}
+void brightness_down(void) {
+  sh("xbacklight -dec 2");
+  update_info_n_highlight(3, 1);
+}
+void brightness_up(void) {
+  sh("xbacklight -inc 2");
+  update_info_n_highlight(3, 1);
+}
 
 typedef struct shortcut_t {
   MODIFIER modifier;

@@ -61,5 +61,6 @@ void launcher_keypress(const xcb_key_press_event_t*);
 void launcher_init(void);
 void launcher_deinit(void);
 void update_info_n(int);
+void update_info_n_highlight(int, int);
 
 #endif
