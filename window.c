@@ -591,7 +591,7 @@ void window_init(void) {
   bool found;
   xcb_window_t *children;
 
-  for(size_t i=0; i<10; i++)
+  for(size_t i=0; i<MAX_WORKSPACES; i++)
     view.workspaces[i].update = calloc(view.monitor_count, sizeof(bool));
 
   prevstate = calloc(view.monitor_count*16, sizeof(uint32_t));

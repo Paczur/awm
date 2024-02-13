@@ -5,6 +5,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include "system_config.h"
 
 typedef unsigned char uchar;
 
@@ -25,7 +26,7 @@ typedef struct search_node_t {
   uchar wrong;
 } search_node_t;
 
-extern char radix_hints[10][256];
+extern char radix_hints[MAX_LAUNCHER_HINTS][MAX_WORD_LENGTH];
 
 void radix_populate(radix_node_t**);
 void radix_gen_hints(const radix_node_t*, char*, size_t);

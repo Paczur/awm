@@ -10,8 +10,8 @@
 
 #define LENGTH(x) (sizeof(x)/sizeof((x)[0]))
 
-uchar lengths[10];
-char radix_hints[10][256];
+uchar lengths[MAX_LAUNCHER_HINTS];
+char radix_hints[MAX_LAUNCHER_HINTS][MAX_WORD_LENGTH];
 
 void radix_add(radix_node_t **tree, const char *word, size_t length) {
   radix_node_t *curr;
@@ -393,7 +393,7 @@ void radix_10_shortest_sr(const search_node_t *node, char *buff, size_t length) 
 void radix_gen_hints_sr(const search_node_t *node, char* buff, size_t length) {
   memset(lengths, UCHAR_MAX, sizeof(lengths));
   radix_10_shortest_sr(node, buff, length);
-  for(size_t i=0; i<10; i++) {
+  for(size_t i=0; i<MAX_LAUNCHER_HINTS; i++) {
     if(lengths[i] == UCHAR_MAX) {
       lengths[i] = 0;
     }
@@ -404,19 +404,19 @@ void radix_gen_hints_sr(const search_node_t *node, char* buff, size_t length) {
 void radix_gen_hints(const radix_node_t *node, char* buff, size_t length) {
   memset(lengths, UCHAR_MAX, sizeof(lengths));
   radix_10_shortest(node, buff, length);
-  for(size_t i=0; i<10; i++) {
+  for(size_t i=0; i<MAX_LAUNCHER_HINTS; i++) {
     if(lengths[i] == UCHAR_MAX) {
       lengths[i] = 0;
     }
     radix_hints[i][lengths[i]] = 0;
   }
-  for(size_t i=0; i<10; i++) {
+  for(size_t i=0; i<MAX_LAUNCHER_HINTS; i++) {
     printf("%s\n", radix_hints[i]);
   }
 }
 
 void radix_populate(radix_node_t **tree) {
-  char string[256];
+  char string[MAX_WORD_LENGTH];
   DIR *stream;
   struct dirent *ent;
   struct stat buf = {0};

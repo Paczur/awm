@@ -5,6 +5,7 @@
 #include <xcb/xcb.h>
 #include "window.h"
 #include "bar.h"
+#include "system_config.h"
 
 #define XK_LATIN1 //letters
 #define XK_MISCELLANY //modifiers and special
@@ -46,7 +47,7 @@ typedef struct internal_shortcut_t {
 typedef struct view_t {
   size_t *spawn_order;
   size_t spawn_order_len;
-  workspace_t workspaces[10];
+  workspace_t workspaces[MAX_WORKSPACES];
   size_t focus;
   monitor_t *monitors;
   size_t monitor_count;

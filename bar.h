@@ -1,11 +1,10 @@
 #ifndef H_BAR
 #define H_BAR
 
-#define MAX_INFO_BLOCKS 10
-
 #include <cairo/cairo.h>
 #include <pango/pango.h>
 #include <xcb/xcb.h>
+#include "system_config.h"
 
 typedef struct bar_component_t {
   xcb_window_t id;
@@ -17,15 +16,15 @@ typedef struct bar_component_t {
 typedef struct launcher_t {
   xcb_window_t id;
   struct bar_component_t prompt;
-  struct bar_component_t hints[10];
+  struct bar_component_t hints[MAX_LAUNCHER_HINTS];
 } launcher_t;
 
 typedef struct bar_t {
   xcb_window_t id;
   launcher_t launcher;
   bar_component_t mode;
-  bar_component_t workspaces[10];
-  bar_component_t minimized[10];
+  bar_component_t workspaces[MAX_WORKSPACES];
+  bar_component_t minimized[MAX_VISIBLE_MINIMIZED];
   bar_component_t info[MAX_INFO_BLOCKS];
 } bar_t;
 
