@@ -25,6 +25,11 @@ init_query_t *init_queries(void) {
   return q;
 }
 
+void deinit_queries(init_query_t* q) {
+  free(q->randr_reply);
+  free(q->kmap_reply);
+}
+
 void setup_keys(const xcb_get_keyboard_mapping_reply_t *kmap) {
   keys = malloc(KEY_LENGTH * sizeof(xcb_keycode_t));
   keys[KEY_ESC] = keysym_to_keycode(XK_Escape, kmap);
@@ -227,6 +232,7 @@ int main(int argc, char *argv[], char *envp[]) {
   q->kmap_reply = xcb_get_keyboard_mapping_reply(conn, q->kmap_cookie, NULL);
   config_parse(q->kmap_reply);
   setup_keys(q->kmap_reply);
+  deinit_queries(q);
   free(q);
 
   bar_init();

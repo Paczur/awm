@@ -31,7 +31,8 @@
 #define TIMES10(x) x(0) x(1) x(2) x(3) x(4) x(5) x(6) x(7) x(8) x(9)
 TIMES10(window_n)
 
-  void shutdown_wm(void) { restart = true; }
+
+  void shutdown(void) { restart = true; }
 void focus_window_down(void) { focus_window_n(window_below()); }
 void focus_window_up(void) { focus_window_n(window_above()); }
 void focus_window_left(void) { focus_window_n(window_to_left()); }
@@ -86,8 +87,8 @@ void brightness_up(void) {
   sh("xbacklight -inc 2");
   update_info_n_highlight(3, 1);
 }
-void suspend(void) { sh("sudo suspend"); }
-void shutdown(void) { sh("notify-send 'Shutting down'; sudo shutdown"); }
+void suspend_system(void) { sh("sudo suspend"); }
+void shutdown_system(void) { sh("notify-send 'Shutting down'; sudo shutdown"); }
 
 typedef struct shortcut_t {
   MODIFIER modifier;

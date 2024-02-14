@@ -174,6 +174,8 @@ void component_geom(const bar_component_t *component,
   pango_layout_get_extents(component->pango, &t, &t2);
   pango_extents_to_pixels(&t, NULL);
   pango_extents_to_pixels(&t2, NULL);
+  if(t.x<0) t.x = 0;
+  if(t2.y<0) t2.y = 0;
   if((uint)t2.height < view.bar_settings.height) {
     geom->text_y = view.bar_settings.height - t2.height;
     geom->text_y /= 2;
