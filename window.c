@@ -147,6 +147,25 @@ void update_layout(size_t m) {
   DEBUG {
     print_grid();
   }
+  if(workspace->grid[0].window == NULL) {
+    for(size_t i=0; i<2; i++) {
+      workspace->cross[m*2+i] = 0;
+    }
+    memcpy(prevstate+m*16, newstate, sizeof(newstate));
+    return;
+  }
+  if(workspace->grid[COMB(0, 0)].window ==
+     workspace->grid[COMB(0, 1)].window &&
+     workspace->grid[COMB(1, 0)].window ==
+     workspace->grid[COMB(1, 1)].window) {
+    workspace->cross[m*2+1] = 0;
+  }
+  if(workspace->grid[COMB(0, 0)].window ==
+     workspace->grid[COMB(1, 0)].window &&
+     workspace->grid[COMB(0, 1)].window ==
+     workspace->grid[COMB(1, 1)].window) {
+    workspace->cross[m*2+0] = 0;
+  }
   for(size_t i=0; i<4; i++) {
     if(workspace->grid[m*4+i].origin == m*4+i &&
        workspace->grid[m*4+i].window != NULL &&
