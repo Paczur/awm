@@ -87,63 +87,67 @@ void brightness_up(void) {
   sh("xbacklight -inc 2");
   update_info_n_highlight(3, 1);
 }
-void suspend_system(void) { sh("sudo suspend"); }
-void shutdown_system(void) { sh("notify-send 'Shutting down'; sudo shutdown"); }
+void system_suspend(void) { sh("sudo suspend"); }
+void system_shutdown(void) { sh("notify-send 'Shutting down'; sudo shutdown"); }
+void launcher_abort(void) { hide_launcher(); }
+void launcher_confirm(void) { confirm_launcher(); }
+void launcher_hint_left(void) { hint_direction(-1); }
+void launcher_hint_right(void) { hint_direction(1); }
+void launcher_erase(void) { prompt_erase(); }
 
-typedef struct shortcut_t {
+typedef struct config_shortcut_t {
   MODIFIER modifier;
   xcb_keysym_t keysym;
   void (*function) (void);
-} shortcut_t;
+} config_shortcut_t;
 
 void normal_mode(void) {
-  internal_shortcut_t *sh;
   mode = MODE_NORMAL;
   xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, XCB_MOD_MASK_ANY);
   xcb_grab_key(conn, 1, screen->root, XCB_MOD_MASK_ANY, XCB_GRAB_ANY,
                XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
-  // for(size_t i=0; i<shortcut_lookup_l; i++) {
-  //   sh = shortcut_lookup[i];
-  //   while(sh != NULL) {
-  //     xcb_grab_key(conn, 1, screen->root, sh->mod_mask, i+shortcut_lookup_offset,
-  //                  XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
-  //     sh = sh->next;
-  //   }
-  // }
   redraw_mode();
 }
 
 void insert_mode(void) {
+  shortcut_t *sh;
   mode = MODE_INSERT;
   xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, XCB_MOD_MASK_ANY);
-  xcb_grab_key(conn, 1, screen->root, 0, normal_code,
-               XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+  for(size_t i=0; i<shortcuts.insert_mode.length; i++) {
+    sh = shortcuts.insert_mode.values[i];
+    while(sh != NULL) {
+      xcb_grab_key(conn, 1, screen->root, sh->mod_mask,
+                   i+shortcuts.insert_mode.offset,
+                   XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+      sh = sh->next;
+    }
+  }
   redraw_mode();
 }
 
-void convert_shortcuts(const xcb_get_keyboard_mapping_reply_t *kmapping) {
+void convert_shortcuts(const xcb_get_keyboard_mapping_reply_t *kmapping,
+                       shortcut_map_t *map,
+                       config_shortcut_t *shortcuts,
+                       size_t len) {
   int start = 0;
   xcb_keycode_t index;
-  internal_shortcut_t *sh;
-  shortcut_t shortcuts[] = CONFIG_SHORTCUTS;
+  shortcut_t *sh;
 
-  normal_code = keysym_to_keycode(CONFIG_NORMAL_SHORTCUT, kmapping);
-
-  shortcut_lookup_l = setup->max_keycode-setup->min_keycode;
-  shortcut_lookup_offset = setup->min_keycode;
-  shortcut_lookup = calloc(shortcut_lookup_l, sizeof(internal_shortcut_t*));
+  map->length = setup->max_keycode-setup->min_keycode;
+  map->offset = setup->min_keycode;
+  map->values = calloc(map->length, sizeof(shortcut_t*));
 
   // get keycodes from keysyms
-  for(size_t i=0; i<LENGTH(shortcuts); i++) {
+  for(size_t i=0; i<len; i++) {
     index = keysym_to_keycode(shortcuts[i].keysym, kmapping) -
-      shortcut_lookup_offset;
-    if(shortcut_lookup[index] == NULL) {
-      shortcut_lookup[index] = malloc(sizeof(internal_shortcut_t));
-      sh = shortcut_lookup[index];
+      map->offset;
+    if(map->values[index] == NULL) {
+      map->values[index] = malloc(sizeof(shortcut_t));
+      sh = map->values[index];
     } else {
-      sh = shortcut_lookup[index];
+      sh = map->values[index];
       while(sh->next != NULL) sh = sh->next;
-      sh->next = malloc(sizeof(internal_shortcut_t));
+      sh->next = malloc(sizeof(shortcut_t));
       sh = sh->next;
     }
     sh->function = shortcuts[i].function;
@@ -155,7 +159,7 @@ void convert_shortcuts(const xcb_get_keyboard_mapping_reply_t *kmapping) {
     case MOD_SHIFT:
       sh->mod_mask = XCB_MOD_MASK_SHIFT;
     break;
-    case MOD_ALT:
+    case MOD_ALT: //Dynamically check numbers
       sh->mod_mask = XCB_MOD_MASK_1;
     break;
     case MOD_SUPER:
@@ -167,29 +171,29 @@ void convert_shortcuts(const xcb_get_keyboard_mapping_reply_t *kmapping) {
     }
   }
 
-  if(shortcut_lookup[0] == NULL) {
+  if(map->values[0] == NULL) {
     // find first used keycode
-    for(size_t i=1;i<shortcut_lookup_l;i++) {
-      if(shortcut_lookup[i] != NULL) {
-        shortcut_lookup_offset += i;
+    for(size_t i=1;i<map->length;i++) {
+      if(map->values[i] != NULL) {
+        map->offset += i;
         start = i;
         break;
       }
     }
     // find last keycode
-    for(int i=shortcut_lookup_l-1; i>=0; i--) {
-      if(shortcut_lookup[i] != NULL) {
-        shortcut_lookup_l = i+1;
+    for(int i=map->length-1; i>=0; i--) {
+      if(map->values[i] != NULL) {
+        map->length = i+1;
         break;
       }
     }
-    shortcut_lookup_l -= start;
+    map->length -= start;
     // move keycodes to start
-    memmove(shortcut_lookup, shortcut_lookup+start,
-            shortcut_lookup_l*sizeof(void(*)(void)));
+    memmove(map->values, map->values+start,
+            map->length*sizeof(void(*)(void)));
     // shrink array
-    shortcut_lookup = realloc(shortcut_lookup,
-                              shortcut_lookup_l*sizeof(void(*)(void)));
+    map->values = realloc(map->values,
+                          map->length*sizeof(void(*)(void)));
   }
 }
 
@@ -243,7 +247,16 @@ void parse_colors(void) {
 }
 
 void config_parse(const xcb_get_keyboard_mapping_reply_t *kmapping) {
-  convert_shortcuts(kmapping);
+  config_shortcut_t insert_shortcuts[] = CONFIG_SHORTCUTS_INSERT_MODE;
+  config_shortcut_t normal_shortcuts[] = CONFIG_SHORTCUTS_NORMAL_MODE;
+  config_shortcut_t launcher_shortcuts[] = CONFIG_SHORTCUTS_LAUNCHER;
+  convert_shortcuts(kmapping, &shortcuts.insert_mode,
+                    insert_shortcuts, LENGTH(insert_shortcuts));
+  convert_shortcuts(kmapping, &shortcuts.normal_mode,
+                    normal_shortcuts, LENGTH(normal_shortcuts));
+  convert_shortcuts(kmapping, &shortcuts.launcher,
+                    launcher_shortcuts, LENGTH(launcher_shortcuts));
+
   view.spawn_order = malloc(sizeof((size_t[])CONFIG_SPAWN_ORDER));
   view.spawn_order_len = LENGTH((size_t[])CONFIG_SPAWN_ORDER);
   memcpy(view.spawn_order, (size_t[])CONFIG_SPAWN_ORDER,

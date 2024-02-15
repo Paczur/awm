@@ -15,8 +15,7 @@
 {mod, XK_k, f ## _up},   \
 {mod, XK_l, f ## _right}
 
-#define CONFIG_NORMAL_SHORTCUT XK_Super_L
-#define CONFIG_SHORTCUTS { \
+#define CONFIG_SHORTCUTS_NORMAL_MODE { \
   CONFIG_NUMBER_PATTERN(MOD_NONE,     focus_window), \
   CONFIG_NUMBER_PATTERN(MOD_SHIFT,    swap_window),  \
   CONFIG_NUMBER_PATTERN(MOD_ALT,      workspace),    \
@@ -31,8 +30,8 @@
   {MOD_NONE,  XF86XK_AudioMute,         volume_mute},     \
   {MOD_NONE,  XF86XK_AudioLowerVolume,  volume_down},     \
   {MOD_NONE,  XF86XK_AudioRaiseVolume,  volume_up},       \
-  {MOD_SHIFT, XK_s,                     suspend_system},  \
-  {MOD_ALT,   XK_s,                     shutdown_system}, \
+  {MOD_SHIFT, XK_s,                     system_suspend},  \
+  {MOD_ALT,   XK_s,                     system_shutdown}, \
   {MOD_NONE,  XK_F4,                    volume_mute},     \
   {MOD_NONE,  XK_F5,                    volume_down},     \
   {MOD_NONE,  XK_F6,                    volume_up},       \
@@ -45,6 +44,18 @@
   {MOD_NONE,  XK_Return,                terminal},        \
   {MOD_NONE,  XK_f,                     librewolf},       \
   {MOD_NONE,  XK_r,                     launch}           \
+}
+#define CONFIG_SHORTCUTS_INSERT_MODE { \
+  {MOD_NONE, XK_Super_L, normal_mode}, \
+}
+
+#define CONFIG_SHORTCUTS_LAUNCHER { \
+  {MOD_NONE, XK_Super_L, launcher_abort}, \
+  {MOD_NONE, XK_Escape, launcher_abort}, \
+  {MOD_NONE, XK_Return, launcher_confirm}, \
+  {MOD_NONE, XK_Left, launcher_hint_left}, \
+  {MOD_NONE, XK_Right, launcher_hint_right}, \
+  {MOD_NONE, XK_BackSpace, launcher_erase}, \
 }
 
 #define CONFIG_TERMINAL_CMD "mlterm"

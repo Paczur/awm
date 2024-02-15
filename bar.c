@@ -34,6 +34,7 @@ uchar *proper_search;
 size_t proper_i;
 uchar *proper_search_size;
 size_t proper_search_size_i;
+size_t last_focus;
 
 search_node_t *last_search;
 size_t hint_no = MAX_LAUNCHER_HINTS;
@@ -310,8 +311,8 @@ void redraw_minimized(void) {
       populate_name(node->window);
     set_text(node->window->name, view.bars[0].minimized+len);
     component_geom( view.bars[0].minimized+len,
-                   CONFIG_BAR_MINIMIZED_MIN_WIDTH,
-                   geom+len);
+                    CONFIG_BAR_MINIMIZED_MIN_WIDTH,
+                    geom+len);
     width += geom[len].width;
     node = node->next;
     len++;
@@ -585,7 +586,7 @@ void redraw_hints(void) {
     width += geom[i].width + CONFIG_BAR_COMPONENT_SEPARATOR;
     hint_no++;
   }
-  skip_hints:
+skip_hints:
 
   for(size_t i=0; i<hint_no; i++) {
     if(!prev_hints[i]) {
@@ -647,6 +648,7 @@ void redraw_hints(void) {
 }
 
 void hide_launcher(void) {
+  workspace_t *workspace = view.workspaces+view.focus;
   for(size_t i=0; i<view.monitor_count; i++) {
     xcb_unmap_window(conn, view.bars[i].launcher.id);
   }
@@ -655,7 +657,11 @@ void hide_launcher(void) {
   free(launcher_prompt_size);
   free(proper_search_size);
   redraw_bars();
-  window_focus_random();
+  if(workspace->grid[last_focus].window != NULL) {
+    focus_window_n(last_focus);
+  } else {
+    window_focus_random();
+  }
   normal_mode();
 }
 
@@ -666,6 +672,7 @@ void redraw_launcher(void) {
 
 void show_launcher(void) {
   char buff[LAUNCHER_PROMPT_LENGTH];
+  workspace_t *workspace = view.workspaces+view.focus;
 
   launcher_prompt = malloc(LAUNCHER_PROMPT_LENGTH);
   proper_search = malloc(LAUNCHER_PROMPT_LENGTH);
@@ -676,6 +683,7 @@ void show_launcher(void) {
   proper_i = 0;
   selected = 0;
   last_search = NULL;
+  last_focus = workspace->focus;
   launcher_prompt_size_i = 0;
   proper_search_size_i = 0;
 
@@ -695,90 +703,94 @@ void show_launcher(void) {
                       view.bars[0].launcher.prompt.id, XCB_CURRENT_TIME);
 }
 
-void launcher_keypress(const xcb_key_press_event_t *event) {
-  search_node_t *search;
+void confirm_launcher(void) {
+  hide_launcher();
+  insert_mode();
+  sh(radix_hints[selected]);
+}
+
+void hint_direction(size_t n) {
+  selected = (selected+n+hint_no)%hint_no;
+  redraw_hints();
+}
+
+void prompt_erase(void) {
   char buff[LAUNCHER_PROMPT_LENGTH];
+  if(launcher_prompt_size_i-1 < launcher_prompt_size_i) {
+    prompt_i -= launcher_prompt_size[--launcher_prompt_size_i];
+    proper_i -= proper_search_size[--proper_search_size_i];
+    launcher_prompt[prompt_i] = 0;
+    proper_search[proper_i] = 0;
+    if(last_search != NULL) {
+      free(last_search);
+    }
+    if(proper_i > 0) {
+      selected = 0;
+      memcpy(buff, proper_search, proper_i);
+      last_search = radix_search(tree, buff, proper_i);
+      radix_gen_hints_sr(last_search, buff, proper_i);
+    } else {
+      last_search = NULL;
+      radix_gen_hints(tree, buff, 0);
+    }
+    redraw_launcher();
+  }
+}
+
+void launcher_keypress(const xcb_key_press_event_t *event) {
+  char buff[LAUNCHER_PROMPT_LENGTH];
+  search_node_t *search;
   size_t len;
+  bool found;
   xcb_keycode_t keycode;
   XKeyEvent keyev;
   keycode = event->detail;
-  if(keycode == normal_code || keycode == keys[KEY_ESC]) {
-    hide_launcher();
-  } else if(keycode == keys[KEY_RETURN]) {
-    hide_launcher();
-    insert_mode();
-    sh(radix_hints[selected]);
-  } else if(keycode == keys[KEY_LEFT]) {
-    selected = (selected-1+hint_no)%hint_no;
-    redraw_hints();
-  } else if(keycode == keys[KEY_RIGHT]) {
-    selected = (selected+1)%hint_no;
-    redraw_hints();
-  } else if(keycode == keys[KEY_BACKSPACE]) {
-    if(launcher_prompt_size_i-1 < launcher_prompt_size_i) {
-      prompt_i -= launcher_prompt_size[--launcher_prompt_size_i];
-      proper_i -= proper_search_size[--proper_search_size_i];
-      launcher_prompt[prompt_i] = 0;
-      proper_search[proper_i] = 0;
-      if(last_search != NULL) {
-        free(last_search);
-      }
-      if(proper_i > 0) {
-        selected = 0;
-        memcpy(buff, proper_search, proper_i);
-        last_search = radix_search(tree, buff, proper_i);
-        radix_gen_hints_sr(last_search, buff, proper_i);
-      } else {
-        last_search = NULL;
-        radix_gen_hints(tree, buff, 0);
-      }
-      redraw_launcher();
-    }
-  } else if(prompt_i < LAUNCHER_PROMPT_LENGTH-1) {
-    keyev = (XKeyEvent) {
-      .type = KeyPress,
+  found = handle_shortcut(&shortcuts.launcher, keycode, event->state);
+  if(found) return;
+  if(prompt_i >= LAUNCHER_PROMPT_LENGTH-1) return;
+  keyev = (XKeyEvent) {
+    .type = KeyPress,
       .display = dpy,
       .keycode = keycode,
       .state = event->state
-    };
-    len = Xutf8LookupString(xic, &keyev, buff, sizeof(buff), NULL, NULL);
-    if(len > 0) {
-      selected = 0;
-      launcher_prompt_size[launcher_prompt_size_i++] = len;
-      if(prompt_i + len > LAUNCHER_PROMPT_LENGTH) {
-        memcpy(launcher_prompt+prompt_i, buff, LAUNCHER_PROMPT_LENGTH-prompt_i);
-      } else {
-        memcpy(launcher_prompt+prompt_i, buff, len);
-      }
-      prompt_i += len;
-      if(prompt_i < LAUNCHER_PROMPT_LENGTH) {
-        launcher_prompt[prompt_i] = 0;
-      }
-
-      if(last_search != NULL) {
-        search = radix_search_sr(last_search, buff, len);
-      } else {
-        search = radix_search(tree, buff, len);
-      }
-
-      if(search != NULL) {
-        if(last_search != search)
-          free(last_search);
-        last_search = search;
-        memcpy(proper_search+proper_i, buff, len-last_search->wrong);
-        proper_i += len-last_search->wrong;
-        proper_search_size[proper_search_size_i++] = len-last_search->wrong;
-        memcpy(buff, proper_search, proper_i);
-        proper_search[proper_i] = 0;
-        last_search->wrong = 0;
-        DEBUG {
-          printf("PROPER: %.*s %lu\n", (int)proper_i, proper_search, proper_i);
-        }
-        radix_gen_hints_sr(last_search, buff, proper_i);
-      } else {
-        proper_search_size[proper_search_size_i++] = 0;
-      }
-      redraw_launcher();
+  };
+  len = Xutf8LookupString(xic, &keyev, buff, sizeof(buff), NULL, NULL);
+  if(len > 0) {
+    selected = 0;
+    launcher_prompt_size[launcher_prompt_size_i++] = len;
+    if(prompt_i + len > LAUNCHER_PROMPT_LENGTH) {
+      memcpy(launcher_prompt+prompt_i, buff, LAUNCHER_PROMPT_LENGTH-prompt_i);
+    } else {
+      memcpy(launcher_prompt+prompt_i, buff, len);
     }
+    prompt_i += len;
+    if(prompt_i < LAUNCHER_PROMPT_LENGTH) {
+      launcher_prompt[prompt_i] = 0;
+    }
+
+    if(last_search != NULL) {
+      search = radix_search_sr(last_search, buff, len);
+    } else {
+      search = radix_search(tree, buff, len);
+    }
+
+    if(search != NULL) {
+      if(last_search != search)
+        free(last_search);
+      last_search = search;
+      memcpy(proper_search+proper_i, buff, len-last_search->wrong);
+      proper_i += len-last_search->wrong;
+      proper_search_size[proper_search_size_i++] = len-last_search->wrong;
+      memcpy(buff, proper_search, proper_i);
+      proper_search[proper_i] = 0;
+      last_search->wrong = 0;
+      DEBUG {
+        printf("PROPER: %.*s %lu\n", (int)proper_i, proper_search, proper_i);
+      }
+      radix_gen_hints_sr(last_search, buff, proper_i);
+    } else {
+      proper_search_size[proper_search_size_i++] = 0;
+    }
+    redraw_launcher();
   }
 }

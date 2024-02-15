@@ -56,11 +56,15 @@ void redraw_workspaces(void);
 void redraw_minimized(void);
 void redraw_mode(void);
 void redraw_bars(void);
+void hide_launcher(void);
 void show_launcher(void);
 void launcher_keypress(const xcb_key_press_event_t*);
 void launcher_init(void);
 void launcher_deinit(void);
 void update_info_n(int);
 void update_info_n_highlight(int, int);
+void confirm_launcher(void);
+void hint_direction(size_t);
+void prompt_erase(void);
 
 #endif

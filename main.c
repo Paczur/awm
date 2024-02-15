@@ -30,15 +30,6 @@ void deinit_queries(init_query_t* q) {
   free(q->kmap_reply);
 }
 
-void setup_keys(const xcb_get_keyboard_mapping_reply_t *kmap) {
-  keys = malloc(KEY_LENGTH * sizeof(xcb_keycode_t));
-  keys[KEY_ESC] = keysym_to_keycode(XK_Escape, kmap);
-  keys[KEY_RETURN] = keysym_to_keycode(XK_Return, kmap);
-  keys[KEY_BACKSPACE] = keysym_to_keycode(XK_BackSpace, kmap);
-  keys[KEY_LEFT] = keysym_to_keycode(XK_Left, kmap);
-  keys[KEY_RIGHT] = keysym_to_keycode(XK_Right, kmap);
-}
-
 void setup_monitors(init_query_t* q) {
   xcb_randr_crtc_t *firstCrtc;
   xcb_randr_get_crtc_info_cookie_t *randr_cookies;
@@ -126,30 +117,6 @@ void setup_wm(void) {
                                XCB_CW_EVENT_MASK, &values);
 }
 
-void handle_shortcut(const xcb_key_press_event_t *event) {
-  xcb_keycode_t keycode;
-  internal_shortcut_t *sh;
-  size_t lookup;
-  keycode = event->detail;
-  if(mode == MODE_INSERT &&
-     keycode == normal_code) {
-    normal_mode();
-  } else if(mode == MODE_NORMAL) {
-    lookup = keycode-shortcut_lookup_offset;
-    if(lookup >= shortcut_lookup_l)
-      return;
-    sh = shortcut_lookup[lookup];
-    while(sh != NULL) {
-      if(event->state == sh->mod_mask) {
-        sh->function();
-        break;
-      } else {
-        sh = sh->next;
-      }
-    }
-  }
-}
-
 void event_loop(void) {
   xcb_generic_event_t* event;
   xcb_key_press_event_t *press;
@@ -166,7 +133,11 @@ void event_loop(void) {
           goto launcher_press;
         }
       }
-      handle_shortcut(press);
+      if(mode == MODE_INSERT) {
+        handle_shortcut(&shortcuts.insert_mode, press->detail, press->state);
+      } else {
+        handle_shortcut(&shortcuts.normal_mode, press->detail, press->state);
+      }
       launcher_press:
     break;
 
@@ -231,7 +202,6 @@ int main(int argc, char *argv[], char *envp[]) {
 
   q->kmap_reply = xcb_get_keyboard_mapping_reply(conn, q->kmap_cookie, NULL);
   config_parse(q->kmap_reply);
-  setup_keys(q->kmap_reply);
   deinit_queries(q);
   free(q);
 
@@ -253,18 +223,9 @@ int main(int argc, char *argv[], char *envp[]) {
   conn = NULL;
   setup = NULL;
 
-  internal_shortcut_t *sh;
-  internal_shortcut_t *t;
-  for(size_t i=0; i<shortcut_lookup_l; i++) {
-    sh = shortcut_lookup[i];
-    while(sh != NULL) {
-      t = sh;
-      sh = sh->next;
-      free(t);
-    }
-  }
-  free(keys);
-  free(shortcut_lookup);
+  free_shortcut(&shortcuts.insert_mode);
+  free_shortcut(&shortcuts.normal_mode);
+  free_shortcut(&shortcuts.launcher);
   free(view.monitors);
   free(view.spawn_order);
   return 0;
