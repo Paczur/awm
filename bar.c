@@ -436,7 +436,8 @@ void redraw_info(void) {
     x[MAX_INFO_BLOCKS-1] = view.monitors[i].w;
     for(size_t j=MAX_INFO_BLOCKS-1; j>0; j--) {
       x[j-1] = redraw_right_align(info_states[j].text, view.bars[i].info+j,
-                                  (info_states[j].status==1) ?
+                                  (info_states[j].status == 1 ||
+                                   info_states[j].status == 33) ?
                                   &view.bar_settings.info_highlighted :
                                   &view.bar_settings.info,
                                   x[j], CONFIG_BAR_INFO_MIN_WIDTH,
