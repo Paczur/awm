@@ -1,29 +1,32 @@
 #include "config.h"
-#include "window.h"
+#include "layout/workspace.h"
+#include "layout/grid.h"
+#include "layout/layout.h"
 #include "global.h"
 #include "user_config.h"
 #include "bar.h"
 #include <stdlib.h> //calloc
 #include <string.h> //memmove
 #include <stdio.h> //printf
+#include "shortcut.h"
 
 #define X(pos) ((pos)%2)
 #define Y(pos) ((pos)%4/2)
 #define COMB(x, y) ((x)+(y)*2)
 
 #define window_n(n) \
-  void focus_window_ ## n (void) { \
-    focus_window_n(n); \
+  void grid_focus_ ## n (void) { \
+    grid_focus(n); \
   } \
-  void swap_window_ ## n (void) { \
-    swap_windows(n, view.workspaces[view.focus].focus); \
+  void grid_swap_ ## n (void) { \
+    grid_swap(n, grid_focused()); \
   } \
   void workspace_ ## n (void) { \
-    workspace_n(n); \
+    workspace_switch(n); \
     redraw_workspaces(); \
   } \
   void show_ ## n (void) { \
-    show_n(n); \
+    layout_show(n); \
     redraw_minimized(); \
   }
 
@@ -33,38 +36,38 @@ TIMES10(window_n)
 
 
   void shutdown(void) { restart = true; }
-void focus_window_down(void) { focus_window_n(window_below()); }
-void focus_window_up(void) { focus_window_n(window_above()); }
-void focus_window_left(void) { focus_window_n(window_to_left()); }
-void focus_window_right(void) { focus_window_n(window_to_right()); }
+  void focus_window_down(void) { grid_focus(grid_below()); }
+  void focus_window_up(void) { grid_focus(grid_above()); }
+  void focus_window_left(void) { grid_focus(grid_to_left()); }
+  void focus_window_right(void) { grid_focus(grid_to_right()); }
 void swap_window_down(void) {
-  swap_windows(view.workspaces[view.focus].focus, window_below());
+  grid_swap(grid_focused(), grid_below());
 }
 void swap_window_up(void) {
-  swap_windows(view.workspaces[view.focus].focus, window_above());
+  grid_swap(grid_focused(), grid_above());
 }
 void swap_window_left(void) {
-  swap_windows(view.workspaces[view.focus].focus, window_to_left());
+  grid_swap(grid_focused(), grid_to_left());
 }
 void swap_window_right(void) {
-  swap_windows(view.workspaces[view.focus].focus, window_to_right());
+  grid_swap(grid_focused(), grid_to_right());
 }
 void enlarge_right(void) {
-  resize_w(view.workspaces[view.focus].focus/4, CONFIG_RESIZE_STEP);
+  grid_resize_w(grid_pos2mon(grid_focused()), CONFIG_RESIZE_STEP);
 }
 void enlarge_down(void) {
-  resize_h(view.workspaces[view.focus].focus/4, CONFIG_RESIZE_STEP);
+  grid_resize_h(grid_pos2mon(grid_focused()), CONFIG_RESIZE_STEP);
 }
 void enlarge_left(void) {
-  resize_w(view.workspaces[view.focus].focus/4, -CONFIG_RESIZE_STEP);
+  grid_resize_w(grid_pos2mon(grid_focused()), -CONFIG_RESIZE_STEP);
 }
 void enlarge_up(void) {
-  resize_h(view.workspaces[view.focus].focus/4, -CONFIG_RESIZE_STEP);
+  grid_resize_h(grid_pos2mon(grid_focused()), -CONFIG_RESIZE_STEP);
 }
-void equal_sizes(void) { reset_cross(view.workspaces[view.focus].focus/4); }
+void equal_sizes(void) { grid_reset_cross(grid_pos2mon(grid_focused())); }
 void terminal(void) { sh(CONFIG_TERMINAL_CMD); }
-void destroy(void) { destroy_n(view.workspaces[view.focus].focus); }
-void minimize(void) { minimize_n(view.workspaces[view.focus].focus); }
+void destroy(void) { layout_destroy(); }
+void minimize(void) { layout_minimize(); redraw_minimized(); }
 void librewolf(void) { sh("lb"); }
 void launch(void) { show_launcher(); }
 void volume_mute(void) {
@@ -113,11 +116,12 @@ void insert_mode(void) {
   shortcut_t *sh;
   mode = MODE_INSERT;
   xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, XCB_MOD_MASK_ANY);
-  for(size_t i=0; i<shortcuts.insert_mode.length; i++) {
-    sh = shortcuts.insert_mode.values[i];
+  for(size_t i=0; i<shortcuts.length; i++) {
+    if(shortcuts.values[i] == NULL) continue;
+    sh = shortcuts.values[i]->by_type[SH_TYPE_INSERT_MODE];
     while(sh != NULL) {
       xcb_grab_key(conn, 1, screen->root, sh->mod_mask,
-                   i+shortcuts.insert_mode.offset,
+                   i+shortcuts.offset,
                    XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
       sh = sh->next;
     }
@@ -126,75 +130,37 @@ void insert_mode(void) {
 }
 
 void convert_shortcuts(const xcb_get_keyboard_mapping_reply_t *kmapping,
-                       shortcut_map_t *map,
-                       config_shortcut_t *shortcuts,
+                       SHORTCUT_TYPE type,
+                       config_shortcut_t *conf_shortcuts,
                        size_t len) {
-  int start = 0;
-  xcb_keycode_t index;
-  shortcut_t *sh;
+  xcb_mod_mask_t mod_mask;
 
-  map->length = setup->max_keycode-setup->min_keycode;
-  map->offset = setup->min_keycode;
-  map->values = calloc(map->length, sizeof(shortcut_t*));
-
-  // get keycodes from keysyms
   for(size_t i=0; i<len; i++) {
-    index = keysym_to_keycode(shortcuts[i].keysym, kmapping) -
-      map->offset;
-    if(map->values[index] == NULL) {
-      map->values[index] = malloc(sizeof(shortcut_t));
-      sh = map->values[index];
-    } else {
-      sh = map->values[index];
-      while(sh->next != NULL) sh = sh->next;
-      sh->next = malloc(sizeof(shortcut_t));
-      sh = sh->next;
-    }
-    sh->function = shortcuts[i].function;
-    sh->next = NULL;
-    switch(shortcuts[i].modifier) {
+    mod_mask=-1;
+    switch(conf_shortcuts[i].modifier) {
     case MOD_NONE:
-      sh->mod_mask = 0;
+      mod_mask = 0;
     break;
     case MOD_SHIFT:
-      sh->mod_mask = XCB_MOD_MASK_SHIFT;
+      mod_mask = XCB_MOD_MASK_SHIFT;
     break;
-    case MOD_ALT: //Dynamically check numbers
-      sh->mod_mask = XCB_MOD_MASK_1;
+    case MOD_ALT:
+      mod_mask = XCB_MOD_MASK_1;
     break;
     case MOD_SUPER:
-      sh->mod_mask = XCB_MOD_MASK_4;
+      mod_mask = XCB_MOD_MASK_4;
     break;
     case MOD_CTRL:
-      sh->mod_mask = XCB_MOD_MASK_CONTROL;
+      mod_mask = XCB_MOD_MASK_CONTROL;
     break;
+    }
+    if(mod_mask != (xcb_mod_mask_t)-1) {
+      shortcut_new(kmapping, setup->min_keycode, setup->max_keycode,
+                   type, conf_shortcuts[i].keysym, mod_mask,
+                   conf_shortcuts[i].function);
     }
   }
 
-  if(map->values[0] == NULL) {
-    // find first used keycode
-    for(size_t i=1;i<map->length;i++) {
-      if(map->values[i] != NULL) {
-        map->offset += i;
-        start = i;
-        break;
-      }
-    }
-    // find last keycode
-    for(int i=map->length-1; i>=0; i--) {
-      if(map->values[i] != NULL) {
-        map->length = i+1;
-        break;
-      }
-    }
-    map->length -= start;
-    // move keycodes to start
-    memmove(map->values, map->values+start,
-            map->length*sizeof(void(*)(void)));
-    // shrink array
-    map->values = realloc(map->values,
-                          map->length*sizeof(void(*)(void)));
-  }
 }
 
 uint32_t hex_to_uint(const char* str, size_t start, size_t end) {
@@ -250,17 +216,12 @@ void config_parse(const xcb_get_keyboard_mapping_reply_t *kmapping) {
   config_shortcut_t insert_shortcuts[] = CONFIG_SHORTCUTS_INSERT_MODE;
   config_shortcut_t normal_shortcuts[] = CONFIG_SHORTCUTS_NORMAL_MODE;
   config_shortcut_t launcher_shortcuts[] = CONFIG_SHORTCUTS_LAUNCHER;
-  convert_shortcuts(kmapping, &shortcuts.insert_mode,
+  convert_shortcuts(kmapping, SH_TYPE_INSERT_MODE,
                     insert_shortcuts, LENGTH(insert_shortcuts));
-  convert_shortcuts(kmapping, &shortcuts.normal_mode,
+  convert_shortcuts(kmapping, SH_TYPE_NORMAL_MODE,
                     normal_shortcuts, LENGTH(normal_shortcuts));
-  convert_shortcuts(kmapping, &shortcuts.launcher,
+  convert_shortcuts(kmapping, SH_TYPE_LAUNCHER,
                     launcher_shortcuts, LENGTH(launcher_shortcuts));
-
-  view.spawn_order = malloc(sizeof((size_t[])CONFIG_SPAWN_ORDER));
-  view.spawn_order_len = LENGTH((size_t[])CONFIG_SPAWN_ORDER);
-  memcpy(view.spawn_order, (size_t[])CONFIG_SPAWN_ORDER,
-         sizeof((size_t[])CONFIG_SPAWN_ORDER));
 
   view.bar_settings.height = CONFIG_BAR_HEIGHT;
   view.bar_settings.font = CONFIG_BAR_FONT;

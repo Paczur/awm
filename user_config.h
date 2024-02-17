@@ -16,8 +16,8 @@
 {mod, XK_l, f ## _right}
 
 #define CONFIG_SHORTCUTS_NORMAL_MODE { \
-  CONFIG_NUMBER_PATTERN(MOD_NONE,     focus_window), \
-  CONFIG_NUMBER_PATTERN(MOD_SHIFT,    swap_window),  \
+  CONFIG_NUMBER_PATTERN(MOD_NONE,     grid_focus), \
+  CONFIG_NUMBER_PATTERN(MOD_SHIFT,    grid_swap),  \
   CONFIG_NUMBER_PATTERN(MOD_ALT,      workspace),    \
   CONFIG_NUMBER_PATTERN(MOD_CTRL,     show),         \
   CONFIG_DIRECTION_PATTERN(MOD_NONE,  focus_window), \
@@ -62,7 +62,7 @@
 #define CONFIG_RESIZE_STEP 10
 
 #define CONFIG_SPAWN_ORDER { 0, 4, 6, 1, 7, 3, 5, 2 }
-#define CONFIG_GAPS 15
+#define CONFIG_GAPS 20
 
 #define CONFIG_BAR_HEIGHT 32
 #define CONFIG_BAR_FONT "CodeNewRoman Nerd Font Propo 14"

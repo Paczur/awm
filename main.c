@@ -1,76 +1,32 @@
 #include "config.h"
 #include "global.h"
-#include "window.h"
+#include "shortcut.h"
 #include "bar.h"
 #include <xcb/randr.h>
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h> //malloc
+#include "layout/monitor.h"
+#include "layout/workspace.h"
+#include "layout/layout.h"
 
 extern char **environ;
 
 typedef struct init_query_t {
-  xcb_randr_get_screen_resources_cookie_t randr_cookie;
   xcb_get_keyboard_mapping_cookie_t kmap_cookie;
-  xcb_randr_get_screen_resources_reply_t *randr_reply;
   xcb_get_keyboard_mapping_reply_t *kmap_reply;
 } init_query_t;
 
 init_query_t *init_queries(void) {
   init_query_t *q = malloc(sizeof(init_query_t));
-  q->randr_cookie = xcb_randr_get_screen_resources(conn, screen->root);
   q->kmap_cookie = xcb_get_keyboard_mapping(conn, setup->min_keycode,
                                            setup->max_keycode-setup->min_keycode);
   return q;
 }
 
 void deinit_queries(init_query_t* q) {
-  free(q->randr_reply);
   free(q->kmap_reply);
-}
-
-void setup_monitors(init_query_t* q) {
-  xcb_randr_crtc_t *firstCrtc;
-  xcb_randr_get_crtc_info_cookie_t *randr_cookies;
-  xcb_randr_get_crtc_info_reply_t **randr_crtcs;
-
-  q->randr_reply = xcb_randr_get_screen_resources_reply(conn,
-                                                       q->randr_cookie, 0);
-  view.monitor_count = xcb_randr_get_screen_resources_crtcs_length(q->randr_reply);
-  randr_cookies = malloc(view.monitor_count*sizeof(xcb_randr_get_crtc_info_cookie_t));
-  firstCrtc = xcb_randr_get_screen_resources_crtcs(q->randr_reply);
-  for(size_t i=0; i<view.monitor_count; i++) {
-    randr_cookies[i] = xcb_randr_get_crtc_info(conn, *(firstCrtc+i), 0);
-  }
-  randr_crtcs = malloc(view.monitor_count*sizeof(xcb_randr_get_crtc_info_reply_t));
-
-  for(size_t i=0; i<view.monitor_count; i++) {
-    randr_crtcs[i] = xcb_randr_get_crtc_info_reply(conn, randr_cookies[i], 0);
-  }
-  free(randr_cookies);
-
-  for(size_t i=0; i<view.monitor_count; i++) {
-    if(randr_crtcs[i]->width == 0)
-      view.monitor_count = i;
-  }
-  view.monitors = malloc(sizeof(monitor_t) * view.monitor_count);
-  for(size_t i=0; i<view.monitor_count; i++) {
-    view.monitors[i].w = randr_crtcs[i]->width;
-    view.monitors[i].h = randr_crtcs[i]->height;
-    view.monitors[i].x = randr_crtcs[i]->x;
-    view.monitors[i].y = randr_crtcs[i]->y;
-    free(randr_crtcs[i]);
-  }
-  free(randr_crtcs);
-
-  for(size_t i=0; i<LENGTH(view.workspaces); i++) {
-    view.workspaces[i].grid = calloc(4*view.monitor_count, sizeof(grid_cell_t));
-    view.workspaces[i].cross = calloc(2*view.monitor_count, sizeof(int));
-    for(size_t j=0; j<4; j++) {
-      view.workspaces[i].grid[j].origin = -1;
-    }
-  }
 }
 
 void setup_visual(void) {
@@ -125,59 +81,47 @@ void event_loop(void) {
     event = xcb_wait_for_event(conn);
     switch(event->response_type) {
     case XCB_KEY_PRESS:
-      DEBUG { puts("KEY PRESS"); }
       press = (xcb_key_press_event_t*)event;
-      for(size_t i=0; i<view.monitor_count; i++) {
+      for(size_t i=0; i<monitor_count; i++) {
         if(press->event == view.bars[i].launcher.prompt.id) {
           launcher_keypress(press);
           goto launcher_press;
         }
       }
       if(mode == MODE_INSERT) {
-        handle_shortcut(&shortcuts.insert_mode, press->detail, press->state);
+        shortcut_handle(press->detail, SH_TYPE_INSERT_MODE, press->state);
       } else {
-        handle_shortcut(&shortcuts.normal_mode, press->detail, press->state);
+        shortcut_handle(press->detail, SH_TYPE_NORMAL_MODE, press->state);
       }
       launcher_press:
     break;
 
     case XCB_MAP_REQUEST:
-      DEBUG { puts("MAP REQUEST"); }
-      map_request(((xcb_map_request_event_t *)event)->window);
+      layout_event_map(((xcb_map_request_event_t *)event)->window);
     break;
 
     case XCB_CREATE_NOTIFY:
-      DEBUG { puts("CREATE NOTIFY"); }
-      create_notify(((xcb_create_notify_event_t *)event)->window);
+      layout_event_create(((xcb_create_notify_event_t *)event)->window);
     break;
 
     case XCB_DESTROY_NOTIFY:
-      DEBUG { puts("DESTROY NOTIFY"); }
-      destroy_notify(((xcb_destroy_notify_event_t *)event)->window);
-    break;
-
-    case XCB_MAP_NOTIFY:
-      DEBUG { puts("MAP NOTIFY"); }
+      layout_event_destroy(((xcb_destroy_notify_event_t *)event)->window);
     break;
 
     case XCB_UNMAP_NOTIFY:
-      DEBUG { puts("UNMAP NOTIFY"); }
-      unmap_notify(((xcb_unmap_notify_event_t *)event)->window);
+      layout_event_unmap(((xcb_unmap_notify_event_t *)event)->window);
     break;
 
     case XCB_FOCUS_IN:
       if(((xcb_focus_in_event_t *)event)->detail != XCB_NOTIFY_DETAIL_POINTER) {
-        DEBUG { puts("FOCUS_IN"); }
-        focus_in(((xcb_focus_in_event_t *)event)->event);
+        layout_event_focus(((xcb_focus_in_event_t *)event)->event);
       }
     break;
 
     case XCB_FOCUS_OUT:
-      DEBUG { puts("FOCUS OUT"); }
     break;
 
     case XCB_EXPOSE:
-      DEBUG { puts("EXPOSE"); }
       //TODO: MAKE IT MORE SPECIFIC
       redraw_bars();
     break;
@@ -197,24 +141,24 @@ int main(int argc, char *argv[], char *envp[]) {
   setup_wm();
   q = init_queries();
 
-  setup_monitors(q);
   setup_visual();
 
+  shortcut_init(setup->min_keycode, setup->max_keycode);
   q->kmap_reply = xcb_get_keyboard_mapping_reply(conn, q->kmap_cookie, NULL);
   config_parse(q->kmap_reply);
   deinit_queries(q);
   free(q);
 
+  layout_preinit();
   bar_init();
-  window_init();
+  layout_init();
   normal_mode();
+
   fflush(stdout);
   xcb_flush(conn);
   event_loop();
 
-  DEBUG {
-    puts("SHUTTING DOWN");
-  }
+  layout_deinit();
   bar_deinit();
   window_deinit();
 
@@ -223,10 +167,6 @@ int main(int argc, char *argv[], char *envp[]) {
   conn = NULL;
   setup = NULL;
 
-  free_shortcut(&shortcuts.insert_mode);
-  free_shortcut(&shortcuts.normal_mode);
-  free_shortcut(&shortcuts.launcher);
-  free(view.monitors);
-  free(view.spawn_order);
+  shortcut_deinit();
   return 0;
 }

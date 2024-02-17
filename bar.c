@@ -1,6 +1,10 @@
 #include "bar.h"
 #include "global.h"
 #include "radix.h"
+#include "layout/layout.h"
+#include "layout/workspace.h"
+#include "layout/monitor.h"
+#include "layout/grid.h"
 #include "config.h"
 #include <cairo/cairo-xcb.h>
 #include <pango/pangocairo.h>
@@ -10,6 +14,7 @@
 #include <unistd.h>
 #include "user_config.h"
 #include <fontconfig/fontconfig.h>
+#include "shortcut.h"
 
 radix_node_t *tree;
 
@@ -102,11 +107,11 @@ void place_bars(void) {
   uint32_t mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
   uint32_t values[2] = { view.bar_settings.background, XCB_EVENT_MASK_EXPOSURE };
 
-  for(size_t i=0; i<view.monitor_count; i++) {
+  for(size_t i=0; i<monitor_count; i++) {
     view.bars[i].id = xcb_generate_id(conn);
     xcb_create_window(conn, screen->root_depth, view.bars[i].id,
-                      screen->root, view.monitors[i].x,
-                      view.monitors[i].y, view.monitors[i].w,
+                      screen->root, monitors[i].x,
+                      monitors[i].y, monitors[i].w,
                       view.bar_settings.height, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT,
                       screen->root_visual, mask, values);
 
@@ -124,7 +129,7 @@ void place_bars(void) {
 
     view.bars[i].launcher.id = xcb_generate_id(conn);
     xcb_create_window(conn, screen->root_depth, view.bars[i].launcher.id,
-                      view.bars[i].id, 0, 0, view.monitors[i].w,
+                      view.bars[i].id, 0, 0, monitors[i].w,
                       view.bar_settings.height, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT,
                       screen->root_visual, mask, values);
     create_component(&view.bars[i].launcher.prompt.id,
@@ -142,7 +147,7 @@ void place_bars(void) {
 
   desc = pango_font_description_from_string(view.bar_settings.font);
 
-  for(size_t i=0; i<view.monitor_count; i++) {
+  for(size_t i=0; i<monitor_count; i++) {
     create_text_context(desc, &view.bars[i].mode);
     create_text_context(desc, &view.bars[i].launcher.prompt);
 
@@ -206,7 +211,7 @@ void redraw_component(const comp_geom *geom, const bar_component_t *component,
   uint32_t vals[2] = { geom->x, geom->width };
   cairo_move_to(component->cairo, geom->text_x, geom->text_y);
   xcb_clear_area(conn, 0, component->id, 0, 0,
-                 view.monitors[m].w, view.bar_settings.height);
+                 monitors[m].w, view.bar_settings.height);
   cairo_set_source_rgb(component->cairo,
                        settings->foreground[0],
                        settings->foreground[1],
@@ -243,7 +248,7 @@ uint32_t redraw_right_align(const char *text, const bar_component_t *component,
                             uint32_t x, uint32_t min_width, size_t m) {
   comp_geom geom;
   geom.x = x;
-  if(geom.x != view.monitors[m].w)
+  if(geom.x != monitors[m].w)
     geom.x -= CONFIG_BAR_COMPONENT_SEPARATOR;
   set_text(text, component);
   component_geom(component, min_width, &geom);
@@ -304,7 +309,7 @@ void redraw_minimized(void) {
   comp_geom geom[MAX_VISIBLE_MINIMIZED];
   size_t len = 0;
   size_t width = 0;
-  window_list_t *node = view.minimized;
+  window_list_t *node = windows_minimized;
   while(node != NULL) {
     //synchronous because windows are added one by one
     if(node->window->name == NULL)
@@ -321,22 +326,22 @@ void redraw_minimized(void) {
 
   for(size_t j=0; j<len; j++) {
     if(!prev_minimized[j]) {
-      for(size_t i=0; i<view.monitor_count; i++)
+      for(size_t i=0; i<monitor_count; i++)
         xcb_map_window(conn, view.bars[i].minimized[j].id);
       prev_minimized[j] = true;
     }
   }
   for(size_t j=len; j<MAX_VISIBLE_MINIMIZED; j++) {
     if(prev_minimized[j]) {
-      for(size_t i=0; i<view.monitor_count; i++)
+      for(size_t i=0; i<monitor_count; i++)
         xcb_unmap_window(conn, view.bars[i].minimized[j].id);
       prev_minimized[j] = false;
     }
   }
 
   if(len == 0) return;
-  for(size_t i=0; i<view.monitor_count; i++) {
-    geom[0].x = (view.monitors[i].w - width)/2;
+  for(size_t i=0; i<monitor_count; i++) {
+    geom[0].x = (monitors[i].w - width)/2;
     redraw_component(geom, view.bars[i].minimized,
                      &view.bar_settings.minimized_odd, i);
     for(size_t j=1; j<len; j++) {
@@ -362,12 +367,12 @@ void redraw_workspaces(void) {
     } else {
       num[0] = i+'1';
     }
-    if(i == view.focus) {
+    if(workspaces+i == workspace_focusedw()) {
       if(prev_workspaces[i] == false) {
-        for(size_t j=0; j<view.monitor_count; j++)
+        for(size_t j=0; j<monitor_count; j++)
           xcb_map_window(conn, view.bars[j].workspaces[i].id);
       }
-      for(size_t j=0; j<view.monitor_count; j++) {
+      for(size_t j=0; j<monitor_count; j++) {
         xs[iterator] = redraw_left_align(num, view.bars[j].workspaces+i,
                                          &view.bar_settings.workspace_focused,
                                          xs[iterator-1],
@@ -376,12 +381,12 @@ void redraw_workspaces(void) {
       }
       prev_workspaces[i] = true;
       iterator++;
-    } else if(view.workspaces[i].grid[0].window != NULL) {
+    } else if(workspaces[i].grid[0].window != NULL) {
       if(prev_workspaces[i] == false) {
-        for(size_t j=0; j<view.monitor_count; j++)
+        for(size_t j=0; j<monitor_count; j++)
           xcb_map_window(conn, view.bars[j].workspaces[i].id);
       }
-      for(size_t j=0; j<view.monitor_count; j++) {
+      for(size_t j=0; j<monitor_count; j++) {
         xs[iterator] = redraw_left_align(num, view.bars[j].workspaces+i,
                                          &view.bar_settings.workspace_unfocused,
                                          xs[iterator-1],
@@ -391,7 +396,7 @@ void redraw_workspaces(void) {
       prev_workspaces[i] = true;
       iterator++;
     } else if(prev_workspaces[i]) {
-      for(size_t j=0; j<view.monitor_count; j++)
+      for(size_t j=0; j<monitor_count; j++)
         xcb_unmap_window(conn, view.bars[j].workspaces[i].id);
       prev_workspaces[i] = false;
     }
@@ -400,14 +405,14 @@ void redraw_workspaces(void) {
 
 void redraw_mode(void) {
   if(mode == MODE_NORMAL) {
-    for(size_t i=0; i<view.monitor_count; i++) {
+    for(size_t i=0; i<monitor_count; i++) {
       workspace_x = redraw_left_align("󰆾", &view.bars[i].mode,
                                       &view.bar_settings.mode_normal, 0,
                                       CONFIG_BAR_WORKSPACE_MIN_WIDTH,
                                       i);
     }
   } else {
-    for(size_t i=0; i<view.monitor_count; i++) {
+    for(size_t i=0; i<monitor_count; i++) {
       workspace_x = redraw_left_align("󰗧", &view.bars[i].mode,
                                       &view.bar_settings.mode_insert, 0,
                                       CONFIG_BAR_WORKSPACE_MIN_WIDTH,
@@ -421,19 +426,19 @@ void redraw_info(void) {
   uint32_t x[MAX_INFO_BLOCKS];
   for(int i=MAX_INFO_BLOCKS-1; i>=0; i--) {
     if(!prev_info[i] && info_states[i].text[0] != 0) {
-      for(size_t j=0; j<view.monitor_count; j++) {
+      for(size_t j=0; j<monitor_count; j++) {
         xcb_map_window(conn, view.bars[j].info[i].id);
       }
       prev_info[i] = true;
     } else if(prev_info[i] && info_states[i].text[0] == 0) {
-      for(size_t j=0; j<view.monitor_count; j++) {
+      for(size_t j=0; j<monitor_count; j++) {
         xcb_unmap_window(conn, view.bars[j].info[i].id);
       }
       prev_info[i] = false;
     }
   }
-  for(size_t i=0; i<view.monitor_count; i++) {
-    x[MAX_INFO_BLOCKS-1] = view.monitors[i].w;
+  for(size_t i=0; i<monitor_count; i++) {
+    x[MAX_INFO_BLOCKS-1] = monitors[i].w;
     for(size_t j=MAX_INFO_BLOCKS-1; j>0; j--) {
       x[j-1] = redraw_right_align(info_states[j].text, view.bars[i].info+j,
                                   (info_states[j].status == 1 ||
@@ -512,7 +517,7 @@ void redraw_bars(void) {
 }
 
 void bar_init(void) {
-  view.bars = malloc(sizeof(bar_t) * view.monitor_count);
+  view.bars = malloc(sizeof(bar_t) * monitor_count);
   place_bars();
   pthread_create(&info_thread, NULL, update_info, NULL);
   intern_atoms();
@@ -528,8 +533,7 @@ void destroy_component(bar_component_t *comp) {
   comp->pango = NULL;
 }
 
-void bar_deinit(void) {
-  for(size_t i=0; i<view.monitor_count; i++) {
+void bar_deinit(void) { for(size_t i=0; i<monitor_count; i++) {
     destroy_component(&view.bars[i].mode);
     destroy_component(&view.bars[i].launcher.prompt);
     for(size_t j=0; j<MAX_WORKSPACES; j++) {
@@ -560,7 +564,7 @@ void redraw_prompt(void) {
   set_text(launcher_prompt, &view.bars[0].launcher.prompt);
   component_geom(&view.bars[0].launcher.prompt,
                  CONFIG_BAR_LAUNCHER_PROMPT_MIN_WIDTH, &geom);
-  for(size_t i=0; i<view.monitor_count; i++) {
+  for(size_t i=0; i<monitor_count; i++) {
     set_text(launcher_prompt, &view.bars[0].launcher.prompt);
     geom.text_x = CONFIG_BAR_COMPONENT_PADDING;
     redraw_component(&geom, &view.bars[i].launcher.prompt,
@@ -577,9 +581,9 @@ void redraw_hints(void) {
     set_text(radix_hints[i], view.bars[0].launcher.hints+i);
     component_geom(view.bars[0].launcher.hints+i,
                    CONFIG_BAR_LAUNCHER_HINT_MIN_WIDTH, geom+i);
-    for(size_t j=0; j<view.monitor_count; j++) {
+    for(size_t j=0; j<monitor_count; j++) {
       if(width + geom[i].width + CONFIG_BAR_COMPONENT_SEPARATOR
-         > view.monitors[j].w - prompt_x) {
+         > monitors[j].w - prompt_x) {
         goto skip_hints;
       }
       set_text(radix_hints[i], view.bars[j].launcher.hints+i);
@@ -591,7 +595,7 @@ skip_hints:
 
   for(size_t i=0; i<hint_no; i++) {
     if(!prev_hints[i]) {
-      for(size_t j=0; j<view.monitor_count; j++) {
+      for(size_t j=0; j<monitor_count; j++) {
         xcb_map_window(conn, view.bars[j].launcher.hints[i].id);
       }
       prev_hints[i] = true;
@@ -599,7 +603,7 @@ skip_hints:
   }
   for(size_t i=hint_no; i<MAX_LAUNCHER_HINTS; i++) {
     if(prev_hints[i]) {
-      for(size_t j=0; j<view.monitor_count; j++) {
+      for(size_t j=0; j<monitor_count; j++) {
         xcb_unmap_window(conn, view.bars[j].launcher.hints[i].id);
       }
       prev_hints[i] = false;
@@ -607,8 +611,8 @@ skip_hints:
   }
 
   if(hint_no > 0) {
-    for(size_t i=0; i<view.monitor_count; i++) {
-      geom[0].x = (view.monitors[i].w - width)/2;
+    for(size_t i=0; i<monitor_count; i++) {
+      geom[0].x = (monitors[i].w - width)/2;
       geom[0].x = (geom[0].x < prompt_x) ? prompt_x : geom[0].x;
       if(selected == 0) {
         redraw_component(geom, view.bars[i].launcher.hints,
@@ -649,8 +653,8 @@ skip_hints:
 }
 
 void hide_launcher(void) {
-  workspace_t *workspace = view.workspaces+view.focus;
-  for(size_t i=0; i<view.monitor_count; i++) {
+  workspace_t *workspace = workspace_focusedw();
+  for(size_t i=0; i<monitor_count; i++) {
     xcb_unmap_window(conn, view.bars[i].launcher.id);
   }
   free(launcher_prompt);
@@ -659,9 +663,9 @@ void hide_launcher(void) {
   free(proper_search_size);
   redraw_bars();
   if(workspace->grid[last_focus].window != NULL) {
-    focus_window_n(last_focus);
+    grid_focus(last_focus);
   } else {
-    window_focus_random();
+    layout_focus_pick();
   }
   normal_mode();
 }
@@ -673,7 +677,7 @@ void redraw_launcher(void) {
 
 void show_launcher(void) {
   char buff[LAUNCHER_PROMPT_LENGTH];
-  workspace_t *workspace = view.workspaces+view.focus;
+  workspace_t *workspace = workspace_focusedw();
 
   launcher_prompt = malloc(LAUNCHER_PROMPT_LENGTH);
   proper_search = malloc(LAUNCHER_PROMPT_LENGTH);
@@ -688,7 +692,7 @@ void show_launcher(void) {
   launcher_prompt_size_i = 0;
   proper_search_size_i = 0;
 
-  for(size_t i=0; i<view.monitor_count; i++) {
+  for(size_t i=0; i<monitor_count; i++) {
     xcb_map_window(conn, view.bars[i].launcher.id);
   }
   memset(launcher_prompt, 0, LAUNCHER_PROMPT_LENGTH);
@@ -746,7 +750,7 @@ void launcher_keypress(const xcb_key_press_event_t *event) {
   xcb_keycode_t keycode;
   XKeyEvent keyev;
   keycode = event->detail;
-  found = handle_shortcut(&shortcuts.launcher, keycode, event->state);
+  found = shortcut_handle(keycode, SH_TYPE_LAUNCHER, event->state);
   if(found) return;
   if(prompt_i >= LAUNCHER_PROMPT_LENGTH-1) return;
   keyev = (XKeyEvent) {
@@ -785,9 +789,6 @@ void launcher_keypress(const xcb_key_press_event_t *event) {
       memcpy(buff, proper_search, proper_i);
       proper_search[proper_i] = 0;
       last_search->wrong = 0;
-      DEBUG {
-        printf("PROPER: %.*s %lu\n", (int)proper_i, proper_search, proper_i);
-      }
       radix_gen_hints_sr(last_search, buff, proper_i);
     } else {
       proper_search_size[proper_search_size_i++] = 0;
