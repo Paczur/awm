@@ -1,20 +1,23 @@
 #include "bar.h"
 #include "global.h"
+#include "shared/proc.h"
 #include "radix.h"
+
 #include "layout/layout.h"
 #include "layout/workspace.h"
 #include "layout/monitor.h"
 #include "layout/grid.h"
+
 #include "config.h"
+#include "user_config.h"
+#include "shortcut.h"
 #include <cairo/cairo-xcb.h>
 #include <pango/pangocairo.h>
+#include <fontconfig/fontconfig.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <pthread.h>
 #include <unistd.h>
-#include "user_config.h"
-#include <fontconfig/fontconfig.h>
-#include "shortcut.h"
 
 radix_node_t *tree;
 

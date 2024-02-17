@@ -5,7 +5,6 @@
 #include <xcb/xcb.h>
 #include "../global.h"
 #include "../user_config.h"
-#include "../log.h"
 
 #define X(pos) ((pos)%HOR_CELLS_PER_MONITOR)
 #define Y(pos) ((pos)%CELLS_PER_MONITOR/VERT_CELLS_PER_MONITOR)

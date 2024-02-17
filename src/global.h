@@ -29,9 +29,6 @@ typedef struct view_t {
   xcb_visualtype_t *visual_type;
 } view_t;
 
-int shout(char*, char*, size_t);
-void sh(char*);
-
 //WM
 extern MODE mode;
 extern bool restart;

@@ -12,7 +12,7 @@ LIBS= $(X) $(TEXT) $(THREADS)
 RELEASE=-O2 -s -pipe -flto=4
 CFLAGS=$(WARN) -march=native -std=gnu99 $(LIBS)
 
-SOURCE=$(wildcard *.c) $(wildcard layout/*.c)
+SOURCE=$(wildcard src/*.c src/**/*.c)
 $(VERBOSE).SILENT:
 
 release: CFLAGS += $(RELEASE)
