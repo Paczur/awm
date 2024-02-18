@@ -1,4 +1,6 @@
 BIN=bin
+OBJ=obj
+DIRS=$(BIN) $(OBJ)
 
 WARN=-Wall -Wextra
 DEBUG=-D DEBUG -Og -ggdb3 -fsanitize=address -fsanitize=pointer-compare \
@@ -15,6 +17,8 @@ CFLAGS=$(WARN) -march=native -std=gnu99 $(LIBS)
 SOURCE=$(wildcard src/*.c src/**/*.c)
 $(VERBOSE).SILENT:
 
+$(shell mkdir -p $(DIRS))
+
 release: CFLAGS += $(RELEASE)
 release: main
 
@@ -24,7 +28,13 @@ debug: main
 main: $(SOURCE)
 	$(CC) $(CFLAGS) -o $(BIN)/$@ $^
 
-clean:
-	rm -f $(wildcard bin/*)
+layout.o: src/layout/layout.c
+	$(CC) $(CFLAGS) -c -o $(OBJ)/$@ $^
 
-test: clean debug
+clean:
+	rm -rf $(BIN) $(OBJ)
+
+log_remove:
+	rm -f $(BIN)/out
+
+test: log_remove debug

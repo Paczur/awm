@@ -5,7 +5,7 @@
 #include <pango/pango.h>
 #include <xcb/xcb.h>
 #include "system_config.h"
-#include "shared/rect.h"
+#include "structs.h"
 
 typedef struct bar_component_t {
   xcb_window_t id;

@@ -7,7 +7,7 @@
 #include <string.h> //memmove
 #include <stdio.h> //printf
 #include "shortcut.h"
-#include "shared/proc.h"
+#include "proc.h"
 
 #define X(pos) ((pos)%2)
 #define Y(pos) ((pos)%4/2)

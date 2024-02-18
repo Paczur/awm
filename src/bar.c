@@ -1,6 +1,6 @@
 #include "bar.h"
 #include "global.h"
-#include "shared/proc.h"
+#include "proc.h"
 #include "radix.h"
 
 #include "layout/layout.h"

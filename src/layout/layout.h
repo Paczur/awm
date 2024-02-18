@@ -2,8 +2,8 @@
 #define H_LAYOUT
 
 #include <xcb/xcb.h>
-#include "../shared/rect.h"
-#include "../shared/protocol.h"
+#include "../structs.h"
+#include "../protocol.h"
 #include "../user_config.h"
 #include "structs.h"
 

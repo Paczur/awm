@@ -8,7 +8,7 @@
 #include <stdbool.h>
 #include <stdlib.h> //malloc
 #include "layout/layout.h"
-#include "shared/rect.h"
+#include "structs.h"
 #include "user_config.h"
 
 extern char **environ;

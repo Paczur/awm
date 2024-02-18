@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <xcb/xcb.h>
 #include "bar.h"
-#include "shared/protocol.h"
+#include "protocol.h"
 #include "system_config.h"
 #include <stdbool.h>
 
