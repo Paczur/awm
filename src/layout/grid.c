@@ -159,15 +159,18 @@ size_t grid_next_pos(void) {
   return SIZE_MAX;
 }
 
-void grid_unmark(xcb_window_t w) {
-  for(size_t i=0; i<monitor_count*CELLS_PER_MONITOR; i++) {
-    if(grid_pos2origin(i) == i &&
-       grid_pos2win(i) != NULL &&
-       grid_pos2win(i)->id == w) {
-      grid_pos2originc(i)->window = NULL;
-      grid_pos2originc(i)->origin = -1;
-      workspace_focusedw()->update[i] = true;
-      return;
+void grid_unmark(window_t *w) {
+  workspace_t *workspace;
+  for(size_t j=0; j<MAX_WORKSPACES; j++) {
+    workspace = workspaces+j;
+    for(size_t i=0; i<monitor_count*CELLS_PER_MONITOR; i++) {
+      if(workspace->grid[i].origin == i &&
+         workspace->grid[i].window == w) {
+        workspace->grid[workspace->grid[i].origin].window = NULL;
+        workspace->grid[workspace->grid[i].origin].origin = -1;
+        workspace->update[grid_pos2mon(i)] = true;
+        return;
+      }
     }
   }
 }

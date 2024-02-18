@@ -83,7 +83,7 @@ void window_deinit(void) {
 }
 
 
-int window_event_destroy(xcb_window_t window) {
+int window_event_destroy(xcb_window_t window, window_t **wp) {
   window_t *w = window_find(window);
   window_list_t *wlist = windows_minimized;
   window_list_t *t;
@@ -114,6 +114,7 @@ int window_event_destroy(xcb_window_t window) {
     }
   }
 
+  *wp = w;
   free(w);
   return pos;
 }

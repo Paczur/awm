@@ -100,9 +100,10 @@ void layout_event_focus(xcb_window_t window) { grid_event_focus(window); }
 
 int layout_event_destroy(xcb_window_t window) {
   int pos;
-  pos = window_event_destroy(window);
+  window_t *p;
+  pos = window_event_destroy(window, &p);
   if(pos >= 0) {
-    grid_unmark(window);
+    grid_unmark(p);
   }
   return pos;
 }

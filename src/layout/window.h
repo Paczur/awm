@@ -27,7 +27,7 @@ void window_minimize(window_t*);
 
 void window_deinit(void);
 
-int window_event_destroy(xcb_window_t);
+int window_event_destroy(xcb_window_t, window_t**);
 void window_event_create(xcb_window_t);
 
 #endif

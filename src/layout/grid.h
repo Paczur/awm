@@ -15,7 +15,7 @@ grid_cell_t *grid_focusedc(void);
 size_t grid_focused(void);
 
 size_t grid_next_pos(void);
-void grid_unmark(xcb_window_t);
+void grid_unmark(window_t*);
 void grid_refresh(void);
 void grid_update(size_t);
 void grid_adjust_pos(size_t);
