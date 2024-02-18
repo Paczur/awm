@@ -26,7 +26,7 @@ window_t *window_minimized_nth(size_t n) {
       return min->window;
     min = min->next;
   }
-  return NULL;
+  return min->window;
 }
 
 

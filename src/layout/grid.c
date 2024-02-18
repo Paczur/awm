@@ -1,11 +1,14 @@
 #include "grid.h"
 #include "monitor.h"
-#include "../system_config.h"
 #include "workspace.h"
 #include <xcb/xcb.h>
-#include "../global.h"
+#include <stdlib.h>
+#include <string.h>
+#include "../shared/protocol.h"
+#include "../system_config.h"
 #include "../user_config.h"
 
+#define LENGTH(x) (sizeof((x))/sizeof((x)[0]))
 #define X(pos) ((pos)%HOR_CELLS_PER_MONITOR)
 #define Y(pos) ((pos)%CELLS_PER_MONITOR/VERT_CELLS_PER_MONITOR)
 #define COMB(x, y) ((x)+(y)*VERT_CELLS_PER_MONITOR)
@@ -16,19 +19,6 @@ size_t spawn_order_len;
 
 bool grid_pos_invalid(size_t n) { return n >= monitor_count*CELLS_PER_MONITOR; }
 size_t grid_mon2pos(size_t m) { return m*CELLS_PER_MONITOR; }
-
-void grid_print(void) {
-  workspace_t *workspace = workspace_focusedw();
-  puts("grid:");
-  for(size_t i=0; i<monitor_count*CELLS_PER_MONITOR; i++) {
-    printf("%lu: ", i);
-    if(workspace->grid[i].window == NULL)
-      printf("NULL");
-    else
-      printf("%d", workspace->grid[i].window->id);
-    printf(" origin: %lu\n", workspace->grid[i].origin);
-  }
-}
 
 size_t grid_pos2mon(size_t n) {
   return grid_pos_invalid(n) ?
@@ -130,14 +120,14 @@ void grid_calculate(size_t m, uint32_t* values, size_t offset) {
        (monitors[m].w/2 + workspace->cross[m*GRID_AXIS+0]));
     values[offset+i*4+1] = monitors[m].y + CONFIG_GAPS +
       (Y(i) == 0 ?
-       view.bar_settings.height :
-       (view.bar_settings.height/2 + monitors[m].h/2 +
+       CONFIG_BAR_HEIGHT :
+       (CONFIG_BAR_HEIGHT/2 + monitors[m].h/2 +
         workspace->cross[m*GRID_AXIS+1]));
     values[offset+i*4+2] = monitors[m].w/2 - CONFIG_GAPS*2 +
       (X(i) == 0 ?
        workspace->cross[m*GRID_AXIS+0] :
        -workspace->cross[m*GRID_AXIS+0]);
-    values[offset+i*4+3] = monitors[m].h/2 - view.bar_settings.height/2 -
+    values[offset+i*4+3] = monitors[m].h/2 - CONFIG_BAR_HEIGHT/2 -
       CONFIG_GAPS*2 +
       (Y(i) == 0 ?
        workspace->cross[m*GRID_AXIS+1] :
@@ -325,7 +315,7 @@ void grid_reset_cross(size_t m) {
 
 void grid_resize_h(size_t m, int h) {
   const workspace_t* workspace = workspace_focusedw();
-  size_t ph = monitors[m].h/2 - view.bar_settings.height/2
+  size_t ph = monitors[m].h/2 - CONFIG_BAR_HEIGHT/2
     - CONFIG_GAPS*2 - workspace->cross[m*GRID_AXIS+1];
   if((h > 0 && (ph - h > ph || ph - h == 0)) ||
      (h < 0 && (ph + workspace->cross[m*GRID_AXIS+1]*2 + h >

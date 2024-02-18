@@ -1,6 +1,7 @@
 #include "monitor.h"
-#include "../global.h"
 #include "workspace.h"
+#include "../shared/protocol.h"
+#include <stdlib.h>
 
 monitor_t *monitors;
 size_t monitor_count;

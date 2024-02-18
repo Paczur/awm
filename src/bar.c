@@ -262,7 +262,7 @@ uint32_t redraw_right_align(const char *text, const bar_component_t *component,
 }
 
 void populate_name(window_t *window) {
-  xcb_get_property_reply_t *reply;
+  xcb_get_property_reply_t *reply = NULL;
   const char *classes[][2] = CONFIG_BAR_MINIMIZED_NAME_REPLACEMENTS;
   size_t length[2];
   char *class;
@@ -271,6 +271,7 @@ void populate_name(window_t *window) {
     xcb_get_property(conn, 0, window->id, wm_class, XCB_ATOM_STRING,
                      0, 50);
   reply = xcb_get_property_reply(conn, cookie, NULL);
+
   class = xcb_get_property_value(reply);
   length[1] = xcb_get_property_value_length(reply);
   length[0] = strnlen(class, length[1])+1;
@@ -521,9 +522,9 @@ void redraw_bars(void) {
 
 void bar_init(void) {
   view.bars = malloc(sizeof(bar_t) * monitor_count);
+  intern_atoms();
   place_bars();
   pthread_create(&info_thread, NULL, update_info, NULL);
-  intern_atoms();
   radix_populate(&tree);
 }
 

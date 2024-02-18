@@ -3,7 +3,7 @@
 #include "window.h"
 #include "workspace.h"
 #include "monitor.h"
-#include "../global.h"
+#include "../shared/protocol.h"
 #include <stdlib.h>
 
 void layout_adopt(void) {
@@ -34,7 +34,7 @@ void layout_adopt(void) {
       found = false;
       for(size_t j=0; j<monitor_count; j++) {
         if(greply->x == monitors[j].x && greply->y == monitors[j].y) {
-          if(children[i] != view.bars[j].id)
+          // if(children[i] != view.bars[j].id)
             xcb_destroy_window(conn, children[i]);
           found = true;
           break;
@@ -79,12 +79,9 @@ void layout_show(size_t n) {
 }
 
 
-void layout_preinit(void) {
+void layout_init(void) {
   monitor_init();
   workspace_init();
-}
-
-void layout_init(void) {
   grid_init();
   layout_adopt();
 }
@@ -101,15 +98,13 @@ void layout_event_map(xcb_window_t window) { grid_event_map(window); }
 void layout_event_create(xcb_window_t window) { window_event_create(window); }
 void layout_event_focus(xcb_window_t window) { grid_event_focus(window); }
 
-void layout_event_destroy(xcb_window_t window) {
+int layout_event_destroy(xcb_window_t window) {
   int pos;
   pos = window_event_destroy(window);
-  if(pos == -1) {
-    redraw_minimized();
-  } else if(pos >= 0) {
+  if(pos >= 0) {
     grid_unmark(window);
-    redraw_workspaces();
   }
+  return pos;
 }
 
 void layout_event_unmap(xcb_window_t window) {

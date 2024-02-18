@@ -76,6 +76,7 @@ void setup_wm(void) {
 void event_loop(void) {
   xcb_generic_event_t* event;
   xcb_key_press_event_t *press;
+  int t;
 
   while(!restart) {
     event = xcb_wait_for_event(conn);
@@ -105,7 +106,12 @@ void event_loop(void) {
     break;
 
     case XCB_DESTROY_NOTIFY:
-      layout_event_destroy(((xcb_destroy_notify_event_t *)event)->window);
+      t = layout_event_destroy(((xcb_destroy_notify_event_t *)event)->window);
+      if(t == -1) {
+        redraw_minimized();
+      } else if(t >= 0) {
+        redraw_workspaces();
+      }
     break;
 
     case XCB_UNMAP_NOTIFY:
@@ -149,9 +155,8 @@ int main(int argc, char *argv[], char *envp[]) {
   deinit_queries(q);
   free(q);
 
-  layout_preinit();
-  bar_init();
   layout_init();
+  bar_init();
   normal_mode();
 
   fflush(stdout);

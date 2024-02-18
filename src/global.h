@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <xcb/xcb.h>
 #include "bar.h"
+#include "shared/protocol.h"
 #include "system_config.h"
 #include <stdbool.h>
 
@@ -34,13 +35,6 @@ extern MODE mode;
 extern bool restart;
 extern view_t view;
 
-//XCB
-extern xcb_connection_t *conn;
-extern const xcb_setup_t *setup;
-extern xcb_screen_t *screen;
-
-//XLIB
-extern Display *dpy;
 extern XIM xim;
 extern XIC xic;
 

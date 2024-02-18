@@ -1,6 +1,7 @@
 #include "workspace.h"
 #include "monitor.h"
-#include "../global.h"
+#include "../shared/protocol.h"
+#include <stdlib.h>
 
 workspace_t workspaces[MAX_WORKSPACES];
 size_t workspace_focused;
