@@ -20,21 +20,16 @@ static xcb_connection_t *conn;
 bool grid_pos_invalid(size_t n) { return n >= workarea_count*CELLS_PER_MONITOR; }
 size_t grid_mon2pos(size_t m) { return m*CELLS_PER_MONITOR; }
 
-size_t grid_pos2mon(size_t n) {
-  return grid_pos_invalid(n) ?
-    SIZE_MAX :
-    n/CELLS_PER_MONITOR;
-}
 
-grid_cell_t *grid_pos2cell(size_t n) {
+static grid_cell_t *grid_pos2cell(size_t n) {
   return grid_pos_invalid(n) ? NULL : workspace_focusedw()->grid+n;
 }
 
-window_t *grid_pos2win(size_t n) {
+static window_t *grid_pos2win(size_t n) {
   return grid_pos_invalid(n) ? NULL : workspace_focusedw()->grid[n].window;
 }
 
-size_t grid_pos2origin(size_t n) {
+static size_t grid_pos2origin(size_t n) {
   const workspace_t *workspace = workspace_focusedw();
   if(grid_pos_invalid(n) ||
      grid_pos_invalid(workspace->grid[n].origin))
@@ -42,7 +37,7 @@ size_t grid_pos2origin(size_t n) {
   return workspace->grid[n].origin;
 }
 
-grid_cell_t *grid_pos2originc(size_t n) {
+static grid_cell_t *grid_pos2originc(size_t n) {
   const workspace_t *workspace = workspace_focusedw();
   if(grid_pos_invalid(n) ||
      grid_pos_invalid(workspace->grid[n].origin))
@@ -50,7 +45,7 @@ grid_cell_t *grid_pos2originc(size_t n) {
   return workspace->grid+workspace->grid[n].origin;
 }
 
-size_t grid_xwin2pos(xcb_window_t window) {
+static size_t grid_xwin2pos(xcb_window_t window) {
   for(size_t i=0; i<workarea_count*4; i++) {
     if(grid_pos2win(i) != NULL &&
        grid_pos2win(i)->id == window)
@@ -59,18 +54,11 @@ size_t grid_xwin2pos(xcb_window_t window) {
   return -1;
 }
 
-grid_cell_t *grid_focusedc(void) {
-  const workspace_t *workspace = workspace_focusedw();
-  return (grid_pos_invalid(workspace->focus) ?
-          NULL :
-          workspace->grid+workspace->focus);
-}
-
-bool grid_mon_empty(size_t m) {
+static bool grid_mon_empty(size_t m) {
   return workspace_focusedw()->grid[grid_mon2pos(m)].window == NULL;
 }
 
-void grid_expand_horizontally(size_t m, uint32_t* values, size_t offset) {
+static void grid_expand_horizontally(size_t m, uint32_t* values, size_t offset) {
   size_t p, ri;
   for(size_t i=0; i<4; i++) {
     p = grid_mon2pos(m);
@@ -88,7 +76,7 @@ void grid_expand_horizontally(size_t m, uint32_t* values, size_t offset) {
   }
 }
 
-void grid_expand_vertically(size_t m, uint32_t* values, size_t offset) {
+static void grid_expand_vertically(size_t m, uint32_t* values, size_t offset) {
   size_t p, ri;
   for(size_t i=0; i<4; i++) {
     p = grid_mon2pos(m);
@@ -106,7 +94,7 @@ void grid_expand_vertically(size_t m, uint32_t* values, size_t offset) {
   }
 }
 
-void grid_calculate(size_t m, uint32_t* values, size_t offset) {
+static void grid_calculate(size_t m, uint32_t* values, size_t offset) {
   const workspace_t* workspace = workspace_focusedw();
   size_t p;
   for(size_t i=0; i<CELLS_PER_MONITOR; i++) {
@@ -147,6 +135,19 @@ void grid_calculate(size_t m, uint32_t* values, size_t offset) {
   }
 }
 
+
+grid_cell_t *grid_focusedc(void) {
+  const workspace_t *workspace = workspace_focusedw();
+  return (grid_pos_invalid(workspace->focus) ?
+          NULL :
+          workspace->grid+workspace->focus);
+}
+
+size_t grid_pos2mon(size_t n) {
+  return grid_pos_invalid(n) ?
+    SIZE_MAX :
+    n/CELLS_PER_MONITOR;
+}
 
 size_t grid_next_pos(void) {
   for(size_t i=0; i<spawn_order_len; i++) {

@@ -13,10 +13,9 @@ typedef struct window_t window_t;
 #define CELLS_PER_MONITOR 4
 #define GRID_AXIS 2
 
-size_t grid_pos2mon(size_t);
 grid_cell_t *grid_focusedc(void);
 size_t grid_focused(void);
-
+size_t grid_pos2mon(size_t);
 size_t grid_next_pos(void);
 void grid_unmark(window_t*);
 void grid_refresh(void);

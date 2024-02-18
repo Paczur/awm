@@ -7,7 +7,7 @@
 
 #define LENGTH(x) (sizeof(x)/sizeof((x)[0]))
 
-void layout_adopt(void) {
+static void layout_adopt(void) {
   xcb_query_tree_cookie_t cookie;
   xcb_query_tree_reply_t *reply;
   xcb_get_geometry_cookie_t gcookie;
