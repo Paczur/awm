@@ -7,9 +7,9 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h> //malloc
-#include "layout/monitor.h"
-#include "layout/workspace.h"
 #include "layout/layout.h"
+#include "shared/rect.h"
+#include "user_config.h"
 
 extern char **environ;
 
@@ -27,6 +27,44 @@ init_query_t *init_queries(void) {
 
 void deinit_queries(init_query_t* q) {
   free(q->kmap_reply);
+}
+
+void setup_monitors(rect_t **monitors, size_t *monitor_count) {
+  xcb_randr_crtc_t *firstCrtc;
+  xcb_randr_get_screen_resources_reply_t *reply;
+  xcb_randr_get_screen_resources_cookie_t cookie;
+  xcb_randr_get_crtc_info_cookie_t *randr_cookies;
+  xcb_randr_get_crtc_info_reply_t **randr_crtcs;
+
+  cookie = xcb_randr_get_screen_resources(conn, screen->root);
+  reply = xcb_randr_get_screen_resources_reply(conn, cookie, 0);
+  *monitor_count = xcb_randr_get_screen_resources_crtcs_length(reply);
+  randr_cookies = malloc(*monitor_count*sizeof(xcb_randr_get_crtc_info_cookie_t));
+  firstCrtc = xcb_randr_get_screen_resources_crtcs(reply);
+  for(size_t i=0; i<*monitor_count; i++) {
+    randr_cookies[i] = xcb_randr_get_crtc_info(conn, *(firstCrtc+i), 0);
+  }
+  free(reply);
+  randr_crtcs = malloc(*monitor_count*sizeof(xcb_randr_get_crtc_info_reply_t));
+
+  for(size_t i=0; i<*monitor_count; i++) {
+    randr_crtcs[i] = xcb_randr_get_crtc_info_reply(conn, randr_cookies[i], 0);
+  }
+  free(randr_cookies);
+
+  for(size_t i=0; i<*monitor_count; i++) {
+    if(randr_crtcs[i]->width == 0)
+      *monitor_count = i;
+  }
+  *monitors = malloc(sizeof(rect_t) * *monitor_count);
+  for(size_t i=0; i<*monitor_count; i++) {
+    (*monitors)[i].w = randr_crtcs[i]->width;
+    (*monitors)[i].h = randr_crtcs[i]->height;
+    (*monitors)[i].x = randr_crtcs[i]->x;
+    (*monitors)[i].y = randr_crtcs[i]->y;
+    free(randr_crtcs[i]);
+  }
+  free(randr_crtcs);
 }
 
 void setup_visual(void) {
@@ -83,7 +121,7 @@ void event_loop(void) {
     switch(event->response_type) {
     case XCB_KEY_PRESS:
       press = (xcb_key_press_event_t*)event;
-      for(size_t i=0; i<monitor_count; i++) {
+      for(size_t i=0; i<bar_count; i++) {
         if(press->event == view.bars[i].launcher.prompt.id) {
           launcher_keypress(press);
           goto launcher_press;
@@ -139,6 +177,10 @@ void event_loop(void) {
 }
 
 int main(int argc, char *argv[], char *envp[]) {
+  rect_t *monitors;
+  size_t monitor_count;
+  rect_t *t_rect;
+
   (void)argc;
   (void)argv;
   environ = envp;
@@ -155,8 +197,22 @@ int main(int argc, char *argv[], char *envp[]) {
   deinit_queries(q);
   free(q);
 
-  layout_init();
-  bar_init();
+  setup_monitors(&monitors, &monitor_count);
+  t_rect = malloc(monitor_count*sizeof(rect_t));
+  for(size_t i=0; i<monitor_count; i++) {
+    t_rect[i].x = monitors[i].x;
+    t_rect[i].y = monitors[i].y + CONFIG_BAR_HEIGHT;
+    t_rect[i].w = monitors[i].w;
+    t_rect[i].h = monitors[i].h - CONFIG_BAR_HEIGHT;
+  }
+  layout_init(t_rect, monitor_count);
+  for(size_t i=0; i<monitor_count; i++) {
+    t_rect[i].x = monitors[i].x;
+    t_rect[i].y = monitors[i].y;
+    t_rect[i].w = monitors[i].w;
+    t_rect[i].h = CONFIG_BAR_HEIGHT;
+  }
+  bar_init(t_rect, monitor_count);
   normal_mode();
 
   fflush(stdout);
@@ -165,7 +221,6 @@ int main(int argc, char *argv[], char *envp[]) {
 
   layout_deinit();
   bar_deinit();
-  window_deinit();
 
   xcb_disconnect(conn);
   screen = NULL;

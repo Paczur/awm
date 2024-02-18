@@ -3,18 +3,8 @@
 
 #include <xcb/xcb.h>
 
-typedef struct window_t {
-  xcb_window_t id;
-  char *name;
-  int pos; //-2 not existant, -1 minimized, 0-10 workspace
-  struct window_t *next;
-  struct window_t *prev;
-} window_t;
-
-typedef struct window_list_t {
-  window_t *window;
-  struct window_list_t *next;
-} window_list_t;
+typedef struct window_list_t window_list_t;
+typedef struct window_t window_t;
 
 extern window_list_t *windows_minimized;
 extern window_t *windows;

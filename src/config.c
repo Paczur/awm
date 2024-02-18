@@ -1,6 +1,4 @@
 #include "config.h"
-#include "layout/workspace.h"
-#include "layout/grid.h"
 #include "layout/layout.h"
 #include "global.h"
 #include "user_config.h"
@@ -16,14 +14,14 @@
 #define COMB(x, y) ((x)+(y)*2)
 
 #define window_n(n) \
-  void grid_focus_ ## n (void) { \
-    grid_focus(n); \
+  void layout_focus_ ## n (void) { \
+    layout_focus(n); \
   } \
-  void grid_swap_ ## n (void) { \
-    grid_swap(n, grid_focused()); \
+  void layout_swap_focused_ ## n (void) { \
+    layout_swap_focused(n); \
   } \
   void workspace_ ## n (void) { \
-    workspace_switch(n); \
+    layout_switch_workspace(n); \
     redraw_workspaces(); \
   } \
   void show_ ## n (void) { \
@@ -37,35 +35,19 @@ TIMES10(window_n)
 
 
   void shutdown(void) { restart = true; }
-  void focus_window_down(void) { grid_focus(grid_below()); }
-  void focus_window_up(void) { grid_focus(grid_above()); }
-  void focus_window_left(void) { grid_focus(grid_to_left()); }
-  void focus_window_right(void) { grid_focus(grid_to_right()); }
-void swap_window_down(void) {
-  grid_swap(grid_focused(), grid_below());
-}
-void swap_window_up(void) {
-  grid_swap(grid_focused(), grid_above());
-}
-void swap_window_left(void) {
-  grid_swap(grid_focused(), grid_to_left());
-}
-void swap_window_right(void) {
-  grid_swap(grid_focused(), grid_to_right());
-}
-void enlarge_right(void) {
-  grid_resize_w(grid_pos2mon(grid_focused()), CONFIG_RESIZE_STEP);
-}
-void enlarge_down(void) {
-  grid_resize_h(grid_pos2mon(grid_focused()), CONFIG_RESIZE_STEP);
-}
-void enlarge_left(void) {
-  grid_resize_w(grid_pos2mon(grid_focused()), -CONFIG_RESIZE_STEP);
-}
-void enlarge_up(void) {
-  grid_resize_h(grid_pos2mon(grid_focused()), -CONFIG_RESIZE_STEP);
-}
-void equal_sizes(void) { grid_reset_cross(grid_pos2mon(grid_focused())); }
+  void focus_window_down(void) { layout_focus(layout_below()); }
+  void focus_window_up(void) { layout_focus(layout_above()); }
+  void focus_window_left(void) { layout_focus(layout_to_left()); }
+  void focus_window_right(void) { layout_focus(layout_to_right()); }
+void swap_window_down(void) { layout_swap_focused(layout_below()); }
+void swap_window_up(void) { layout_swap_focused(layout_above()); }
+void swap_window_left(void) { layout_swap_focused(layout_to_left()); }
+void swap_window_right(void) { layout_swap_focused(layout_to_right()); }
+void enlarge_right(void) { layout_resize_w_focused(CONFIG_RESIZE_STEP); }
+void enlarge_down(void) { layout_resize_h_focused(CONFIG_RESIZE_STEP); }
+void enlarge_left(void) { layout_resize_w_focused(-CONFIG_RESIZE_STEP); }
+void enlarge_up(void) { layout_resize_h_focused(-CONFIG_RESIZE_STEP); }
+void equal_sizes(void) { layout_reset_sizes_focused(); }
 void terminal(void) { sh(CONFIG_TERMINAL_CMD); }
 void destroy(void) { layout_destroy(); }
 void minimize(void) { layout_minimize(); redraw_minimized(); }

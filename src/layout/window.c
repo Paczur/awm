@@ -1,4 +1,5 @@
 #include "window.h"
+#include "structs.h"
 #include <stdlib.h>
 
 window_list_t *windows_minimized;

@@ -15,5 +15,4 @@
 #define VERT_CELLS_PER_MONITOR 2
 #define CELLS_PER_MONITOR 4
 #define GRID_AXIS 2
-
 #endif

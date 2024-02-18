@@ -2,9 +2,10 @@
 #include "grid.h"
 #include "window.h"
 #include "workspace.h"
-#include "monitor.h"
-#include "../shared/protocol.h"
+#include "workarea.h"
 #include <stdlib.h>
+
+#define LENGTH(x) (sizeof(x)/sizeof((x)[0]))
 
 void layout_adopt(void) {
   xcb_query_tree_cookie_t cookie;
@@ -32,8 +33,9 @@ void layout_adopt(void) {
        areply->_class != XCB_WINDOW_CLASS_INPUT_ONLY) {
       greply = xcb_get_geometry_reply(conn, gcookie, NULL);
       found = false;
-      for(size_t j=0; j<monitor_count; j++) {
-        if(greply->x == monitors[j].x && greply->y == monitors[j].y) {
+      for(size_t j=0; j<workarea_count; j++) {
+        if(greply->x < workareas[j].x ||
+           greply->y < workareas[j].y) {
           // if(children[i] != view.bars[j].id)
             xcb_destroy_window(conn, children[i]);
           found = true;
@@ -61,6 +63,34 @@ void layout_focus_pick(void) {
     workspace_focusedw()->focus = 0;
 }
 
+void layout_focus_restore(void) {
+  if(!grid_focus_restore()) {
+    workspace_focusedw()->focus = 0;
+  }
+}
+
+const window_list_t *layout_get_minimized(void) { return windows_minimized; }
+const workspace_t *layout_get_workspaces(void) { return workspaces; }
+size_t layout_get_focused_workspace(void) { return workspace_focused; }
+bool layout_workspace_empty(size_t i) { return workspace_empty(i); }
+void layout_switch_workspace(size_t n) { return workspace_switch(n); }
+
+void layout_focus(size_t n) { grid_focus(n); }
+size_t layout_above(void) { return grid_above(); }
+size_t layout_below(void) { return grid_below(); }
+size_t layout_to_right(void) { return grid_to_right(); }
+size_t layout_to_left(void) { return grid_to_left(); }
+size_t layout_focused(void) { return grid_focused(); }
+void layout_swap_focused(size_t n) { grid_swap(layout_focused(), n); }
+void layout_reset_sizes_focused(void) {
+  grid_reset_sizes(grid_pos2mon(grid_focused()));
+}
+void layout_resize_w_focused(int n) {
+  grid_resize_w(grid_pos2mon(grid_focused()), n);
+}
+void layout_resize_h_focused(int n) {
+  grid_resize_h(grid_pos2mon(grid_focused()), n);
+}
 
 void layout_minimize(void) {
   grid_minimize(grid_focused());
@@ -79,10 +109,11 @@ void layout_show(size_t n) {
 }
 
 
-void layout_init(void) {
-  monitor_init();
-  workspace_init();
-  grid_init();
+void layout_init(const rect_t *workareas, size_t workarea_count) {
+  size_t spawn_order[] = CONFIG_SPAWN_ORDER;
+  workarea_init((workarea_t*)workareas, workarea_count);
+  workspace_init(conn);
+  grid_init(conn, spawn_order, LENGTH(spawn_order), CONFIG_GAPS);
   layout_adopt();
 }
 
@@ -90,7 +121,7 @@ void layout_deinit(void) {
   grid_deinit();
   workspace_deinit();
   window_deinit();
-  monitor_deinit();
+  workarea_deinit();
 }
 
 

@@ -5,6 +5,7 @@
 #include <pango/pango.h>
 #include <xcb/xcb.h>
 #include "system_config.h"
+#include "shared/rect.h"
 
 typedef struct bar_component_t {
   xcb_window_t id;
@@ -22,6 +23,7 @@ typedef struct launcher_t {
 typedef struct bar_t {
   xcb_window_t id;
   launcher_t launcher;
+  rect_t geometry;
   bar_component_t mode;
   bar_component_t workspaces[MAX_WORKSPACES];
   bar_component_t minimized[MAX_VISIBLE_MINIMIZED];
@@ -50,7 +52,9 @@ typedef struct bar_settings_t {
   bar_component_settings_t launcher_hint_selected;
 } bar_settings_t;
 
-void bar_init(void);
+extern size_t bar_count;
+
+void bar_init(rect_t*, size_t);
 void bar_deinit(void);
 void redraw_workspaces(void);
 void redraw_minimized(void);

@@ -16,13 +16,13 @@
 {mod, XK_l, f ## _right}
 
 #define CONFIG_SHORTCUTS_NORMAL_MODE { \
-  CONFIG_NUMBER_PATTERN(MOD_NONE,     grid_focus), \
-  CONFIG_NUMBER_PATTERN(MOD_SHIFT,    grid_swap),  \
-  CONFIG_NUMBER_PATTERN(MOD_ALT,      workspace),    \
-  CONFIG_NUMBER_PATTERN(MOD_CTRL,     show),         \
-  CONFIG_DIRECTION_PATTERN(MOD_NONE,  focus_window), \
-  CONFIG_DIRECTION_PATTERN(MOD_SHIFT, swap_window),  \
-  CONFIG_DIRECTION_PATTERN(MOD_ALT,   enlarge),      \
+  CONFIG_NUMBER_PATTERN(MOD_NONE,     layout_focus),        \
+  CONFIG_NUMBER_PATTERN(MOD_SHIFT,    layout_swap_focused), \
+  CONFIG_NUMBER_PATTERN(MOD_ALT,      workspace),           \
+  CONFIG_NUMBER_PATTERN(MOD_CTRL,     show),                \
+  CONFIG_DIRECTION_PATTERN(MOD_NONE,  focus_window),        \
+  CONFIG_DIRECTION_PATTERN(MOD_SHIFT, swap_window),         \
+  CONFIG_DIRECTION_PATTERN(MOD_ALT,   enlarge),             \
   {MOD_NONE,  XF86XK_MonBrightnessDown, brightness_down}, \
   {MOD_NONE,  XF86XK_MonBrightnessUp,   brightness_up},   \
   {MOD_NONE,  XK_F1,                    brightness_down}, \
