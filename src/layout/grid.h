@@ -8,9 +8,9 @@
 typedef struct grid_cell_t grid_cell_t;
 typedef struct window_t window_t;
 
-#define HOR_CELLS_PER_MONITOR 2
-#define VERT_CELLS_PER_MONITOR 2
-#define CELLS_PER_MONITOR 4
+#define HOR_CELLS_PER_WORKAREA 2
+#define VERT_CELLS_PER_WORKAREA 2
+#define CELLS_PER_WORKAREA 4
 #define GRID_AXIS 2
 
 grid_cell_t *grid_focusedc(void);
@@ -43,6 +43,6 @@ void grid_deinit(void);
 
 void grid_event_focus(xcb_window_t);
 void grid_event_map(xcb_window_t);
-bool grid_event_unmap(xcb_window_t);
+void grid_event_unmap(xcb_window_t);
 
 #endif

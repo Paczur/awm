@@ -140,6 +140,6 @@ int layout_event_destroy(xcb_window_t window) {
 }
 
 void layout_event_unmap(xcb_window_t window) {
-  if(!grid_event_unmap(window))
-    layout_focus_pick();
+  grid_event_unmap(window);
+  layout_focus_restore();
 }

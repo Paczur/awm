@@ -410,9 +410,6 @@ void radix_gen_hints(const radix_node_t *node, char* buff, size_t length) {
     }
     radix_hints[i][lengths[i]] = 0;
   }
-  for(size_t i=0; i<MAX_LAUNCHER_HINTS; i++) {
-    printf("%s\n", radix_hints[i]);
-  }
 }
 
 void radix_populate(radix_node_t **tree) {

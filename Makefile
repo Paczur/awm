@@ -1,6 +1,7 @@
 BIN=bin
-OBJ=obj
-DIRS=$(BIN) $(OBJ)
+BUILD=build
+DIRS=$(BIN) $(BUILD)
+SRC=src
 
 WARN=-Wall -Wextra
 DEBUG=-D DEBUG -Og -ggdb3 -fsanitize=address -fsanitize=pointer-compare \
@@ -11,30 +12,43 @@ TEXT=$(shell pkg-config --cflags --libs pangocairo fontconfig)
 X=$(shell pkg-config --cflags --libs x11-xcb xcb-randr)
 THREADS=-lpthread
 LIBS= $(X) $(TEXT) $(THREADS)
-RELEASE=-O2 -s -pipe -flto=4
+RELEASE=-O2 -s -pipe -flto=4 -fwhole-program
 CFLAGS=$(WARN) -march=native -std=gnu99 $(LIBS)
 
-SOURCE=$(wildcard src/*.c src/**/*.c)
+SOURCES=$(wildcard $(SRC)/*.c $(SRC)/**/*.c)
+OBJECTS=$(patsubst $(SRC)/%.c,$(BUILD)/%.o,$(SOURCES))
+DEPENDS=$(patsubst $(SRC)/%.c,$(BUILD)/%.d,$(SOURCES))
+-include $(DEPENDS)
+
+.PHONY: release debug test test_clean clean
+
 $(VERBOSE).SILENT:
 
-$(shell mkdir -p $(DIRS))
-
 release: CFLAGS += $(RELEASE)
-release: main
+release: $(BIN)/idkwm
 
 debug: CFLAGS += $(DEBUG)
-debug: main
-
-main: $(SOURCE)
-	$(CC) $(CFLAGS) -o $(BIN)/$@ $^
-
-layout.o: src/layout/layout.c
-	$(CC) $(CFLAGS) -c -o $(OBJ)/$@ $^
+debug: $(BIN)/idkwm-debug
 
 clean:
-	rm -rf $(BIN) $(OBJ)
+	rm -rf $(BIN) $(BUILD)
 
-log_remove:
-	rm -f $(BIN)/out
+test_clean:
+	rm -rf $(BIN)/out
 
-test: log_remove debug
+test: test_clean debug
+
+$(BIN):
+	mkdir -p $(BIN)
+
+$(BIN)/idkwm: $(SOURCES) | $(BIN)
+	$(CC) $(CFLAGS) -o $@ $^
+
+$(BIN)/idkwm-debug: $(OBJECTS) | $(BIN)
+	$(CC) $(CFLAGS) -o $@ $^
+
+$(BUILD):
+	mkdir -p $(dir $(OBJECTS)) $(dir $(DEPENDS))
+
+$(BUILD)/%.o: $(SRC)/%.c | $(BUILD)
+	$(CC) $(CFLAGS) -MMD -MP -c -o $@ $<

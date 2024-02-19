@@ -7,9 +7,9 @@
 #include <string.h>
 
 #define LENGTH(x) (sizeof((x))/sizeof((x)[0]))
-#define X(pos) ((pos)%HOR_CELLS_PER_MONITOR)
-#define Y(pos) ((pos)%CELLS_PER_MONITOR/VERT_CELLS_PER_MONITOR)
-#define COMB(x, y) ((x)+(y)*VERT_CELLS_PER_MONITOR)
+#define X(pos) ((pos)%HOR_CELLS_PER_WORKAREA)
+#define Y(pos) ((pos)%CELLS_PER_WORKAREA/VERT_CELLS_PER_WORKAREA)
+#define COMB(x, y) ((x)+(y)*VERT_CELLS_PER_WORKAREA)
 
 static uint32_t *prevstate;
 static size_t *spawn_order;
@@ -17,8 +17,8 @@ static size_t spawn_order_len;
 static size_t gap_size;
 static xcb_connection_t *conn;
 
-bool grid_pos_invalid(size_t n) { return n >= workarea_count*CELLS_PER_MONITOR; }
-size_t grid_mon2pos(size_t m) { return m*CELLS_PER_MONITOR; }
+bool grid_pos_invalid(size_t n) { return n >= workarea_count*CELLS_PER_WORKAREA; }
+size_t grid_mon2pos(size_t m) { return m*CELLS_PER_WORKAREA; }
 
 
 static grid_cell_t *grid_pos2cell(size_t n) {
@@ -46,7 +46,7 @@ static grid_cell_t *grid_pos2originc(size_t n) {
 }
 
 static size_t grid_xwin2pos(xcb_window_t window) {
-  for(size_t i=0; i<workarea_count*4; i++) {
+  for(size_t i=0; i<CELLS_PER_WORKAREA; i++) {
     if(grid_pos2win(i) != NULL &&
        grid_pos2win(i)->id == window)
       return i;
@@ -97,7 +97,7 @@ static void grid_expand_vertically(size_t m, uint32_t* values, size_t offset) {
 static void grid_calculate(size_t m, uint32_t* values, size_t offset) {
   const workspace_t* workspace = workspace_focusedw();
   size_t p;
-  for(size_t i=0; i<CELLS_PER_MONITOR; i++) {
+  for(size_t i=0; i<CELLS_PER_WORKAREA; i++) {
     p = grid_pos2mon(m)+i;
     if(grid_pos2origin(p) != p)
       grid_pos2cell(p)->window = NULL;
@@ -128,10 +128,10 @@ static void grid_calculate(size_t m, uint32_t* values, size_t offset) {
     grid_expand_horizontally(m, values, offset);
   }
   if(grid_pos2mon(grid_focused()) == m) {
-    values[offset+grid_focused()%CELLS_PER_MONITOR*CELLS_PER_MONITOR+1] -= gap_size;
-    values[offset+grid_focused()%CELLS_PER_MONITOR*CELLS_PER_MONITOR+0] -= gap_size;
-    values[offset+grid_focused()%CELLS_PER_MONITOR*CELLS_PER_MONITOR+2] += gap_size*2;
-    values[offset+grid_focused()%CELLS_PER_MONITOR*CELLS_PER_MONITOR+3] += gap_size*2;
+    values[offset+grid_focused()%CELLS_PER_WORKAREA*CELLS_PER_WORKAREA+1] -= gap_size;
+    values[offset+grid_focused()%CELLS_PER_WORKAREA*CELLS_PER_WORKAREA+0] -= gap_size;
+    values[offset+grid_focused()%CELLS_PER_WORKAREA*CELLS_PER_WORKAREA+2] += gap_size*2;
+    values[offset+grid_focused()%CELLS_PER_WORKAREA*CELLS_PER_WORKAREA+3] += gap_size*2;
   }
 }
 
@@ -146,7 +146,7 @@ grid_cell_t *grid_focusedc(void) {
 size_t grid_pos2mon(size_t n) {
   return grid_pos_invalid(n) ?
     SIZE_MAX :
-    n/CELLS_PER_MONITOR;
+    n/CELLS_PER_WORKAREA;
 }
 
 size_t grid_next_pos(void) {
@@ -163,7 +163,7 @@ void grid_unmark(window_t *w) {
   workspace_t *workspace;
   for(size_t j=0; j<MAX_WORKSPACES; j++) {
     workspace = workspaces+j;
-    for(size_t i=0; i<workarea_count*CELLS_PER_MONITOR; i++) {
+    for(size_t i=0; i<workarea_count*CELLS_PER_WORKAREA; i++) {
       if(workspace->grid[i].origin == i &&
          workspace->grid[i].window == w) {
         workspace->grid[workspace->grid[i].origin].window = NULL;
@@ -177,19 +177,19 @@ void grid_unmark(window_t *w) {
 
 void grid_refresh(void) {
   for(size_t i=0; i<workarea_count; i++) {
-    grid_calculate(i, prevstate, i*4*CELLS_PER_MONITOR);
+    grid_calculate(i, prevstate, i*4*CELLS_PER_WORKAREA);
   }
 }
 
 void grid_update(size_t m) {
   const workspace_t *workspace = workspace_focusedw();
-  uint32_t newstate[4*CELLS_PER_MONITOR];
+  uint32_t newstate[4*CELLS_PER_WORKAREA];
   grid_calculate(m, newstate, 0);
   if(grid_mon_empty(m)) {
     for(size_t i=0; i<GRID_AXIS; i++) {
       workspace->cross[m*GRID_AXIS+i] = 0;
     }
-    memcpy(prevstate+m*4*CELLS_PER_MONITOR, newstate, sizeof(newstate));
+    memcpy(prevstate+m*4*CELLS_PER_WORKAREA, newstate, sizeof(newstate));
     return;
   }
   if(grid_pos2win(COMB(0, 0)) == grid_pos2win(COMB(0, 1)) &&
@@ -200,13 +200,13 @@ void grid_update(size_t m) {
      grid_pos2win(COMB(0, 1)) == grid_pos2win(COMB(1, 1))) {
     workspace->cross[m*GRID_AXIS+0] = 0;
   }
-  for(size_t i=0; i<CELLS_PER_MONITOR; i++) {
+  for(size_t i=0; i<CELLS_PER_WORKAREA; i++) {
     if(grid_pos2origin(grid_mon2pos(m)+i) == grid_mon2pos(m)+i &&
        grid_pos2win(grid_mon2pos(m)+i) != NULL &&
-       (prevstate[m*4*CELLS_PER_MONITOR+i*4+0] != newstate[i*4+0] ||
-        prevstate[m*4*CELLS_PER_MONITOR+i*4+1] != newstate[i*4+1] ||
-        prevstate[m*4*CELLS_PER_MONITOR+i*4+2] != newstate[i*4+2] ||
-        prevstate[m*4*CELLS_PER_MONITOR+i*4+3] != newstate[i*4+3])) {
+       (prevstate[m*4*CELLS_PER_WORKAREA+i*4+0] != newstate[i*4+0] ||
+        prevstate[m*4*CELLS_PER_WORKAREA+i*4+1] != newstate[i*4+1] ||
+        prevstate[m*4*CELLS_PER_WORKAREA+i*4+2] != newstate[i*4+2] ||
+        prevstate[m*4*CELLS_PER_WORKAREA+i*4+3] != newstate[i*4+3])) {
       xcb_configure_window(conn,
                            grid_pos2win(grid_mon2pos(m)+1)->id,
                            XCB_CONFIG_WINDOW_X |
@@ -215,8 +215,17 @@ void grid_update(size_t m) {
                            newstate+i*4);
     }
   }
-
-  memcpy(prevstate+m*4*CELLS_PER_MONITOR, newstate, sizeof(newstate));
+  memcpy(prevstate+m*4*CELLS_PER_WORKAREA, newstate, sizeof(newstate));
+  // puts("GRID:");
+  // for(size_t i=0; i<CELLS_PER_WORKAREA*workarea_count; i++) {
+  //   printf("%lu: ", i);
+  //   if(grid_pos2cell(i)->window == NULL) {
+  //     printf("w:NULL ");
+  //   } else {
+  //     printf("w:%u ", grid_pos2cell(i)->window->id);
+  //   }
+  //   printf("o:%lu\n", grid_pos2cell(i)->origin);
+  // }
 }
 
 void grid_adjust_pos(size_t m) {
@@ -225,7 +234,7 @@ void grid_adjust_pos(size_t m) {
   size_t count = 0;
   size_t iter = 0;
   size_t pos = grid_mon2pos(m);
-  for(size_t i=0; i<CELLS_PER_MONITOR; i++) {
+  for(size_t i=0; i<CELLS_PER_WORKAREA; i++) {
     if(grid_pos2origin(i+pos) == i+pos)
       count++;
   }
@@ -374,7 +383,7 @@ void grid_destroy(size_t n) {
 
 size_t grid_below(void) {
   size_t t = grid_focused();
-  return grid_pos2mon(t)*CELLS_PER_MONITOR+COMB(X(t), !Y(t));
+  return grid_pos2mon(t)*CELLS_PER_WORKAREA+COMB(X(t), !Y(t));
 }
 
 size_t grid_above(void) { return grid_below(); }
@@ -384,12 +393,12 @@ size_t grid_to_right(void) {
   size_t t = grid_focused();
   size_t i = 0;
   while(grid_focusedc()->window == next &&
-        i < workarea_count*HOR_CELLS_PER_MONITOR) {
-    if(t == workarea_count*CELLS_PER_MONITOR-1 ||
-       t == workarea_count*CELLS_PER_MONITOR-HOR_CELLS_PER_MONITOR-1) {
+        i < workarea_count*HOR_CELLS_PER_WORKAREA) {
+    if(t == workarea_count*CELLS_PER_WORKAREA-1 ||
+       t == workarea_count*CELLS_PER_WORKAREA-HOR_CELLS_PER_WORKAREA-1) {
       t = COMB(0, Y(t));
     } else {
-      t += (X(t) == HOR_CELLS_PER_MONITOR-1) ? (CELLS_PER_MONITOR-1) : 1;
+      t += (X(t) == HOR_CELLS_PER_WORKAREA-1) ? (CELLS_PER_WORKAREA-1) : 1;
     }
     next = grid_pos2cell(t)->window;
     i++;
@@ -403,11 +412,11 @@ size_t grid_to_left(void) {
   size_t t = workspace->focus;
   size_t i = 0;
   while(grid_focusedc()->window == next &&
-        i < workarea_count*HOR_CELLS_PER_MONITOR) {
-    if(t == 0 || t == HOR_CELLS_PER_MONITOR) {
-      t = COMB(1, Y(t)) + (workarea_count-1)*CELLS_PER_MONITOR;
+        i < workarea_count*HOR_CELLS_PER_WORKAREA) {
+    if(t == 0 || t == HOR_CELLS_PER_WORKAREA) {
+      t = COMB(1, Y(t)) + (workarea_count-1)*CELLS_PER_WORKAREA;
     } else {
-      t -= X(t) == 0 ? CELLS_PER_MONITOR-1 : HOR_CELLS_PER_MONITOR-1;
+      t -= X(t) == 0 ? CELLS_PER_WORKAREA-1 : HOR_CELLS_PER_WORKAREA-1;
     }
     next = grid_pos2win(t);
     i++;
@@ -422,7 +431,7 @@ void grid_init(xcb_connection_t *c, size_t *so, size_t so_len, size_t n) {
   spawn_order = malloc(so_len*sizeof(size_t));
   spawn_order_len = so_len;
   memcpy(spawn_order, so, so_len*sizeof(size_t));
-  prevstate = calloc(workarea_count*4*CELLS_PER_MONITOR, sizeof(uint32_t));
+  prevstate = calloc(workarea_count*4*CELLS_PER_WORKAREA, sizeof(uint32_t));
 }
 
 void grid_deinit(void) {
@@ -432,28 +441,28 @@ void grid_deinit(void) {
 
 
 void grid_event_focus(xcb_window_t window) {
-  workspace_t *workspace = workspace_focusedw();
-  size_t grid_i = workspace->focus;
+  size_t grid_i = grid_focused();
   size_t in = grid_xwin2pos(window);
-  if(in >= workarea_count * CELLS_PER_MONITOR) return;
-  size_t temp = workspace->grid[in].origin;
-  if(grid_i < workarea_count * CELLS_PER_MONITOR &&
-     temp < workarea_count * CELLS_PER_MONITOR &&
-     workspace->grid[grid_i].window == workspace->grid[temp].window) return;
-  if(grid_i < workarea_count*CELLS_PER_MONITOR &&
-     workspace->grid[grid_i].window != NULL) {
+  if(grid_pos_invalid(in)) return;
+  size_t temp = grid_pos2origin(in);
+  if(!grid_pos_invalid(grid_i) &&
+     !grid_pos_invalid(temp) &&
+     grid_pos2cell(grid_i)->window == grid_pos2cell(temp)->window)
+    return;
+  // printf("FOCUS: %lu\n", temp);
+  if(!grid_pos_invalid(grid_i) && grid_pos2cell(grid_i)->window != NULL) {
     prevstate[grid_i*4+0] += gap_size;
     prevstate[grid_i*4+1] += gap_size;
     prevstate[grid_i*4+2] -= gap_size*2;
     prevstate[grid_i*4+3] -= gap_size*2;
     xcb_configure_window(conn,
-                         workspace->grid[grid_i].window->id,
+                         grid_pos2cell(grid_i)->window->id,
                          XCB_CONFIG_WINDOW_X |
                          XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH |
                          XCB_CONFIG_WINDOW_HEIGHT,
                          prevstate+grid_i*4);
   }
-  if(temp < workarea_count*CELLS_PER_MONITOR) {
+  if(!grid_pos_invalid(temp)) {
     prevstate[temp*4+0] -= gap_size;
     prevstate[temp*4+1] -= gap_size;
     prevstate[temp*4+2] += gap_size*2;
@@ -464,7 +473,7 @@ void grid_event_focus(xcb_window_t window) {
                          XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH |
                          XCB_CONFIG_WINDOW_HEIGHT,
                          prevstate+temp*4);
-    workspace->focus = temp;
+    workspace_focusedw()->focus = temp;
   }
 }
 
@@ -484,9 +493,9 @@ void grid_event_map(xcb_window_t window) {
   grid_place_window(win, next, false);
 }
 
-bool grid_event_unmap(xcb_window_t window) {
+void grid_event_unmap(xcb_window_t window) {
   size_t pos = grid_xwin2pos(window);
-  if(grid_pos_invalid(pos)) return false;
+  if(grid_pos_invalid(pos)) return;
   pos = grid_pos2origin(pos);
   grid_pos2win(pos)->pos = -2;
   grid_pos2cell(pos)->window = NULL;
@@ -495,10 +504,4 @@ bool grid_event_unmap(xcb_window_t window) {
     workspace_focusedw()->focus = -1;
   grid_update(grid_pos2mon(pos));
   grid_adjust_pos(grid_pos2mon(pos));
-
-  if(grid_pos2win(pos) != NULL) {
-    grid_focus(pos);
-    return true;
-  }
-  return false;
 }
