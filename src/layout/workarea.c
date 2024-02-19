@@ -1,5 +1,5 @@
 #include "workarea.h"
-#include "structs.h"
+#include "layout_structs.h"
 #include <stdlib.h>
 #include <string.h>
 

@@ -5,7 +5,7 @@
 #include "../structs.h"
 #include "../protocol.h"
 #include "../user_config.h"
-#include "structs.h"
+#include "layout_structs.h"
 
 void layout_focus_pick(void);
 void layout_focus_restore(void);
