@@ -152,6 +152,7 @@ void bar_redraw(void) {
   block_info_redraw();
   block_minimized_redraw();
   launcher_prompt_redraw();
+  launcher_hint_redraw();
 }
 
 void bar_init(const rect_t *bs, size_t count) {
@@ -180,8 +181,8 @@ void bar_init(const rect_t *bs, size_t count) {
   CONF_COLOR(&bsh, CONFIG_BAR_WORKSPACE_FOCUSED);
   CONF_COLOR(&bsn, CONFIG_BAR_WORKSPACE_UNFOCUSED);
   block_workspace_init(font, CONFIG_BAR_WORKSPACE_MIN_WIDTH, &bsh, &bsn);
-  CONF_COLOR(&bsh, CONFIG_BAR_INFO);
-  CONF_COLOR(&bsn, CONFIG_BAR_INFO_HIGHLIGHTED);
+  CONF_COLOR(&bsn, CONFIG_BAR_INFO);
+  CONF_COLOR(&bsh, CONFIG_BAR_INFO_HIGHLIGHTED);
   block_info_init(font, CONFIG_BAR_INFO_MIN_WIDTH, &bsh, &bsn,
                   (block_info_data_t[])CONFIG_BAR_INFO_BLOCKS,
                   LENGTH((block_info_data_t[])CONFIG_BAR_INFO_BLOCKS),

@@ -63,8 +63,8 @@ void block_workspace_update(size_t focused, bool(*empty)(size_t),
                           block_workspace.min_width,
                           block_workspace_geometry+prev_workspace,
                           block_workspace_geometry+i);
-      if(block_workspace_geometry[i].x >
-         block_workspace_geometry[prev_workspace].x) {
+      if(block_next_x(block_workspace_geometry+i) >
+         block_next_x(block_workspace_geometry+prev_workspace)) {
         prev_workspace = i;
       }
       block_set_text_batch(block_workspace.blocks+index+1,

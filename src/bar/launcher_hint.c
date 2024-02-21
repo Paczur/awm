@@ -21,6 +21,11 @@ static const block_settings_t *launcher_hint_get_settings(size_t n) {
     &launcher_hint.unfocused;
 }
 
+void launcher_hint_redraw(void) {
+  block_redraw_batch(launcher_hint.blocks, launcher_hint_count*
+                     launcher_container_count);
+}
+
 void launcher_hint_regen(void) {
   launcher_trie_search_node_t *sr;
   launcher_hint_selected = 0;

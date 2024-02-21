@@ -8,6 +8,7 @@
 extern size_t launcher_hint_selected;
 extern size_t launcher_hint_count;
 
+void launcher_hint_redraw(void);
 void launcher_hint_regen(void);
 void launcher_hint_update(void);
 
