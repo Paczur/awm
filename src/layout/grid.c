@@ -208,7 +208,7 @@ void grid_update(size_t m) {
         prevstate[m*4*CELLS_PER_WORKAREA+i*4+2] != newstate[i*4+2] ||
         prevstate[m*4*CELLS_PER_WORKAREA+i*4+3] != newstate[i*4+3])) {
       xcb_configure_window(conn,
-                           grid_pos2win(grid_mon2pos(m)+1)->id,
+                           grid_pos2win(grid_mon2pos(m)+i)->id,
                            XCB_CONFIG_WINDOW_X |
                            XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH |
                            XCB_CONFIG_WINDOW_HEIGHT,
@@ -378,7 +378,7 @@ void grid_minimize(size_t n) {
 void grid_destroy(size_t n) {
   grid_cell_t *cell = grid_pos2cell(n);
   if(cell == NULL || cell->window == NULL) return;
-  xcb_destroy_window(conn, cell->window->id);
+  xcb_kill_client(conn, cell->window->id);
 }
 
 size_t grid_below(void) {

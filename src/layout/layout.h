@@ -4,7 +4,7 @@
 #include <xcb/xcb.h>
 #include "../structs.h"
 #include "../protocol.h"
-#include "../user_config.h"
+#include "../config.h"
 #include "layout_structs.h"
 
 void layout_focus_pick(void);

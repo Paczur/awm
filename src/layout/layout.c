@@ -73,7 +73,7 @@ const window_list_t *layout_get_minimized(void) { return windows_minimized; }
 const workspace_t *layout_get_workspaces(void) { return workspaces; }
 size_t layout_get_focused_workspace(void) { return workspace_focused; }
 bool layout_workspace_empty(size_t i) { return workspace_empty(i); }
-void layout_switch_workspace(size_t n) { return workspace_switch(n); }
+void layout_switch_workspace(size_t n) { workspace_switch(n); }
 
 void layout_focus(size_t n) { grid_focus(n); }
 size_t layout_above(void) { return grid_above(); }
@@ -112,6 +112,7 @@ void layout_show(size_t n) {
 void layout_init(const rect_t *workareas, size_t workarea_count) {
   size_t spawn_order[] = CONFIG_SPAWN_ORDER;
   workarea_init((workarea_t*)workareas, workarea_count);
+  window_init(conn, config_bar_minimized_name_replacements);
   workspace_init(conn);
   grid_init(conn, spawn_order, LENGTH(spawn_order), CONFIG_GAPS);
   layout_adopt();

@@ -18,6 +18,7 @@ CFLAGS=$(WARN) -march=native -std=gnu99 $(LIBS)
 SOURCES=$(wildcard $(SRC)/*.c $(SRC)/**/*.c)
 OBJECTS=$(patsubst $(SRC)/%.c,$(BUILD)/%.o,$(SOURCES))
 DEPENDS=$(patsubst $(SRC)/%.c,$(BUILD)/%.d,$(SOURCES))
+$(shell mkdir -p $(dir $(DEPENDS)))
 -include $(DEPENDS)
 
 .PHONY: release debug test test_clean clean

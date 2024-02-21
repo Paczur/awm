@@ -3,7 +3,6 @@
 
 #include <stddef.h>
 #include <xcb/xcb.h>
-#include "bar.h"
 #include "protocol.h"
 #include "system_config.h"
 #include <stdbool.h>
@@ -24,16 +23,9 @@ typedef enum {
   MODE_INSERT
 } MODE;
 
-typedef struct view_t {
-  bar_t *bars;
-  bar_settings_t bar_settings;
-  xcb_visualtype_t *visual_type;
-} view_t;
-
 //WM
 extern MODE mode;
 extern bool restart;
-extern view_t view;
 
 extern XIM xim;
 extern XIC xic;

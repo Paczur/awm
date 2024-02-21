@@ -1,7 +1,7 @@
 #include "config.h"
 #include "global.h"
 #include "shortcut.h"
-#include "bar.h"
+#include "bar/bar.h"
 #include <xcb/randr.h>
 #include <inttypes.h>
 #include <stdio.h>
@@ -81,7 +81,7 @@ void setup_visual(void) {
       visual_type_current = iter_visuals.data;
 
       if (visual_type_current->visual_id == screen->root_visual) {
-        view.visual_type = visual_type_current;
+        visual_type = visual_type_current;
         return;
       }
     }
@@ -121,11 +121,11 @@ void event_loop(void) {
     switch(event->response_type) {
     case XCB_KEY_PRESS:
       press = (xcb_key_press_event_t*)event;
-      for(size_t i=0; i<bar_count; i++) {
-        if(press->event == view.bars[i].launcher.prompt.id) {
-          launcher_keypress(press);
-          goto launcher_press;
+      if(bar_launcher_window(press->event)) {
+        if(!shortcut_handle(press->detail, SH_TYPE_LAUNCHER, press->state)) {
+         bar_launcher_append(press);
         }
+        goto launcher_press;
       }
       if(mode == MODE_INSERT) {
         shortcut_handle(press->detail, SH_TYPE_INSERT_MODE, press->state);
@@ -146,9 +146,9 @@ void event_loop(void) {
     case XCB_DESTROY_NOTIFY:
       t = layout_event_destroy(((xcb_destroy_notify_event_t *)event)->window);
       if(t == -1) {
-        redraw_minimized();
+        bar_update_minimized();
       } else if(t >= 0) {
-        redraw_workspaces();
+        bar_update_workspace();
       }
     break;
 
@@ -167,7 +167,7 @@ void event_loop(void) {
 
     case XCB_EXPOSE:
       //TODO: MAKE IT MORE SPECIFIC
-      redraw_bars();
+      bar_redraw();
     break;
     }
     free(event);
