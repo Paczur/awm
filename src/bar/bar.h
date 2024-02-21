@@ -4,10 +4,9 @@
 #include "bar_structs.h"
 #include "../layout/layout.h"
 #include "../structs.h"
-#include "../protocol.h"
-#include "../global.h"
-#include "../user_config.h"
-#include "../proc.h"
+#include "../system.h"
+#include "../config.h"
+#include "../mode.h"
 
 void bar_launcher_show(void);
 void bar_launcher_hide(void);

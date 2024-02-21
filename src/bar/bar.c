@@ -14,6 +14,7 @@
 static bool launcher_visible;
 
 //TODO: Possibly optimize searching
+#define LENGTH(x) (sizeof(x)/sizeof((x)[0]))
 
 #define CONF_COLOR(b, def) \
   to_block_settings(b, def ## _BACKGROUND, def ## _FOREGROUND)
@@ -132,7 +133,7 @@ void bar_update_workspace(void) {
 
 void bar_update_mode(void) {
   size_t pos = block_next_x(&block_mode_geometry);
-  block_mode_update(mode == MODE_NORMAL);
+  block_mode_update(mode_get() == MODE_NORMAL);
   if(block_next_x(&block_mode_geometry) != pos)
     bar_update_workspace();
 }

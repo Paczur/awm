@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include "global.h"
 
 shortcuts_t shortcuts;
 shortcuts_unused_t *shortcuts_unused;

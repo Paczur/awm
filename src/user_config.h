@@ -92,8 +92,7 @@
   {"mlterm", "󰆍"}, \
   {"librewolf", ""}, \
   {"gimp", ""}, \
-  {"telegram-desktop", ""}, \
-  {0} \
+  {"telegram-desktop", ""} \
 }
 
 #define CONFIG_BAR_INFO_MIN_WIDTH 0

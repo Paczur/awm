@@ -7,6 +7,7 @@
 static xcb_connection_t *conn;
 static xcb_atom_t wm_class;
 static const char *const (*classes)[2];
+static size_t classes_length;
 window_list_t *windows_minimized;
 window_t *windows;
 
@@ -26,7 +27,7 @@ static void window_set_name(window_t *window) {
   length[1] = xcb_get_property_value_length(reply);
   length[0] = strnlen(class, length[1])+1;
   length[1] -= length[0] + 1;
-  for(size_t i=0; classes[i][0] != 0; i++) {
+  for(size_t i=0; i < classes_length; i++) {
     if(strcmp(class, classes[i][0]) == 0) {
       strcpy(window->name, classes[i][1]);
       free(reply);
@@ -116,9 +117,11 @@ void window_minimize(window_t *window) {
 }
 
 
-void window_init(xcb_connection_t *c, const char *const(*names)[2]) {
+void window_init(xcb_connection_t *c, const char *const(*names)[2],
+                 size_t names_length) {
   conn = c;
   classes = names;
+  classes_length = names_length;
   char wm_class_str[] = "WM_CLASS";
   xcb_intern_atom_reply_t *reply = NULL;
   xcb_intern_atom_cookie_t cookie;

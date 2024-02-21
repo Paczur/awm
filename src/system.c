@@ -1,8 +1,20 @@
-#include "proc.h"
+#include "system.h"
 #include <unistd.h>
 #include <sys/wait.h>
 #include <stdio.h>
 #include <string.h>
+
+
+//XCB
+xcb_visualtype_t *visual_type;
+xcb_connection_t* conn;
+const xcb_setup_t* setup;
+xcb_screen_t* screen;
+
+//XLIB
+XIM xim;
+XIC xic;
+Display *dpy;
 
 int shout(char *cmd, char *out, size_t len) {
   FILE *f;

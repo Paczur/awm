@@ -10,7 +10,6 @@ typedef enum {
 } MODIFIER;
 
 #include "user_config.h"
-#include "system_config.h"
 #include <xcb/xcb.h>
 
 extern const char *const config_bar_minimized_name_replacements[][2];

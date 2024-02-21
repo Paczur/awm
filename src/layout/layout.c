@@ -112,7 +112,8 @@ void layout_show(size_t n) {
 void layout_init(const rect_t *workareas, size_t workarea_count) {
   size_t spawn_order[] = CONFIG_SPAWN_ORDER;
   workarea_init((workarea_t*)workareas, workarea_count);
-  window_init(conn, config_bar_minimized_name_replacements);
+  window_init(conn, config_bar_minimized_name_replacements,
+              LENGTH((char*[][2])CONFIG_BAR_MINIMIZED_NAME_REPLACEMENTS));
   workspace_init(conn);
   grid_init(conn, spawn_order, LENGTH(spawn_order), CONFIG_GAPS);
   layout_adopt();

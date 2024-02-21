@@ -3,7 +3,7 @@
 
 #include <xcb/xcb.h>
 #include "../structs.h"
-#include "../protocol.h"
+#include "../system.h"
 #include "../config.h"
 #include "layout_structs.h"
 

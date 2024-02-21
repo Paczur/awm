@@ -1,17 +1,18 @@
-#include "config.h"
-#include "global.h"
-#include "shortcut.h"
+#include "main.h"
+#include "layout/layout.h"
 #include "bar/bar.h"
+#include "config.h"
+#include "shortcut.h"
+#include "mode.h"
 #include <xcb/randr.h>
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h> //malloc
-#include "layout/layout.h"
-#include "structs.h"
-#include "user_config.h"
 
 extern char **environ;
+
+bool restart;
 
 typedef struct init_query_t {
   xcb_get_keyboard_mapping_cookie_t kmap_cookie;
@@ -127,7 +128,7 @@ void event_loop(void) {
         }
         goto launcher_press;
       }
-      if(mode == MODE_INSERT) {
+      if(mode_get() == MODE_INSERT) {
         shortcut_handle(press->detail, SH_TYPE_INSERT_MODE, press->state);
       } else {
         shortcut_handle(press->detail, SH_TYPE_NORMAL_MODE, press->state);

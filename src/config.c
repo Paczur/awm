@@ -1,13 +1,15 @@
 #include "config.h"
 #include "layout/layout.h"
-#include "global.h"
 #include "bar/bar.h"
 #include <stdlib.h> //calloc
 #include <string.h> //memmove
 #include <stdio.h> //printf
+#include "global.h"
 #include "shortcut.h"
-#include "proc.h"
+#include "system.h"
+#include "main.h"
 
+#define LENGTH(x) (sizeof(x)/sizeof((x)[0]))
 #define X(pos) ((pos)%2)
 #define Y(pos) ((pos)%4/2)
 #define COMB(x, y) ((x)+(y)*2)
@@ -70,6 +72,8 @@ void launcher_confirm(void) { bar_launcher_run(); }
 void launcher_hint_left(void) { bar_launcher_select_left(); }
 void launcher_hint_right(void) { bar_launcher_select_right(); }
 void launcher_erase(void) { bar_launcher_erase(); }
+void insert_mode(void) { mode_set(MODE_INSERT); }
+void normal_mode(void) { mode_set(MODE_NORMAL); }
 
 typedef struct config_shortcut_t {
   MODIFIER modifier;
@@ -79,31 +83,6 @@ typedef struct config_shortcut_t {
 
 const char *const config_bar_minimized_name_replacements[][2] =
 CONFIG_BAR_MINIMIZED_NAME_REPLACEMENTS;
-
-void normal_mode(void) {
-  mode = MODE_NORMAL;
-  xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, XCB_MOD_MASK_ANY);
-  xcb_grab_key(conn, 1, screen->root, XCB_MOD_MASK_ANY, XCB_GRAB_ANY,
-               XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
-  bar_update_mode();
-}
-
-void insert_mode(void) {
-  shortcut_t *sh;
-  mode = MODE_INSERT;
-  xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, XCB_MOD_MASK_ANY);
-  for(size_t i=0; i<shortcuts.length; i++) {
-    if(shortcuts.values[i] == NULL) continue;
-    sh = shortcuts.values[i]->by_type[SH_TYPE_INSERT_MODE];
-    while(sh != NULL) {
-      xcb_grab_key(conn, 1, screen->root, sh->mod_mask,
-                   i+shortcuts.offset,
-                   XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
-      sh = sh->next;
-    }
-  }
-  bar_update_mode();
-}
 
 void convert_shortcuts(const xcb_get_keyboard_mapping_reply_t *kmapping,
                        SHORTCUT_TYPE type,
@@ -138,7 +117,6 @@ void convert_shortcuts(const xcb_get_keyboard_mapping_reply_t *kmapping,
   }
 
 }
-
 
 void config_parse(const xcb_get_keyboard_mapping_reply_t *kmapping) {
   config_shortcut_t insert_shortcuts[] = CONFIG_SHORTCUTS_INSERT_MODE;
