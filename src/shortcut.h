@@ -6,9 +6,9 @@
 #include <xcb/xcb.h>
 
 typedef struct shortcut_t {
+  struct shortcut_t *next;
   uint16_t mod_mask;
   void (*function) (void);
-  struct shortcut_t *next;
 } shortcut_t;
 
 typedef enum SHORTCUT_TYPE {
@@ -30,9 +30,9 @@ typedef struct shorcuts_t {
 } shortcuts_t;
 
 typedef struct shortcuts_unused_t {
-  shortcut_node_t* shortcut;
-  struct shortcuts_unused_t *prev;
   struct shortcuts_unused_t *next;
+  struct shortcuts_unused_t *prev;
+  shortcut_node_t* shortcut;
 } shortcuts_unused_t;
 
 extern shortcuts_t shortcuts; //[shortcut_node_t]

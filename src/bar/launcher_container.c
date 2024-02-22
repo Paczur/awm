@@ -1,4 +1,5 @@
 #include "launcher_container.h"
+#include <stdlib.h>
 
 launcher_containers_t launcher_containers;
 size_t launcher_container_count;

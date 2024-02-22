@@ -1,7 +1,9 @@
 #ifndef H_BAR_CONTAINER
 #define H_BAR_CONTAINER
 
-#include "bar_structs.h"
+#include "bar_types.h"
+#include <xcb/xcb.h>
+
 typedef struct bar_containers_t {
   xcb_window_t *id;
   uint16_t *x;

@@ -14,6 +14,7 @@ typedef struct window_t window_t;
 #define GRID_AXIS 2
 
 grid_cell_t *grid_focusedc(void);
+window_t *grid_focusedw(void);
 size_t grid_focused(void);
 size_t grid_pos2mon(size_t);
 size_t grid_next_pos(void);
@@ -38,11 +39,11 @@ size_t grid_above(void);
 size_t grid_to_right(void);
 size_t grid_to_left(void);
 
-void grid_init(xcb_connection_t*, size_t*, size_t, size_t);
+void grid_init(xcb_connection_t*, const size_t*, size_t, size_t);
 void grid_deinit(void);
 
 void grid_event_focus(xcb_window_t);
-void grid_event_map(xcb_window_t);
+bool grid_event_map(window_t*);
 void grid_event_unmap(xcb_window_t);
 
 #endif

@@ -1,6 +1,5 @@
 #include "launcher_hint.h"
 #include "launcher_container.h"
-#include "launcher_prompt.h"
 #include "launcher_trie.h"
 
 typedef struct launcher_hint_t {
@@ -26,18 +25,17 @@ void launcher_hint_redraw(void) {
                      launcher_container_count);
 }
 
-void launcher_hint_regen(void) {
+void launcher_hint_regen(const char *search, size_t length) {
+  char buff[MAX_WORD_LENGTH];
   launcher_trie_search_node_t *sr;
   launcher_hint_selected = 0;
   size_t count;
-  if(launcher_prompt_search_length == 0) {
-    launcher_trie_gen_hints(launcher_trie_tree, launcher_prompt_search,
-                            launcher_prompt_search_length);
+  memcpy(buff, search, length);
+  if(length == 0) {
+    launcher_trie_gen_hints(launcher_trie_tree, buff, length);
   } else {
-    sr = launcher_trie_search(launcher_trie_tree, launcher_prompt_search,
-                              launcher_prompt_search_length);
-    launcher_trie_gen_hints_sr(sr, launcher_prompt_search,
-                               launcher_prompt_search_length);
+    sr = launcher_trie_search(launcher_trie_tree, buff, length);
+    launcher_trie_gen_hints_sr(sr, buff, length);
     free(sr);
   }
   for(count=0; count<MAX_LAUNCHER_HINTS; count++) {
@@ -46,22 +44,20 @@ void launcher_hint_regen(void) {
                          launcher_container_count, launcher_trie_hints[count]);
   }
   launcher_hint_count = count;
-  launcher_hint_update();
 }
 
-void launcher_hint_update(void) {
+void launcher_hint_update(size_t left_offset) {
   block_geometry_update_center(launcher_hint.blocks, launcher_hint_geometry,
                                launcher_hint.prev_state, launcher_hint_count,
                                MAX_LAUNCHER_HINTS, launcher_hint_get_settings,
-                               block_next_x(&launcher_prompt_geometry),
-                               launcher_hint.min_width, 0);
+                               left_offset, launcher_hint.min_width, 0);
 }
 
-void launcher_hint_init(const PangoFontDescription *font, uint16_t min_width,
-                        block_settings_t *focused, block_settings_t *unfocused) {
-  launcher_hint.focused = *focused;
-  launcher_hint.unfocused = *unfocused;
-  launcher_hint.min_width = min_width;
+void launcher_hint_init(const PangoFontDescription *font,
+                        const bar_launcher_hint_init_t *init) {
+  block_settings(&launcher_hint.focused, &init->focused);
+  block_settings(&launcher_hint.unfocused, &init->unfocused);
+  launcher_hint.min_width = init->min_width;
   launcher_hint.blocks = malloc(launcher_container_count*MAX_LAUNCHER_HINTS*
                                 sizeof(block_t));
   for(size_t i=0; i<launcher_container_count*MAX_LAUNCHER_HINTS; i++) {

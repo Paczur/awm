@@ -76,11 +76,10 @@ void block_workspace_update(size_t focused, bool(*empty)(size_t),
 }
 
 void block_workspace_init(const PangoFontDescription *font,
-                          uint16_t min_width, block_settings_t* focused,
-                          block_settings_t* unfocused) {
-  block_workspace.focused = *focused;
-  block_workspace.unfocused = *unfocused;
-  block_workspace.min_width = min_width;
+                          const bar_block_workspace_init_t *init) {
+  block_settings(&block_workspace.focused, &init->focused);
+  block_settings(&block_workspace.unfocused, &init->unfocused);
+  block_workspace.min_width = init->min_width;
   block_workspace.blocks = malloc(bar_container_count*MAX_WORKSPACE_BLOCKS*
                                   sizeof(block_t));
   for(size_t i=0; i<bar_container_count*MAX_WORKSPACE_BLOCKS; i++) {

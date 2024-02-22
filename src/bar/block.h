@@ -1,7 +1,7 @@
 #ifndef H_BAR_BLOCK
 #define H_BAR_BLOCK
 
-#include "bar_structs.h"
+#include "bar_types.h"
 #include <stdint.h>
 #include <stdbool.h>
 #include <xcb/xcb.h>
@@ -22,10 +22,7 @@ typedef struct block_geometry_t {
   uint16_t text_y;
 } block_geometry_t;
 
-typedef struct block_settings_t {
-  uint32_t background;
-  double foreground[4];
-} block_settings_t;
+void block_settings(block_settings_t*, const block_settings_init_t*);
 
 uint16_t block_next_x(const block_geometry_t*);
 

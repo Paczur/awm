@@ -26,44 +26,19 @@ typedef struct block_info_t {
 uint16_t block_info_offset_right;
 static block_info_t block_info;
 static pthread_t block_info_thread;
+static bool info_run_flag;
+static bool info_run_finished = false;
+//TODO: Make this callback not block the timer
+static void (*callback)(void);
+static int (*get_output)(const char*, char*, size_t);
 static block_geometry_t block_info_geometry[MAX_INFO_BLOCKS];
-static xcb_connection_t *conn;
-
 //TODO: more granular updates here and in workspaces
-
-static int block_info_run_with_output(char *cmd, char* out, size_t len) {
-  FILE *f;
-  int pid;
-  int status;
-  int fd[2];
-  if(!pipe(fd)) {
-    pid = fork();
-    if(pid == 0) {
-      close(fd[0]);
-      dup2(fd[1], STDOUT_FILENO);
-      close(fd[1]);
-      execl("/bin/sh", "sh", "-c", cmd, NULL);
-    } else {
-      close(fd[1]);
-      f = fdopen(fd[0], "r");
-      if(f && !fgets(out, len, f)) {
-        out[strcspn(out, "\n")] = 0;
-      }
-      waitpid(pid, &status, 0);
-      if(WIFEXITED(status)) {
-        status = WEXITSTATUS(status);
-      }
-    }
-  }
-  return status;
-}
 
 static const block_settings_t *block_info_get_settings(size_t n)  {
   return (block_info.state[n].status == 1 || block_info.state[n].status == 33) ?
     &block_info.highlighted : &block_info.normal;
 }
 
-//TODO: Make callback to realign minimized on update
 static void *block_info_update_periodic(void*) {
   bool updated;
   struct timespec ts =
@@ -73,21 +48,22 @@ static void *block_info_update_periodic(void*) {
       block_info.state[i].countdown = -1;
     }
   }
-  while(true) {
+  info_run_flag = true;
+  while(info_run_flag) {
     updated = false;
     for(size_t i=0; i<MAX_INFO_BLOCKS; i++) {
       if(block_info.state[i].update) {
-        block_info_run_with_output(block_info.data[i].cmd,
-                                   block_info.state[i].text,
-                                   INFO_BLOCK_TEXT_LENGTH);
+        get_output(block_info.data[i].cmd,
+                   block_info.state[i].text,
+                   INFO_BLOCK_TEXT_LENGTH);
         block_info.state[i].status = 1;
         block_info.state[i].update = false;
         updated = true;
       } else if(block_info.state[i].countdown == 0) {
         block_info.state[i].status =
-          block_info_run_with_output(block_info.data[i].cmd,
-                                     block_info.state[i].text,
-                                     INFO_BLOCK_TEXT_LENGTH);
+          get_output(block_info.data[i].cmd,
+                     block_info.state[i].text,
+                     INFO_BLOCK_TEXT_LENGTH);
         block_info.state[i].countdown = block_info.data[i].timer*CLOCK_STEPS_PER_SECOND;
         updated = true;
       } else if(block_info.state[i].countdown > 0) {
@@ -105,10 +81,11 @@ static void *block_info_update_periodic(void*) {
                                     block_info.min_width);
       block_info_offset_right =
         block_combined_width(block_info_geometry, MAX_INFO_BLOCKS);
-      xcb_flush(conn);
+      callback();
     }
     nanosleep(&ts, &ts);
   }
+  info_run_finished = true;
   return NULL;
 }
 
@@ -136,14 +113,13 @@ void block_info_redraw(void) {
 }
 
 void block_info_init(const PangoFontDescription *font,
-                     uint16_t min_width, block_settings_t *highlighted,
-                     block_settings_t *normal, block_info_data_t *data,
-                     size_t count, xcb_connection_t *c) {
-  block_info.normal = *normal;
-  block_info.highlighted = *highlighted;
-  block_info.min_width = min_width;
-  conn = c;
-  memcpy(block_info.data, data, count*sizeof(block_info_data_t));
+                     const bar_block_info_init_t *init) {
+  block_settings(&block_info.normal, &init->normal);
+  block_settings(&block_info.highlighted, &init->highlighted);
+  block_info.min_width = init->min_width;
+  callback = init->callback;
+  get_output = init->get_output;
+  memcpy(block_info.data, init->data, init->data_length*sizeof(block_info_data_t));
   block_info.blocks = malloc(bar_container_count*MAX_INFO_BLOCKS*sizeof(block_t));
   block_info.prev_state = calloc(bar_container_count*MAX_INFO_BLOCKS,
                                  sizeof(block_t));
@@ -154,6 +130,8 @@ void block_info_init(const PangoFontDescription *font,
 }
 
 void block_info_deinit(void) {
+  info_run_flag = false;
+  while(!info_run_finished) {}
   for(size_t i=0; i<bar_container_count*MAX_INFO_BLOCKS; i++) {
     block_destroy(block_info.blocks+i);
   }

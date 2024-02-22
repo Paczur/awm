@@ -7,6 +7,9 @@
 
 #define LENGTH(x) (sizeof(x)/sizeof((x)[0]))
 
+static xcb_connection_t *conn;
+static const xcb_screen_t *screen;
+
 static void layout_adopt(void) {
   xcb_query_tree_cookie_t cookie;
   xcb_query_tree_reply_t *reply;
@@ -94,6 +97,7 @@ void layout_resize_h_focused(int n) {
 
 void layout_minimize(void) {
   grid_minimize(grid_focused());
+  window_minimize(grid_focusedw());
 }
 
 void layout_destroy(void) {
@@ -108,14 +112,13 @@ void layout_show(size_t n) {
     window_minimize(w);
 }
 
-
-void layout_init(const rect_t *workareas, size_t workarea_count) {
-  size_t spawn_order[] = CONFIG_SPAWN_ORDER;
-  workarea_init((workarea_t*)workareas, workarea_count);
-  window_init(conn, config_bar_minimized_name_replacements,
-              LENGTH((char*[][2])CONFIG_BAR_MINIMIZED_NAME_REPLACEMENTS));
-  workspace_init(conn);
-  grid_init(conn, spawn_order, LENGTH(spawn_order), CONFIG_GAPS);
+void layout_init(const layout_init_t *init) {
+  conn = init->conn;
+  screen = init->screen;
+  workarea_init((workarea_t*)init->workareas, init->workarea_count);
+  window_init(init->conn, init->name_replacements, init->name_replacements_length);
+  workspace_init(init->conn);
+  grid_init(init->conn, init->spawn_order, init->spawn_order_length, init->gaps);
   layout_adopt();
 }
 
@@ -126,8 +129,20 @@ void layout_deinit(void) {
   workarea_deinit();
 }
 
+bool layout_event_map(xcb_window_t window) {
+  window_t *win = window_find(window);
+  if(win == NULL) {
+    window_event_create(window);
+    win = window_find(window);
+  }
 
-void layout_event_map(xcb_window_t window) { grid_event_map(window); }
+  if(!grid_event_map(win)) {
+    window_minimize(win);
+    return false;
+  }
+  return true;
+}
+
 void layout_event_create(xcb_window_t window) { window_event_create(window); }
 void layout_event_focus(xcb_window_t window) { grid_event_focus(window); }
 

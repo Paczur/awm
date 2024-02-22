@@ -1,12 +1,10 @@
 #include "grid.h"
 #include "workspace.h"
-#include "window.h"
 #include "workarea.h"
 #include <xcb/xcb.h>
 #include <stdlib.h>
 #include <string.h>
 
-#define LENGTH(x) (sizeof((x))/sizeof((x)[0]))
 #define X(pos) ((pos)%HOR_CELLS_PER_WORKAREA)
 #define Y(pos) ((pos)%CELLS_PER_WORKAREA/VERT_CELLS_PER_WORKAREA)
 #define COMB(x, y) ((x)+(y)*VERT_CELLS_PER_WORKAREA)
@@ -19,7 +17,6 @@ static xcb_connection_t *conn;
 
 bool grid_pos_invalid(size_t n) { return n >= workarea_count*CELLS_PER_WORKAREA; }
 size_t grid_mon2pos(size_t m) { return m*CELLS_PER_WORKAREA; }
-
 
 static grid_cell_t *grid_pos2cell(size_t n) {
   return grid_pos_invalid(n) ? NULL : workspace_focusedw()->grid+n;
@@ -136,11 +133,21 @@ static void grid_calculate(size_t m, uint32_t* values, size_t offset) {
 }
 
 
+
 grid_cell_t *grid_focusedc(void) {
   const workspace_t *workspace = workspace_focusedw();
   return (grid_pos_invalid(workspace->focus) ?
           NULL :
           workspace->grid+workspace->focus);
+}
+
+window_t *grid_focusedw(void) {
+  const workspace_t *workspace = workspace_focusedw();
+  const grid_cell_t *cell;
+  if(grid_pos_invalid(workspace->focus))
+    return NULL;
+  cell = workspace->grid+workspace->focus;
+  return (cell == NULL) ?  NULL : cell->window;
 }
 
 size_t grid_pos2mon(size_t n) {
@@ -372,7 +379,6 @@ void grid_minimize(size_t n) {
   if(cell == NULL || cell->window == NULL) return;
   xcb_unmap_window(conn,cell->window->id);
   grid_adjust_pos(grid_pos2mon(n));
-  window_minimize(cell->window);
 }
 
 void grid_destroy(size_t n) {
@@ -425,7 +431,7 @@ size_t grid_to_left(void) {
 }
 
 
-void grid_init(xcb_connection_t *c, size_t *so, size_t so_len, size_t n) {
+void grid_init(xcb_connection_t *c, const size_t *so, size_t so_len, size_t n) {
   conn = c;
   gap_size = n;
   spawn_order = malloc(so_len*sizeof(size_t));
@@ -477,20 +483,15 @@ void grid_event_focus(xcb_window_t window) {
   }
 }
 
-void grid_event_map(xcb_window_t window) {
-  if(!grid_pos_invalid(grid_xwin2pos(window))) return;
+bool grid_event_map(window_t *window) {
+  if(window->pos >= 0) return true;
   size_t next = grid_next_pos();
-  window_t* win = window_find(window);
-  if(win == NULL) {
-    window_event_create(window);
-    win = window_find(window);
-  }
-  if(grid_pos_invalid(next)) {
-    window_minimize(win);
-    return;
-  }
 
-  grid_place_window(win, next, false);
+  if(grid_pos_invalid(next))
+    return false;
+
+  grid_place_window(window, next, false);
+  return true;
 }
 
 void grid_event_unmap(xcb_window_t window) {

@@ -4,6 +4,7 @@ DIRS=$(BIN) $(BUILD)
 SRC=src
 
 WARN=-Wall -Wextra
+VALGRIND=-D DEBUG -Og -ggdb3
 DEBUG=-D DEBUG -Og -ggdb3 -fsanitize=address -fsanitize=pointer-compare \
 -fsanitize=pointer-subtract -fsanitize=undefined \
 -fsanitize-address-use-after-scope -fstack-check \
@@ -30,6 +31,9 @@ release: $(BIN)/idkwm
 
 debug: CFLAGS += $(DEBUG)
 debug: $(BIN)/idkwm-debug
+
+valgrind: CFGLAS += $(VALGRIND)
+valgrind: clean $(BIN)/idkwm-debug
 
 clean:
 	rm -rf $(BIN) $(BUILD)

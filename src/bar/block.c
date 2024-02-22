@@ -39,6 +39,29 @@ static void block_geometry(const block_t *block, uint16_t min_width,
   }
 }
 
+static uint32_t hex_to_uint(const char* str, size_t start, size_t end) {
+  uint32_t mul = 1;
+  uint32_t ret = 0;
+  while(end --> start) {
+    if(str[end] >= 'a') {
+      ret += mul * (str[end] - 'a' + 10);
+    } else if(str[end] >= 'A') {
+      ret += mul * (str[end] - 'A' + 10);
+    } else {
+      ret += mul * (str[end] - '0');
+    }
+    mul *= 16;
+  }
+  return ret;
+}
+
+void block_settings(block_settings_t *bs, const block_settings_init_t *init) {
+  bs->background = hex_to_uint(init->background, 0, 6);
+  bs->foreground[0] = hex_to_uint(init->foreground, 0, 2)/255.0;
+  bs->foreground[1] = hex_to_uint(init->foreground, 2, 4)/255.0;
+  bs->foreground[2] = hex_to_uint(init->foreground, 4, 6)/255.0;
+}
+
 uint16_t block_next_x(const block_geometry_t *geom) {
   return (geom->w < 2) ? geom->x : geom->x + geom->w + bar_containers.separator;
 }
@@ -158,7 +181,17 @@ void block_create(block_t *block, xcb_window_t parent,
   pango_layout_set_font_description(block->pango, font);
 }
 
-//TODO: batch version of this
+void block_geometry_batch(const block_t *blocks, block_geometry_t *geom,
+                          size_t count, uint16_t min_width) {
+  geom[0].x = 0;
+  block_geometry(blocks, min_width, &geom->w, &geom->text_x, &geom->text_y);
+  for(size_t i=1; i<count; i++) {
+    geom[i].x = block_next_x(geom+(i-1));
+    block_geometry(blocks+i, min_width,
+                   &geom[i].w, &geom[i].text_x, &geom[i].text_y);
+  }
+}
+
 void block_geometry_left(const block_t *block, uint16_t min_width,
                          const block_geometry_t *in, block_geometry_t *out) {
   if(in == NULL) {
@@ -178,10 +211,7 @@ void block_geometry_update_center(block_t *blocks, block_geometry_t *geom,
   size_t visible;
   uint16_t available;
   uint16_t max_x;
-  block_geometry_left(blocks, min_width, NULL, geom);
-  for(size_t i=1; i<count; i++) {
-    block_geometry_left(blocks+i, min_width, geom+i-1, geom+i);
-  }
+  block_geometry_batch(blocks, geom, count, min_width);
   for(size_t i=0; i<bar_container_count; i++) {
     max_x = bar_containers.w[i] - right_offset;
     available = max_x - left_offset;
@@ -240,10 +270,7 @@ void block_geometry_update_rightef(block_t *blocks, block_geometry_t *geom,
                                    uint16_t min_width) {
   uint16_t width;
   uint16_t start = 0;
-  block_geometry_left(blocks, min_width, NULL, geom);
-  for(size_t i=1; i<count; i++) {
-    block_geometry_left(blocks+i, min_width, geom+(i-1), geom+i);
-  }
+  block_geometry_batch(blocks, geom, count, min_width);
   width = block_combined_width(geom, count);
   for(size_t i=0; i<bar_container_count; i++) {
     start = bar_containers.w[i] - width;
@@ -271,12 +298,12 @@ void block_geometry_update_rightef(block_t *blocks, block_geometry_t *geom,
 }
 
   void block_destroy(block_t *block) {
+    g_object_unref(block->pango);
+    block->pango = NULL;
     cairo_destroy(block->cairo);
     block->cairo = NULL;
     cairo_surface_destroy(block->surface);
     block->surface = NULL;
-    g_object_unref(block->pango);
-    block->pango = NULL;
     xcb_destroy_window(conn, block->id);
   }
 

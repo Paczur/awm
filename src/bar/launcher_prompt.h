@@ -13,8 +13,8 @@ void launcher_prompt_redraw(void);
 void launcher_prompt_append(const char*, size_t);
 void launcher_prompt_erase(void);
 
-void launcher_prompt_init(const PangoFontDescription*, uint16_t,
-                          block_settings_t*);
+void launcher_prompt_init(const PangoFontDescription*,
+                          const bar_launcher_prompt_init_t*);
 void launcher_prompt_deinit(void);
 
 #endif

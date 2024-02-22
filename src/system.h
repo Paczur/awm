@@ -4,7 +4,7 @@
 #include <xcb/xcb.h>
 #include <X11/Xlib-xcb.h>
 #include <stddef.h>
-
+#include "types.h"
 
 //XCB
 extern xcb_visualtype_t *visual_type;
@@ -17,7 +17,10 @@ extern XIM xim;
 extern XIC xic;
 extern Display *dpy;
 
-int shout(char*, char*, size_t);
-void sh(char*);
+int shout(const char*, char*, size_t);
+void sh(const char*);
+void system_init(void);
+void system_deinit(void);
+void system_monitors(rect_t **monitors, size_t *monitor_count);
 
 #endif

@@ -13,8 +13,8 @@ void block_minimized_update(const plist_t*, size_t, size_t, size_t);
 
 void block_minimized_redraw(void);
 
-void block_minimized_init(const PangoFontDescription*, uint16_t,
-                          block_settings_t*, block_settings_t*);
+void block_minimized_init(const PangoFontDescription*,
+                          const bar_block_minimized_init_t*);
 
 void block_minimized_deinit(void);
 

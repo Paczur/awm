@@ -10,8 +10,7 @@ void block_mode_update(bool);
 
 void block_mode_redraw(void);
 
-void block_mode_init(const PangoFontDescription*,
-                     uint16_t, block_settings_t*, block_settings_t*);
+void block_mode_init(const PangoFontDescription*, const bar_block_mode_init_t*);
 void block_mode_deinit(void);
 
 #endif

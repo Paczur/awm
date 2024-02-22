@@ -39,11 +39,10 @@ void block_mode_redraw(void) {
 }
 
 void block_mode_init(const PangoFontDescription *font,
-                     uint16_t min_width,
-                     block_settings_t *normal, block_settings_t *insert) {
-  block_mode.insert = *insert;
-  block_mode.normal = *normal;
-  block_mode.min_width = min_width;
+                     const bar_block_mode_init_t *init) {
+  block_settings(&block_mode.insert, &init->insert);
+  block_settings(&block_mode.normal, &init->normal);
+  block_mode.min_width = init->min_width;
   block_mode.blocks = malloc(bar_container_count * sizeof(block_t));
   for(size_t i=0; i<bar_container_count; i++) {
     block_create(block_mode.blocks+i, bar_containers.id[i], font);

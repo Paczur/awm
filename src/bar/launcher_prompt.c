@@ -1,6 +1,5 @@
 #include "launcher_prompt.h"
 #include "launcher_container.h"
-#include "bar_structs.h"
 
 typedef struct launcher_prompt_t {
   block_t *blocks;
@@ -74,10 +73,10 @@ void launcher_prompt_clear(void) {
 }
 
 void launcher_prompt_init(const PangoFontDescription *font,
-                          uint16_t min_width, block_settings_t *settings) {
+                          const bar_launcher_prompt_init_t *init) {
+  block_settings(&launcher_prompt.settings, &init->settings);
+  launcher_prompt.min_width = init->min_width;
   launcher_prompt.blocks = malloc(launcher_container_count*sizeof(block_t));
-  launcher_prompt.min_width = min_width;
-  launcher_prompt.settings = *settings;
   for(size_t i=0; i<launcher_container_count; i++) {
     block_create(launcher_prompt.blocks+i, launcher_containers.id[i], font);
     block_show(launcher_prompt.blocks+i);
@@ -100,4 +99,9 @@ void launcher_prompt_init(const PangoFontDescription *font,
                      &launcher_prompt_geometry);
 }
 
-void launcher_prompt_deinit(void) {}
+void launcher_prompt_deinit(void) {
+  for(size_t i=0; i<launcher_container_count; i++) {
+    block_destroy(launcher_prompt.blocks+i);
+  }
+  free(launcher_prompt.blocks);
+}

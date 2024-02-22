@@ -1,5 +1,5 @@
 #include "window.h"
-#include "layout_structs.h"
+#include "layout_types.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>

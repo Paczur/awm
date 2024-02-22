@@ -1,7 +1,7 @@
 #ifndef H_LAYOUT_WORKSPACE
 #define H_LAYOUT_WORKSPACE
 
-#include "layout_structs.h"
+#include "layout_types.h"
 #include <xcb/xcb.h>
 #include <stddef.h>
 #include <stdbool.h>

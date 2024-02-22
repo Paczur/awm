@@ -1,4 +1,5 @@
 #include "bar_container.h"
+#include <stdlib.h>
 
 bar_containers_t bar_containers;
 size_t bar_container_count;

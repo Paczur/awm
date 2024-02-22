@@ -1,11 +1,7 @@
 #ifndef H_LAYOUT
 #define H_LAYOUT
 
-#include <xcb/xcb.h>
-#include "../structs.h"
-#include "../system.h"
-#include "../config.h"
-#include "layout_structs.h"
+#include "layout_types.h"
 
 void layout_focus_pick(void);
 void layout_focus_restore(void);
@@ -29,10 +25,10 @@ void layout_show(size_t);
 void layout_minimize(void);
 void layout_destroy(void);
 
-void layout_init(const rect_t*, size_t);
+void layout_init(const layout_init_t*);
 void layout_deinit(void);
 
-void layout_event_map(xcb_window_t);
+bool layout_event_map(xcb_window_t);
 void layout_event_unmap(xcb_window_t);
 void layout_event_create(xcb_window_t);
 int layout_event_destroy(xcb_window_t);

@@ -61,30 +61,6 @@ bool shortcut_handle(xcb_keycode_t keycode, SHORTCUT_TYPE type, uint16_t state) 
   return false;
 }
 
-void shortcut_deinit(void) {
-  shortcut_t *sh;
-  shortcut_t *t;
-  size_t end = shortcuts.offset + shortcuts.length;
-  for(size_t i=shortcuts.offset; i<end; i++) {
-    if(shortcuts.values[i] != NULL) {
-      for(size_t j=0; j<<SH_TYPE_LENGTH; j++) {
-        sh = shortcuts.values[i]->by_type[j];
-        if(sh != NULL) {
-          while(sh->next != NULL) {
-            t = sh->next;
-            free(sh);
-            sh = t;
-          }
-          free(sh);
-        }
-      }
-      free(shortcuts.values[i]);
-    }
-  }
-  free(shortcuts.values);
-  shortcuts.values = NULL;
-}
-
 void shortcuts_shrink(void) {
   size_t start;
   size_t end;
@@ -226,7 +202,6 @@ void shortcuts_update(xcb_get_keyboard_mapping_reply_t *kmap,
     }
   }
   //TODO: Remove shortcuts
-
   //TODO: Add shortcuts
  }
 
@@ -234,4 +209,27 @@ void shortcut_init(size_t start, size_t end) {
   shortcuts.offset = start;
   shortcuts.length = end-start;
   shortcuts.values = calloc(shortcuts.length, sizeof(shortcut_node_t));
+}
+
+void shortcut_deinit(void) {
+  shortcut_t *sh;
+  shortcut_t *t;
+  for(size_t i=0; i<shortcuts.length; i++) {
+    if(shortcuts.values[i] != NULL) {
+      for(size_t j=0; j<SH_TYPE_LENGTH; j++) {
+        sh = shortcuts.values[i]->by_type[j];
+        if(sh != NULL) {
+          while(sh->next != NULL) {
+            t = sh->next;
+            free(sh);
+            sh = t;
+          }
+          free(sh);
+        }
+      }
+      free(shortcuts.values[i]);
+    }
+  }
+  free(shortcuts.values);
+  shortcuts.values = NULL;
 }

@@ -5,7 +5,7 @@
 #include <xcb/xcb.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "../structs.h"
+#include "../types.h"
 
 typedef struct window_t {
   struct window_t *next;
@@ -38,5 +38,17 @@ typedef struct workspace_t {
   int *cross;
   bool *update;
 } workspace_t;
+
+typedef struct layout_init_t {
+  xcb_connection_t *conn;
+  const xcb_screen_t *screen;
+  const rect_t *workareas;
+  size_t workarea_count;
+  const char *const(*name_replacements)[2];
+  size_t name_replacements_length;
+  size_t gaps;
+  const size_t *spawn_order;
+  size_t spawn_order_length;
+} layout_init_t;
 
 #endif

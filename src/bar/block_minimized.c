@@ -41,11 +41,10 @@ void block_minimized_redraw(void) {
 }
 
 void block_minimized_init(const PangoFontDescription *font,
-                          uint16_t min_width, block_settings_t *odd,
-                          block_settings_t *even) {
-  block_minimized.even = *even;
-  block_minimized.odd = *odd;
-  block_minimized.min_width = min_width;
+                          const bar_block_minimized_init_t *init) {
+  block_settings(&block_minimized.even, &init->even);
+  block_settings(&block_minimized.odd, &init->odd);
+  block_minimized.min_width = init->min_width;
   block_minimized.blocks = malloc(bar_container_count*MAX_MINIMIZED_BLOCKS*
                                   sizeof(block_t));
   block_minimized.prev_state = calloc(bar_container_count*MAX_MINIMIZED_BLOCKS,

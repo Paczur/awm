@@ -6,7 +6,6 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <sys/types.h>
 
 #define LENGTH(x) (sizeof(x)/sizeof((x)[0]))
 
@@ -351,7 +350,8 @@ void launcher_trie_10_shortest(const launcher_trie_node_t *node, char* buff,
   }
 }
 
-void launcher_trie_10_shortest_sr(const launcher_trie_search_node_t *node, char *buff, size_t length) {
+void launcher_trie_10_shortest_sr(const launcher_trie_search_node_t *node,
+                                  char *buff, size_t length) {
   if(node == NULL) return;
   const launcher_trie_node_t *curr = node->node;
   length -= node->wrong;
@@ -392,7 +392,8 @@ void launcher_trie_10_shortest_sr(const launcher_trie_search_node_t *node, char 
   }
 }
 
-void launcher_trie_gen_hints_sr(const launcher_trie_search_node_t *node, char* buff, size_t length) {
+void launcher_trie_gen_hints_sr(const launcher_trie_search_node_t *node,
+                                char* buff, size_t length) {
   memset(lengths, UCHAR_MAX, sizeof(lengths));
   launcher_trie_10_shortest_sr(node, buff, length);
   for(size_t i=0; i<MAX_LAUNCHER_HINTS; i++) {
@@ -403,7 +404,8 @@ void launcher_trie_gen_hints_sr(const launcher_trie_search_node_t *node, char* b
   }
 }
 
-void launcher_trie_gen_hints(const launcher_trie_node_t *node, char* buff, size_t length) {
+void launcher_trie_gen_hints(const launcher_trie_node_t *node,
+                             char* buff, size_t length) {
   memset(lengths, UCHAR_MAX, sizeof(lengths));
   launcher_trie_10_shortest(node, buff, length);
   for(size_t i=0; i<MAX_LAUNCHER_HINTS; i++) {
