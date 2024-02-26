@@ -341,13 +341,7 @@ void block_geometry_update_center(block_t *blocks, block_geometry_t *geom,
       if(geom[0].x < left_offset) {
         geom[0].x = left_offset;
       } else if(geom[0].x + width > max_x) {
-        //TODO: DECIDE WHICH FALLBACK IS BETTER AND MAKE SURE
-        //TODO: IT DOESN'T GO OVER LEFT OFFSET
-        for(size_t j=2; geom[0].x + width > max_x; j++) {
-          geom[0].x = (bar_containers.w[i]/j-width)/2;
-        }
-        // geom[0].x = (max_x-width)/2;
-        // geom[0].x -= geom[0].x + width - max_x;
+        geom[0].x -= geom[0].x + width - max_x;
       }
       for(size_t j=1; j<visible; j++) {
         geom[j].x = block_next_x(geom+(j-1));

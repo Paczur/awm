@@ -133,6 +133,12 @@ static void grid_calculate(size_t m, uint32_t* values, size_t offset) {
   }
 }
 
+static void grid_force_update(size_t pos) {
+  for(size_t i=0; i<4; i++) {
+    prevstate[pos*4+i] = 0;
+  }
+}
+
 
 
 grid_cell_t *grid_focusedc(void) {
@@ -265,15 +271,19 @@ void grid_adjust_pos(void) {
           grid_pos2cell(t2)->window = NULL;
           moved[grid_pos2mon(t)] = true;
           moved[grid_pos2mon(t2)] = true;
+          grid_force_update(t);
+          grid_force_update(t2);
           break;
         }
       }
     }
   }
   for(size_t i=0; i<workarea_count; i++) {
-    if(moved[i])
+    if(moved[i]) {
       grid_update(i);
+    }
   }
+  free(moved);
 }
 
 bool grid_focus_pick(void) {
@@ -516,6 +526,6 @@ void grid_event_unmap(xcb_window_t window) {
   grid_pos2cell(pos)->origin = -1;
   if(grid_focused() == pos)
     workspace_focusedw()->focus = -1;
-  grid_update(grid_pos2mon(pos));
   grid_adjust_pos();
+  grid_update(grid_pos2mon(pos));
 }
