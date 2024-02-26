@@ -163,6 +163,7 @@ void bar_init(const bar_init_t *init) {
   containers.background = block_background(init->bar_background, 0, 6);
   containers.padding = init->block_padding;
   containers.separator = init->block_separator;
+  containers.launcher = NULL;
   for(size_t i=0; i<init->bar_container_count; i++) {
     containers.x[i] = init->bar_containers[i].x;
     containers.y[i] = init->bar_containers[i].y;
