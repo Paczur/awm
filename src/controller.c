@@ -34,8 +34,9 @@ static void c_bar_update_mode(void) {
 
 void c_shutdown(void) { event_stop(); }
 void c_workspace_switch(size_t n) {
+  size_t min = MIN(n, layout_get_focused_workspace());
   layout_switch_workspace(n);
-  c_bar_update_workspace(MIN(n, layout_get_focused_workspace()));
+  c_bar_update_workspace(min);
 }
 void c_window_show(size_t n) {
   layout_show(n);
