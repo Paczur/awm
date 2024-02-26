@@ -17,8 +17,8 @@ extern XIM xim;
 extern XIC xic;
 extern Display *dpy;
 
-int shout(const char*, char*, size_t);
-void sh(const char*);
+int system_sh_out(const char*, char*, size_t);
+void system_sh(const char*);
 void system_init(void);
 void system_deinit(void);
 void system_monitors(rect_t **monitors, size_t *monitor_count);

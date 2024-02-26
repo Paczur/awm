@@ -41,6 +41,7 @@ extern shortcuts_unused_t *shortcuts_unused; //(shortcut_node_t)
 bool shortcut_handle(xcb_keycode_t, SHORTCUT_TYPE, uint16_t);
 void shortcut_deinit(void);
 void shortcuts_shrink(void);
+void shortcut_enable(xcb_connection_t*, const xcb_screen_t*, SHORTCUT_TYPE);
 void shortcut_new(const xcb_get_keyboard_mapping_reply_t*, size_t, size_t,
                   SHORTCUT_TYPE, xcb_keysym_t, uint16_t, void(*)(void));
 void shortcuts_update(xcb_get_keyboard_mapping_reply_t*, size_t, size_t);

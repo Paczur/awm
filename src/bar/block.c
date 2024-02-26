@@ -2,6 +2,8 @@
 #include "bar_container.h"
 #include <stdio.h>
 
+//TODO: Reposition only for left and right align
+
 static xcb_connection_t *conn;
 static const xcb_screen_t *screen;
 static xcb_visualtype_t *visual_type;
@@ -10,7 +12,7 @@ static void block_geometry(const block_t *block, uint16_t min_width,
                            uint16_t *width, uint16_t *text_x, uint16_t *text_y) {
   PangoRectangle t;
   PangoRectangle t2;
-  pango_layout_get_extents(block->pango, &t, &t2);
+  pango_layout_get_extents(block->pango[0], &t, &t2);
   pango_extents_to_pixels(&t, NULL);
   pango_extents_to_pixels(&t2, NULL);
   if(t.x<0) t.x = 0;
@@ -39,7 +41,7 @@ static void block_geometry(const block_t *block, uint16_t min_width,
   }
 }
 
-static uint32_t hex_to_uint(const char* str, size_t start, size_t end) {
+uint32_t block_background(const char* str, size_t start, size_t end) {
   uint32_t mul = 1;
   uint32_t ret = 0;
   while(end --> start) {
@@ -56,10 +58,10 @@ static uint32_t hex_to_uint(const char* str, size_t start, size_t end) {
 }
 
 void block_settings(block_settings_t *bs, const block_settings_init_t *init) {
-  bs->background = hex_to_uint(init->background, 0, 6);
-  bs->foreground[0] = hex_to_uint(init->foreground, 0, 2)/255.0;
-  bs->foreground[1] = hex_to_uint(init->foreground, 2, 4)/255.0;
-  bs->foreground[2] = hex_to_uint(init->foreground, 4, 6)/255.0;
+  bs->background = block_background(init->background, 0, 6);
+  bs->foreground[0] = block_background(init->foreground, 0, 2)/255.0;
+  bs->foreground[1] = block_background(init->foreground, 2, 4)/255.0;
+  bs->foreground[2] = block_background(init->foreground, 4, 6)/255.0;
 }
 
 uint16_t block_next_x(const block_geometry_t *geom) {
@@ -79,106 +81,206 @@ uint16_t block_combined_width(const block_geometry_t *geom, size_t count) {
 
 void block_update_batch(const block_t *blocks, size_t count,
                         const block_settings_t* settings,
-                        const block_geometry_t *geom) {
+                        const block_geometry_t *geom, size_t bar) {
   uint32_t vals[2] = { geom->x, geom->w };
   for(size_t i=0; i<count; i++) {
-    xcb_configure_window(conn, blocks[i].id,
+    xcb_configure_window(conn, blocks[i].id[bar],
                          XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_WIDTH, vals);
-    xcb_change_window_attributes(conn, blocks[i].id,
+    xcb_change_window_attributes(conn, blocks[i].id[bar],
                                  XCB_CW_BACK_PIXEL, &settings->background);
-    xcb_clear_area(conn, 0, blocks[i].id, 0, 0, geom->w, bar_containers.h);
+    xcb_clear_area(conn, 0, blocks[i].id[bar], 0, 0, geom->w, bar_containers.h);
   }
   for(size_t i=0; i<count; i++) {
-    cairo_surface_flush(blocks[i].surface);
-    cairo_xcb_surface_set_size(blocks[i].surface, geom->w, bar_containers.h);
-    cairo_move_to(blocks[i].cairo, geom->text_x, geom->text_y);
-    cairo_set_source_rgb(blocks[i].cairo,
+    cairo_surface_flush(blocks[i].surface[bar]);
+    cairo_xcb_surface_set_size(blocks[i].surface[bar], geom->w, bar_containers.h);
+    cairo_move_to(blocks[i].cairo[bar], geom->text_x, geom->text_y);
+    cairo_set_source_rgb(blocks[i].cairo[bar],
                          settings->foreground[0],
                          settings->foreground[1],
                          settings->foreground[2]);
-    pango_cairo_show_layout(blocks[i].cairo, blocks[i].pango);
+    pango_cairo_show_layout(blocks[i].cairo[bar], blocks[i].pango[bar]);
   }
 }
 
-void block_redraw_batch(const block_t *blocks, size_t count) {
-  for(size_t i=0; i<count*bar_container_count; i++) {
-    xcb_clear_area(conn, 0, blocks[i].id, 0, 0,
-                   bar_containers.w[i/count], bar_containers.h);
-    pango_cairo_show_layout(blocks[i].cairo, blocks[i].pango);
+void block_redraw(const block_t *block, size_t bar) {
+  xcb_clear_area(conn, 0, block->id[bar], 0, 0,
+                 bar_containers.w[bar], bar_containers.h);
+  pango_cairo_show_layout(block->cairo[bar], block->pango[bar]);
+}
+
+void block_redraw_batch(const block_t *blocks, size_t count, size_t bar) {
+  for(size_t i=0; i<count; i++) {
+    xcb_clear_area(conn, 0, blocks[i].id[bar], 0, 0,
+                   bar_containers.w[bar], bar_containers.h);
+    pango_cairo_show_layout(blocks[i].cairo[bar], blocks[i].pango[bar]);
   }
+}
+
+bool block_find_redraw(const block_t *blocks, size_t count, xcb_window_t window) {
+  for(size_t i=0; i<count; i++) {
+    for(size_t bar=0; bar<bar_container_count; bar++) {
+      if(blocks[i].id[bar] == window) {
+        xcb_clear_area(conn, 0, blocks[i].id[bar], 0, 0,
+                       bar_containers.w[bar], bar_containers.h);
+        pango_cairo_show_layout(blocks[i].cairo[bar], blocks[i].pango[bar]);
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 void block_update_batchf(const block_t *blocks,
                          const block_geometry_t *geom, size_t count,
-                         const block_settings_t* (*settings)(size_t)) {
+                         const block_settings_t* (*settings)(size_t),
+                         size_t bar) {
   uint32_t vals[2];
   for(size_t i=0; i<count; i++) {
     vals[0] = geom[i].x;
     vals[1] = geom[i].w;
-    xcb_configure_window(conn, blocks[i].id,
+    xcb_configure_window(conn, blocks[i].id[bar],
                          XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_WIDTH, vals);
-    xcb_change_window_attributes(conn, blocks[i].id,
+    xcb_change_window_attributes(conn, blocks[i].id[bar],
                                  XCB_CW_BACK_PIXEL, &settings(i)->background);
-    xcb_clear_area(conn, 0, blocks[i].id, 0, 0, geom[i].w, bar_containers.h);
+    xcb_clear_area(conn, 0, blocks[i].id[bar], 0, 0, geom[i].w, bar_containers.h);
   }
   for(size_t i=0; i<count; i++) {
-    cairo_surface_flush(blocks[i].surface);
-    cairo_xcb_surface_set_size(blocks[i].surface, geom[i].w, bar_containers.h);
-    cairo_move_to(blocks[i].cairo, geom[i].text_x, geom[i].text_y);
-    cairo_set_source_rgb(blocks[i].cairo,
+    cairo_surface_flush(blocks[i].surface[bar]);
+    cairo_xcb_surface_set_size(blocks[i].surface[bar], geom[i].w, bar_containers.h);
+    cairo_move_to(blocks[i].cairo[bar], geom[i].text_x, geom[i].text_y);
+    cairo_set_source_rgb(blocks[i].cairo[bar],
                          settings(i)->foreground[0],
                          settings(i)->foreground[1],
                          settings(i)->foreground[2]);
-    pango_cairo_show_layout(blocks[i].cairo, blocks[i].pango);
+    pango_cairo_show_layout(blocks[i].cairo[bar], blocks[i].pango[bar]);
   }
 }
 
 void block_update(const block_t *block, const block_settings_t *settings,
-                  const block_geometry_t *geom) {
+                  const block_geometry_t *geom, size_t bar) {
   uint32_t vals[2] = { geom->x, geom->w };
-  xcb_configure_window(conn, block->id,
+  xcb_configure_window(conn, block->id[bar],
                        XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_WIDTH, vals);
-  xcb_change_window_attributes(conn, block->id,
+  xcb_change_window_attributes(conn, block->id[bar],
                                XCB_CW_BACK_PIXEL, &settings->background);
-  xcb_clear_area(conn, 0, block->id, 0, 0,
+  xcb_clear_area(conn, 0, block->id[bar], 0, 0,
                  geom->w, bar_containers.h);
-  cairo_xcb_surface_set_size(block->surface, geom->w, bar_containers.h);
-  cairo_move_to(block->cairo, geom->text_x, geom->text_y);
-  cairo_set_source_rgb(block->cairo,
+  cairo_xcb_surface_set_size(block->surface[bar], geom->w, bar_containers.h);
+  cairo_move_to(block->cairo[bar], geom->text_x, geom->text_y);
+  cairo_set_source_rgb(block->cairo[bar],
                        settings->foreground[0],
                        settings->foreground[1],
                        settings->foreground[2]);
-  cairo_surface_flush(block->surface);
-  pango_cairo_show_layout(block->cairo, block->pango);
+  cairo_surface_flush(block->surface[bar]);
+  pango_cairo_show_layout(block->cairo[bar], block->pango[bar]);
+}
+
+void block_update_same(const block_t *block, const block_settings_t *settings,
+                       const block_geometry_t *geom) {
+  uint32_t vals[2] = { geom->x, geom->w };
+  for(size_t bar=0; bar<bar_container_count; bar++) {
+    xcb_configure_window(conn, block->id[bar],
+                         XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_WIDTH, vals);
+    xcb_change_window_attributes(conn, block->id[bar],
+                                 XCB_CW_BACK_PIXEL, &settings->background);
+    xcb_clear_area(conn, 0, block->id[bar], 0, 0,
+                   geom->w, bar_containers.h);
+    cairo_xcb_surface_set_size(block->surface[bar], geom->w, bar_containers.h);
+    cairo_move_to(block->cairo[bar], geom->text_x, geom->text_y);
+    cairo_set_source_rgb(block->cairo[bar],
+                         settings->foreground[0],
+                         settings->foreground[1],
+                         settings->foreground[2]);
+    cairo_surface_flush(block->surface[bar]);
+    pango_cairo_show_layout(block->cairo[bar], block->pango[bar]);
+  }
 }
 
 void block_set_text_batch(const block_t *blocks, size_t count, const char *text) {
   for(size_t i=0; i<count; i++) {
-    pango_layout_set_text(blocks[i].pango, text, -1);
+    for(size_t j=0; j<bar_container_count; j++) {
+      pango_layout_set_text(blocks[i].pango[j], text, -1);
+    }
   }
 }
 
 void block_set_text(const block_t *block, const char *text) {
-  pango_layout_set_text(block->pango, text, -1);
+  for(size_t i=0; i<bar_container_count; i++) {
+    pango_layout_set_text(block->pango[i], text, -1);
+  }
 }
 
-void block_hide(block_t *block) { xcb_unmap_window(conn, block->id); }
-void block_show(block_t *block) { xcb_map_window(conn, block->id); }
+void block_hide(block_t *block, size_t bar) {
+  xcb_unmap_window(conn, block->id[bar]);
+  block->state[bar] = false;
+}
+void block_show(block_t *block, size_t bar) {
+  xcb_map_window(conn, block->id[bar]);
+  block->state[bar] = true;
+}
+void block_hide_all(block_t *block) {
+  for(size_t i=0; i<bar_container_count; i++) {
+    xcb_unmap_window(conn, block->id[i]);
+    block->state[i] = false;
+  }
+}
+void block_show_all(block_t *block) {
+  for(size_t i=0; i<bar_container_count; i++) {
+    xcb_map_window(conn, block->id[i]);
+    block->state[i] = true;
+  }
+}
 
-void block_create(block_t *block, xcb_window_t parent,
-                  const PangoFontDescription *font) {
+void block_create(block_t *block, const PangoFontDescription *font) {
   uint32_t mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
   uint32_t values[2] = { bar_containers.background, XCB_EVENT_MASK_EXPOSURE };
-  block->id = xcb_generate_id(conn);
-  xcb_create_window(conn, screen->root_depth, block->id,
-                    parent, 0, 0, 1, bar_containers.h, 0,
-                    XCB_WINDOW_CLASS_INPUT_OUTPUT,
-                    screen->root_visual, mask, values);
-  block->surface =
-    cairo_xcb_surface_create(conn, block->id, visual_type, 1, bar_containers.h);
-  block->cairo = cairo_create(block->surface);
-  block->pango = pango_cairo_create_layout(block->cairo);
-  pango_layout_set_font_description(block->pango, font);
+
+  block->id = malloc(bar_container_count*sizeof(xcb_window_t));
+  block->surface = malloc(bar_container_count*sizeof(cairo_surface_t*));
+  block->cairo = malloc(bar_container_count*sizeof(cairo_t*));
+  block->pango = malloc(bar_container_count*sizeof(PangoLayout*));
+  block->state = calloc(bar_container_count, sizeof(bool));
+
+  for(size_t i=0; i<bar_container_count; i++) {
+    block->id[i] = xcb_generate_id(conn);
+    xcb_create_window(conn, screen->root_depth, block->id[i],
+                      bar_containers.id[i], 0, 0, 1, bar_containers.h, 0,
+                      XCB_WINDOW_CLASS_INPUT_OUTPUT,
+                      screen->root_visual, mask, values);
+  }
+  for(size_t i=0; i<bar_container_count; i++) {
+    block->surface[i] =
+      cairo_xcb_surface_create(conn, block->id[i], visual_type, 1, bar_containers.h);
+    block->cairo[i] = cairo_create(block->surface[i]);
+    block->pango[i] = pango_cairo_create_layout(block->cairo[i]);
+    pango_layout_set_font_description(block->pango[i], font);
+  }
+}
+
+void block_launcher_create(block_t *block, const PangoFontDescription *font) {
+  uint32_t mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
+  uint32_t values[2] = { bar_containers.background, XCB_EVENT_MASK_EXPOSURE };
+
+  block->id = malloc(bar_container_count*sizeof(xcb_window_t));
+  block->surface = malloc(bar_container_count*sizeof(cairo_surface_t*));
+  block->cairo = malloc(bar_container_count*sizeof(cairo_t*));
+  block->pango = malloc(bar_container_count*sizeof(PangoLayout*));
+  block->state = calloc(bar_container_count, sizeof(bool));
+
+  for(size_t i=0; i<bar_container_count; i++) {
+    block->id[i] = xcb_generate_id(conn);
+    xcb_create_window(conn, screen->root_depth, block->id[i],
+                      bar_containers.launcher[i], 0, 0, 1, bar_containers.h, 0,
+                      XCB_WINDOW_CLASS_INPUT_OUTPUT,
+                      screen->root_visual, mask, values);
+  }
+  for(size_t i=0; i<bar_container_count; i++) {
+    block->surface[i] =
+      cairo_xcb_surface_create(conn, block->id[i], visual_type, 1, bar_containers.h);
+    block->cairo[i] = cairo_create(block->surface[i]);
+    block->pango[i] = pango_cairo_create_layout(block->cairo[i]);
+    pango_layout_set_font_description(block->pango[i], font);
+  }
 }
 
 void block_geometry_batch(const block_t *blocks, block_geometry_t *geom,
@@ -203,7 +305,7 @@ void block_geometry_left(const block_t *block, uint16_t min_width,
 }
 
 void block_geometry_update_center(block_t *blocks, block_geometry_t *geom,
-                                  bool *prev_state, size_t count, size_t step,
+                                  size_t count,
                                   const block_settings_t* (*settings)(size_t),
                                   uint16_t left_offset, uint16_t min_width,
                                   uint16_t right_offset) {
@@ -227,20 +329,11 @@ void block_geometry_update_center(block_t *blocks, block_geometry_t *geom,
           j--;
           continue;
         }
-        if(!prev_state[i*step+j]) {
-          block_show(blocks+i*step+j);
-          prev_state[i*step+j] = true;
-        }
-      } else if(prev_state[i*step+j]){
-        block_hide(blocks+i*step+j);
-        prev_state[i*step+j] = false;
+        if(!blocks[j].state[i])
+          block_show(blocks+j, i);
+      } else if(blocks[j].state[i]) {
+        block_hide(blocks+j, i);
       }
-    }
-    for(size_t j=count; i<step; j++) {
-      if(prev_state[i*step+j]) {
-        block_hide(blocks+i*step+j);
-        prev_state[i*step+j] = false;
-      } else break;
     }
     if(width > 0) {
       width -= bar_containers.separator;
@@ -259,59 +352,59 @@ void block_geometry_update_center(block_t *blocks, block_geometry_t *geom,
       for(size_t j=1; j<visible; j++) {
         geom[j].x = block_next_x(geom+(j-1));
       }
-      block_update_batchf(blocks, geom, visible, settings);
+      block_update_batchf(blocks, geom, visible, settings, i);
     }
   }
 }
 
-void block_geometry_update_rightef(block_t *blocks, block_geometry_t *geom,
-                                   bool *prev_state, size_t count,
-                                   const block_settings_t* (*settings)(size_t),
-                                   uint16_t min_width) {
+void block_geometry_update_right(block_t *blocks, block_geometry_t *geom,
+                                 size_t count, size_t right_offset,
+                                 const block_settings_t* (*settings)(size_t),
+                                 uint16_t min_width) {
   uint16_t width;
   uint16_t start = 0;
   block_geometry_batch(blocks, geom, count, min_width);
   width = block_combined_width(geom, count);
   for(size_t i=0; i<bar_container_count; i++) {
-    start = bar_containers.w[i] - width;
+    start = bar_containers.w[i] - width -
+      ((right_offset==0)?0:right_offset+bar_containers.separator);
     for(size_t j=count-1; j>0; j--) {
       geom[j].x = geom[j].x - geom[0].x + start;
     }
     geom[0].x = start;
     for(size_t j=0; j<count; j++) {
-      if(!prev_state[i*count+j] && geom[j].w > 1) {
-        block_show(blocks+i*count+j);
-        prev_state[i*count+j] = true;
-      } else if(prev_state[i*count+j] && geom[j].w < 2){
-        block_hide(blocks+i*count+j);
-        prev_state[i*count+j] = false;
+      if(!blocks[j].state[0] && geom[j].w > 1) {
+        block_show_all(blocks+j);
+      } else if(blocks[j].state[0] && geom[j].w < 2){
+        block_hide_all(blocks+j);
       }
     }
-    for(size_t j=count; j<count; j++) {
-      if(prev_state[i*count+j]) {
-        block_hide(blocks+i*count+j);
-        prev_state[i*count+j] = false;
-      }
-    }
-    block_update_batchf(blocks, geom, count, settings);
+    block_update_batchf(blocks, geom, count, settings, i);
   }
 }
 
-  void block_destroy(block_t *block) {
-    g_object_unref(block->pango);
-    block->pango = NULL;
-    cairo_destroy(block->cairo);
-    block->cairo = NULL;
-    cairo_surface_destroy(block->surface);
-    block->surface = NULL;
-    xcb_destroy_window(conn, block->id);
+void block_destroy(block_t *block) {
+  for(size_t i=0; i<bar_container_count; i++) {
+    g_object_unref(block->pango[i]);
+    block->pango[i] = NULL;
+    cairo_destroy(block->cairo[i]);
+    block->cairo[i] = NULL;
+    cairo_surface_destroy(block->surface[i]);
+    block->surface[i] = NULL;
+    xcb_destroy_window(conn, block->id[i]);
   }
+  free(block->id);
+  free(block->state);
+  free(block->surface);
+  free(block->cairo);
+  free(block->pango);
+}
 
-  void block_init(xcb_connection_t *c, const xcb_screen_t *s,
-                  xcb_visualtype_t *type) {
-    conn = c;
-    screen = s;
-    visual_type = type;
-  }
+void block_init(xcb_connection_t *c, const xcb_screen_t *s,
+                xcb_visualtype_t *type) {
+  conn = c;
+  screen = s;
+  visual_type = type;
+}
 
-  void block_deinit(void) {};
+void block_deinit(void) {}

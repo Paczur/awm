@@ -5,6 +5,14 @@ bar_containers_t bar_containers;
 size_t bar_container_count;
 static xcb_connection_t *conn;
 
+size_t bar_container_find(xcb_window_t window) {
+  for(size_t i=0; i<bar_container_count; i++) {
+    if(bar_containers.id[i] == window)
+      return i;
+  }
+  return -1;
+}
+
 void bar_container_init(xcb_connection_t *c, const xcb_screen_t *screen,
                         bar_containers_t bcs, size_t count) {
   bar_containers = bcs;

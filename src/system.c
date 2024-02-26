@@ -18,7 +18,7 @@ XIM xim;
 XIC xic;
 Display *dpy;
 
-int shout(const char *cmd, char *out, size_t len) {
+int system_sh_out(const char *cmd, char *out, size_t len) {
   FILE *f;
   int pid;
   int status;
@@ -45,14 +45,13 @@ int shout(const char *cmd, char *out, size_t len) {
   return status;
 }
 
-void sh(const char* cmd) {
+void system_sh(const char* cmd) {
   int pid = vfork();
   if(pid == 0) {
     execl("/bin/sh", "sh", "-c", cmd, NULL);
   }
 }
 
-//TODO: Cleanup those functions
 static void setup_visual(void) {
   xcb_depth_iterator_t iter_depths;
   xcb_depth_t *depth;
@@ -94,6 +93,7 @@ static void setup_wm(void) {
   xcb_change_window_attributes(conn, screen->root,
                                XCB_CW_EVENT_MASK, &values);
 }
+
 void system_monitors(rect_t **monitors, size_t *monitor_count) {
   size_t length;
   xcb_randr_crtc_t *firstCrtc;

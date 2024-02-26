@@ -1,6 +1,7 @@
 #include "event.h"
 #include <stdbool.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 static void(*event_dispatch[XCB_GE_GENERIC]) (const xcb_generic_event_t*);
 static bool run;

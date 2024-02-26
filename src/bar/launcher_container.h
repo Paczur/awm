@@ -5,11 +5,9 @@
 
 typedef struct launcher_containers_t {
   xcb_window_t *id;
-  size_t *bar_container;
 } launcher_containers_t;
 
 extern launcher_containers_t launcher_containers;
-extern size_t launcher_container_count;
 
 void launcher_container_show(void);
 void launcher_container_hide(void);

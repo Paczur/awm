@@ -40,6 +40,7 @@ void c_event_destroy(const xcb_generic_event_t*);
 void c_event_unmap(const xcb_generic_event_t*);
 void c_event_focus(const xcb_generic_event_t*);
 void c_event_expose(const xcb_generic_event_t*);
+void c_loop(void);
 void c_init(void);
 void c_deinit(void);
 

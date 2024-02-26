@@ -7,12 +7,15 @@
 
 extern uint16_t block_info_offset_right;
 
-void block_info_redraw(void);
+void block_info_redraw(size_t);
+bool block_info_find_redraw(xcb_window_t);
 
 void block_info_update_highlight(int n, int delay);
 void block_info_update(int n);
 
-void block_info_init(const PangoFontDescription*, const bar_block_info_init_t*);
+void block_info_init(const PangoFontDescription*,
+                     void(*)(void), const bar_block_info_init_t*,
+                     xcb_connection_t*);
 void block_info_deinit(void);
 
 #endif

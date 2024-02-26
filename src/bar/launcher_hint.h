@@ -8,7 +8,8 @@
 extern size_t launcher_hint_selected;
 extern size_t launcher_hint_count;
 
-void launcher_hint_redraw(void);
+void launcher_hint_redraw(size_t);
+bool launcher_hint_find_redraw(xcb_window_t);
 void launcher_hint_regen(const char*, size_t);
 void launcher_hint_update(size_t);
 

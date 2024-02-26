@@ -15,22 +15,28 @@ THREADS=-lpthread
 LIBS= $(X) $(TEXT) $(THREADS)
 RELEASE=-O2 -s -pipe -flto=4 -fwhole-program
 CFLAGS=$(WARN) -march=native -std=gnu99 $(LIBS)
-
 SOURCES=$(wildcard $(SRC)/*.c $(SRC)/**/*.c)
 OBJECTS=$(patsubst $(SRC)/%.c,$(BUILD)/%.o,$(SOURCES))
 DEPENDS=$(patsubst $(SRC)/%.c,$(BUILD)/%.d,$(SOURCES))
+
+all: test
+
 $(shell mkdir -p $(dir $(DEPENDS)))
 -include $(DEPENDS)
 
-.PHONY: release debug test test_clean clean
-
+.PHONY: all release debug test test_clean clean
 $(VERBOSE).SILENT:
 
+test: test_clean debug
+
 release: CFLAGS += $(RELEASE)
-release: $(BIN)/idkwm
+release: $(BIN)/idkwm rename
 
 debug: CFLAGS += $(DEBUG)
 debug: $(BIN)/idkwm-debug
+
+rename:
+	mv $(BIN)/idkwm $(BIN)/idkwm-debug
 
 valgrind: CFGLAS += $(VALGRIND)
 valgrind: clean $(BIN)/idkwm-debug
@@ -40,8 +46,6 @@ clean:
 
 test_clean:
 	rm -rf $(BIN)/out
-
-test: test_clean debug
 
 $(BIN):
 	mkdir -p $(BIN)

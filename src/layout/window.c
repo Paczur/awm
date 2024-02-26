@@ -4,6 +4,8 @@
 #include <string.h>
 #include <stdio.h>
 
+#define MIN(x,y) (((x)<=(y))?(x):(y))
+
 static xcb_connection_t *conn;
 static xcb_atom_t wm_class;
 static const char *const (*classes)[2];
@@ -12,50 +14,34 @@ window_list_t *windows_minimized;
 window_t *windows;
 
 //TODO: ref counting on global storage
-//TODO: improve this function
 static void window_set_name(window_t *window) {
   xcb_get_property_reply_t *reply = NULL;
   size_t length[2];
   char *class;
   window->name = calloc(WINDOW_NAME_MAX_LENGTH, sizeof(char));
   xcb_get_property_cookie_t cookie =
-    xcb_get_property(conn, 0, window->id, wm_class, XCB_ATOM_STRING,
-                     0, 50);
+    xcb_get_property(conn, 0, window->id, wm_class, XCB_ATOM_STRING, 0, 50);
   reply = xcb_get_property_reply(conn, cookie, NULL);
-
   class = xcb_get_property_value(reply);
   length[1] = xcb_get_property_value_length(reply);
+  if(length[1] == 0) {
+    strcpy(window->name, "?");
+    goto window_set_name_cleanup;
+  }
   length[0] = strnlen(class, length[1])+1;
   length[1] -= length[0] + 1;
   for(size_t i=0; i < classes_length; i++) {
-    if(strcmp(class, classes[i][0]) == 0) {
+    if(!strcmp(class, classes[i][0]) || !strcmp(class+length[0], classes[i][0])) {
       strcpy(window->name, classes[i][1]);
-      free(reply);
-      return;
-    } else if(strcmp(class+length[0], classes[i][0]) == 0) {
-      strcpy(window->name, classes[i][1]);
-      free(reply);
-      return;
+      goto window_set_name_cleanup;
     }
   }
-  if(length[1] > WINDOW_NAME_MAX_LENGTH) {
-    memcpy(window->name, class+length[0], WINDOW_NAME_MAX_LENGTH);
-    if(window->name[WINDOW_NAME_MAX_LENGTH-1] != 0) {
-       window->name[WINDOW_NAME_MAX_LENGTH-1] = 0;
-       window->name[WINDOW_NAME_MAX_LENGTH-2] = '.';
-       window->name[WINDOW_NAME_MAX_LENGTH-3] = '.';
-       window->name[WINDOW_NAME_MAX_LENGTH-4] = '.';
-    }
-  } else {
-    memcpy(window->name, class+length[0], length[1]);
-  }
-  if(window->name[0] < 'A' ||
-     window->name[0] > 'z' ||
-     (window->name[0] > 'Z' &&
-      window->name[0] < 'a')) {
-    window->name[0] = '?';
-    window->name[1] = 0;
-  }
+  memcpy(window->name, class+length[0], MIN(WINDOW_NAME_MAX_LENGTH,length[1]));
+  if(window->name[WINDOW_NAME_MAX_LENGTH-1] != 0)
+    memcpy(window->name+(WINDOW_NAME_MAX_LENGTH-4), "...", sizeof("..."));
+  if(window->name[0] == 0)
+    memcpy(window->name, "?", sizeof("?"));
+window_set_name_cleanup:
   free(reply);
 }
 

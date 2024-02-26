@@ -1,8 +1,7 @@
 #include "block_mode.h"
-#include "bar_container.h"
 
 typedef struct block_mode_t {
-  block_t *blocks;
+  block_t block;
   block_settings_t insert;
   block_settings_t normal;
   uint16_t min_width;
@@ -24,18 +23,18 @@ void block_mode_update(bool normal_mode) {
     settings = &block_mode.insert;
   }
 
-  block_set_text(block_mode.blocks, text);
-  block_geometry_left(block_mode.blocks, block_mode.min_width,
+  block_set_text(&block_mode.block, text);
+  block_geometry_left(&block_mode.block, block_mode.min_width,
                       NULL, &block_mode_geometry);
-  block_update(block_mode.blocks, settings, &block_mode_geometry);
-  for(size_t i=0; i<bar_container_count; i++) {
-    block_set_text(block_mode.blocks+i, text);
-    block_update(block_mode.blocks+i, settings, &block_mode_geometry);
-  }
+  block_update_same(&block_mode.block, settings, &block_mode_geometry);
 }
 
-void block_mode_redraw(void) {
-  block_redraw_batch(block_mode.blocks, 1);
+void block_mode_redraw(size_t bar) {
+  block_redraw(&block_mode.block, bar);
+}
+
+bool block_mode_find_redraw(xcb_window_t window) {
+  return block_find_redraw(&block_mode.block, 1, window);
 }
 
 void block_mode_init(const PangoFontDescription *font,
@@ -43,16 +42,10 @@ void block_mode_init(const PangoFontDescription *font,
   block_settings(&block_mode.insert, &init->insert);
   block_settings(&block_mode.normal, &init->normal);
   block_mode.min_width = init->min_width;
-  block_mode.blocks = malloc(bar_container_count * sizeof(block_t));
-  for(size_t i=0; i<bar_container_count; i++) {
-    block_create(block_mode.blocks+i, bar_containers.id[i], font);
-    block_show(block_mode.blocks+i);
-  }
+  block_create(&block_mode.block, font);
+  block_show_all(&block_mode.block);
 }
 
 void block_mode_deinit(void) {
-  for(size_t i=0; i<bar_container_count; i++) {
-    block_destroy(block_mode.blocks+i);
-  }
-  free(block_mode.blocks);
+  block_destroy(&block_mode.block);
 }

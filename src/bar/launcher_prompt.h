@@ -9,7 +9,8 @@ extern char launcher_prompt_search[LAUNCHER_PROMPT_MAX_LENGTH];
 extern size_t launcher_prompt_search_length;
 
 void launcher_prompt_clear(void);
-void launcher_prompt_redraw(void);
+void launcher_prompt_redraw(size_t);
+bool launcher_prompt_find_redraw(xcb_window_t);
 void launcher_prompt_append(const char*, size_t);
 void launcher_prompt_erase(void);
 

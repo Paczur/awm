@@ -205,6 +205,22 @@ void shortcuts_update(xcb_get_keyboard_mapping_reply_t *kmap,
   //TODO: Add shortcuts
  }
 
+void shortcut_enable(xcb_connection_t *conn, const xcb_screen_t *screen,
+                     SHORTCUT_TYPE type) {
+  shortcut_t *sh;
+  xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, XCB_MOD_MASK_ANY);
+  for(size_t i=0; i<shortcuts.length; i++) {
+    if(shortcuts.values[i] == NULL) continue;
+    sh = shortcuts.values[i]->by_type[type];
+    while(sh != NULL) {
+      xcb_grab_key(conn, 1, screen->root, sh->mod_mask,
+                   i+shortcuts.offset,
+                   XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+      sh = sh->next;
+    }
+  }
+}
+
 void shortcut_init(size_t start, size_t end) {
   shortcuts.offset = start;
   shortcuts.length = end-start;

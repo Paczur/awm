@@ -4,6 +4,19 @@
 #include "../types.h"
 #include <xcb/xcb.h>
 #include <stddef.h>
+#include <stdbool.h>
+
+typedef struct bar_containers_t {
+  xcb_window_t *id;
+  xcb_window_t *launcher;
+  uint16_t *x;
+  uint16_t *y;
+  uint16_t *w;
+  uint32_t background;
+  uint16_t h;
+  uint16_t padding;
+  uint16_t separator;
+} bar_containers_t;
 
 typedef struct block_settings_t {
   uint32_t background;
@@ -23,8 +36,8 @@ typedef struct block_info_data_t {
 
 typedef struct bar_launcher_hint_init_t {
   uint16_t min_width;
-  const block_settings_init_t focused;
   const block_settings_init_t unfocused;
+  const block_settings_init_t focused;
 } bar_launcher_hint_init_t;
 
 typedef struct bar_launcher_prompt_init_t {
@@ -44,7 +57,6 @@ typedef struct bar_block_info_init_t {
   const block_settings_init_t highlighted;
   block_info_data_t *data;
   size_t data_length;
-  void (*callback)(void);
   int(*get_output)(const char*, char*, size_t);
 } bar_block_info_init_t;
 
@@ -66,6 +78,10 @@ typedef struct bar_init_t {
   xcb_visualtype_t *visual_type;
   const rect_t* bar_containers;
   size_t bar_container_count;
+  size_t (*focused_workspace)(void);
+  bool (*workspace_empty)(size_t);
+  const plist_t* (*minimized_list)(void);
+  size_t minimized_name_offset;
 
   size_t block_padding;
   size_t block_separator;

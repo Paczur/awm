@@ -7,6 +7,7 @@ int main(int argc, char *argv[], char *envp[]) {
   (void)argv;
   environ = envp;
   c_init();
+  c_loop();
   c_deinit();
   return 0;
 }
