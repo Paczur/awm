@@ -23,8 +23,7 @@ void launcher_container_init(xcb_connection_t *c, const xcb_screen_t *screen) {
   for(size_t i=0; i<bar_container_count; i++) {
     bar_containers.launcher[i] = xcb_generate_id(c);
     xcb_create_window(conn, screen->root_depth, bar_containers.launcher[i],
-                      bar_containers.id[i], bar_containers.x[i],
-                      bar_containers.y[i], bar_containers.w[i],
+                      bar_containers.id[i], 0, 0, bar_containers.w[i],
                       bar_containers.h, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT,
                       screen->root_visual, mask, values);
   }

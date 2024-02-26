@@ -21,7 +21,7 @@ size_t grid_next_pos(void);
 void grid_unmark(window_t*);
 void grid_refresh(void);
 void grid_update(size_t);
-void grid_adjust_pos(size_t);
+void grid_adjust_pos(void);
 bool grid_focus_pick(void);
 bool grid_focus_restore(void);
 void grid_place_window(window_t*, size_t, bool);

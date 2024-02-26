@@ -26,14 +26,14 @@ static void block_geometry(const block_t *block, uint16_t min_width,
   }
   if(t2.width > 0) {
     if((uint)t.x > bar_containers.padding) {
-      *width = t2.width + t.x*2;
+      *width = t.width + t.x*2;
       *text_x = t.x;
     } else {
-      *width = t2.width + bar_containers.padding*2;
+      *width = t.width + bar_containers.padding*2;
       *text_x = bar_containers.padding - t.x;
     }
     if(*width < min_width) {
-      *text_x = (min_width - t2.width)/2 - t.x;
+      *text_x = (min_width - t.width)/2 - t.x;
       *width = min_width;
     }
   } else {

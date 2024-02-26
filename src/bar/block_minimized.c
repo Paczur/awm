@@ -35,8 +35,7 @@ void block_minimized_update(const plist_t *names, size_t offset,
 }
 
 void block_minimized_redraw(size_t bar) {
-  block_redraw_batch(block_minimized.blocks+bar*MAX_MINIMIZED_BLOCKS,
-                     MAX_MINIMIZED_BLOCKS, bar);
+  block_redraw_batch(block_minimized.blocks, MAX_MINIMIZED_BLOCKS, bar);
 }
 
 bool block_minimized_find_redraw(xcb_window_t window) {

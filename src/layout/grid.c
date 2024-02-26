@@ -4,6 +4,7 @@
 #include <xcb/xcb.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #define X(pos) ((pos)%HOR_CELLS_PER_WORKAREA)
 #define Y(pos) ((pos)%CELLS_PER_WORKAREA/VERT_CELLS_PER_WORKAREA)
@@ -43,7 +44,7 @@ static grid_cell_t *grid_pos2originc(size_t n) {
 }
 
 static size_t grid_xwin2pos(xcb_window_t window) {
-  for(size_t i=0; i<CELLS_PER_WORKAREA; i++) {
+  for(size_t i=0; i<workarea_count*CELLS_PER_WORKAREA; i++) {
     if(grid_pos2win(i) != NULL &&
        grid_pos2win(i)->id == window)
       return i;
@@ -57,7 +58,7 @@ static bool grid_mon_empty(size_t m) {
 
 static void grid_expand_horizontally(size_t m, uint32_t* values, size_t offset) {
   size_t p, ri;
-  for(size_t i=0; i<4; i++) {
+  for(size_t i=0; i<CELLS_PER_WORKAREA; i++) {
     p = grid_mon2pos(m);
     ri = COMB(!X(i), Y(i));
     if(grid_pos2win(p+i) == NULL &&
@@ -75,7 +76,7 @@ static void grid_expand_horizontally(size_t m, uint32_t* values, size_t offset) 
 
 static void grid_expand_vertically(size_t m, uint32_t* values, size_t offset) {
   size_t p, ri;
-  for(size_t i=0; i<4; i++) {
+  for(size_t i=0; i<CELLS_PER_WORKAREA; i++) {
     p = grid_mon2pos(m);
     ri = COMB(X(i), !Y(i));
     if(grid_pos2win(p+i) == NULL &&
@@ -95,7 +96,7 @@ static void grid_calculate(size_t m, uint32_t* values, size_t offset) {
   const workspace_t* workspace = workspace_focusedw();
   size_t p;
   for(size_t i=0; i<CELLS_PER_WORKAREA; i++) {
-    p = grid_pos2mon(m)+i;
+    p = grid_mon2pos(m)+i;
     if(grid_pos2origin(p) != p)
       grid_pos2cell(p)->window = NULL;
 
@@ -151,9 +152,7 @@ window_t *grid_focusedw(void) {
 }
 
 size_t grid_pos2mon(size_t n) {
-  return grid_pos_invalid(n) ?
-    SIZE_MAX :
-    n/CELLS_PER_WORKAREA;
+  return grid_pos_invalid(n) ?  SIZE_MAX : n/CELLS_PER_WORKAREA;
 }
 
 size_t grid_next_pos(void) {
@@ -233,34 +232,48 @@ void grid_update(size_t m) {
   //   }
   //   printf("o:%lu\n", grid_pos2cell(i)->origin);
   // }
+  // fflush(stdout);
 }
 
-void grid_adjust_pos(size_t m) {
+void grid_adjust_pos(void) {
   size_t t;
-  size_t moved[4];
+  size_t t2;
+  bool *moved;
   size_t count = 0;
   size_t iter = 0;
-  size_t pos = grid_mon2pos(m);
-  for(size_t i=0; i<CELLS_PER_WORKAREA; i++) {
-    if(grid_pos2origin(i+pos) == i+pos)
+  size_t orig;
+  moved = calloc(workarea_count, sizeof(bool));
+  for(size_t i=0; i<CELLS_PER_WORKAREA*workarea_count; i++) {
+    if(grid_pos2origin(i) == i)
       count++;
   }
-  for(size_t i=0; i<spawn_order_len; i++) {
+  for(size_t i=0; i<spawn_order_len && iter<count; i++) {
     t = spawn_order[i];
-    if(count == iter) break;
-    if(grid_pos2mon(t) != m) continue;
-    if(grid_pos2origin(t) == t) {
-      iter++;
+    if(grid_pos_invalid(t))
       continue;
-    }
-    if(!moved[grid_pos2mon(t)]) {
-      grid_pos2originc(t)->origin = t;
-      grid_pos2cell(t)->origin = t;
-      moved[grid_pos2mon(t)] = true;
-      iter++;
+    orig = grid_pos2origin(t);
+    iter++;
+    if(grid_pos2win(t) == NULL || orig != t) {
+      for(size_t j=i+1; j<spawn_order_len; j++) {
+        t2 = spawn_order[j];
+        if(!grid_pos_invalid(t2) &&
+           grid_pos2win(t2) != NULL &&
+           grid_pos2origin(t2) == t2) {
+          grid_pos2cell(t)->origin = t;
+          grid_pos2cell(t)->window = grid_pos2win(t2);
+          grid_pos2cell(t2)->origin = -1;
+          grid_pos2cell(t2)->window = NULL;
+          moved[grid_pos2mon(t)] = true;
+          moved[grid_pos2mon(t2)] = true;
+          break;
+        }
+      }
     }
   }
-  grid_update(m);
+  for(size_t i=0; i<workarea_count; i++) {
+    if(moved[i])
+      grid_update(i);
+  }
 }
 
 bool grid_focus_pick(void) {
@@ -378,7 +391,7 @@ void grid_minimize(size_t n) {
   grid_cell_t *cell = grid_pos2cell(n);
   if(cell == NULL || cell->window == NULL) return;
   xcb_unmap_window(conn,cell->window->id);
-  grid_adjust_pos(grid_pos2mon(n));
+  grid_adjust_pos();
 }
 
 void grid_destroy(size_t n) {
@@ -504,5 +517,5 @@ void grid_event_unmap(xcb_window_t window) {
   if(grid_focused() == pos)
     workspace_focusedw()->focus = -1;
   grid_update(grid_pos2mon(pos));
-  grid_adjust_pos(grid_pos2mon(pos));
+  grid_adjust_pos();
 }

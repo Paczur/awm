@@ -8,7 +8,7 @@
 
 static xcb_connection_t *conn;
 static xcb_atom_t wm_class;
-static const char *const (*classes)[2];
+static char *(*classes)[2];
 static size_t classes_length;
 window_list_t *windows_minimized;
 window_t *windows;
@@ -105,8 +105,17 @@ void window_minimize(window_t *window) {
 
 void window_init(xcb_connection_t *c, const char *const(*names)[2],
                  size_t names_length) {
+  size_t len;
   conn = c;
-  classes = names;
+  classes = malloc(names_length*sizeof(char*[2]));
+  for(size_t i=0; i<names_length; i++) {
+    len = strlen(names[i][0])+1;
+    classes[i][0] = malloc(len);
+    strncpy(classes[i][0], names[i][0], len);
+    len = strlen(names[i][1])+1;
+    classes[i][1] = malloc(len);
+    strncpy(classes[i][1], names[i][1], len);
+  }
   classes_length = names_length;
   char wm_class_str[] = "WM_CLASS";
   xcb_intern_atom_reply_t *reply = NULL;
@@ -114,8 +123,7 @@ void window_init(xcb_connection_t *c, const char *const(*names)[2],
   cookie = xcb_intern_atom(conn, 0, sizeof(wm_class_str)-1, wm_class_str);
   while(reply == NULL) {
     reply = xcb_intern_atom_reply(conn, cookie, NULL);
-    if(reply == NULL) {
-      cookie = xcb_intern_atom(conn, 0, sizeof(wm_class_str)-1, wm_class_str);
+    if(reply == NULL) { cookie = xcb_intern_atom(conn, 0, sizeof(wm_class_str)-1, wm_class_str);
     }
   }
   wm_class = reply->atom;

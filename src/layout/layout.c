@@ -37,17 +37,20 @@ static void layout_adopt(void) {
       greply = xcb_get_geometry_reply(conn, gcookie, NULL);
       found = false;
       for(size_t j=0; j<workarea_count; j++) {
-        if(greply->x < workareas[j].x ||
-           greply->y < workareas[j].y) {
-          // if(children[i] != view.bars[j].id)
-            xcb_destroy_window(conn, children[i]);
+        if(greply->x >= workareas[j].x &&
+           greply->y >= workareas[j].y &&
+           greply->x < workareas[j].x+workareas[j].w &&
+           greply->y < workareas[j].y+workareas[j].h) {
           found = true;
           break;
         }
       }
+      if(!found) {
+        xcb_destroy_window(conn, children[i]);
+      }
       free(greply);
       greply = NULL;
-      if(!found) {
+      if(found) {
         if(areply->map_state == XCB_MAP_STATE_UNMAPPED)
           window_minimize(window_find(children[i]));
         else

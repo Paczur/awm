@@ -3,12 +3,6 @@
 
 #include "bar_container.h"
 
-typedef struct launcher_containers_t {
-  xcb_window_t *id;
-} launcher_containers_t;
-
-extern launcher_containers_t launcher_containers;
-
 void launcher_container_show(void);
 void launcher_container_hide(void);
 

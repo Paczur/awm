@@ -13,8 +13,7 @@ block_geometry_t block_workspace_geometry[MAX_WORKSPACE_BLOCKS];
 void block_workspace_redraw(size_t bar) {
   puts("WORKSPACE");
   fflush(stdout);
-  block_redraw_batch(block_workspace.blocks+bar*MAX_WORKSPACE_BLOCKS,
-                     MAX_WORKSPACE_BLOCKS, bar);
+  block_redraw_batch(block_workspace.blocks, MAX_WORKSPACE_BLOCKS, bar);
 }
 
 bool block_workspace_find_redraw(xcb_window_t window) {

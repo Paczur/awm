@@ -47,6 +47,8 @@ void launcher_hint_regen(const char *search, size_t length) {
 }
 
 void launcher_hint_update(size_t left_offset) {
+  for(size_t i=launcher_hint_count; i<MAX_LAUNCHER_HINTS; i++)
+    block_hide_all(launcher_hint.blocks+i);
   block_geometry_update_center(launcher_hint.blocks, launcher_hint_geometry,
                                launcher_hint_count, launcher_hint_get_settings,
                                left_offset, launcher_hint.min_width, 0);

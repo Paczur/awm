@@ -103,7 +103,7 @@
   {0, "/home/paczur/.config/i3blocks/net", 60}, \
   {1, "/home/paczur/.config/i3blocks/volume", -1}, \
   {2, "/home/paczur/.config/i3blocks/dnd", -1}, \
-  {3, "echo  $(/home/paczur/.config/i3blocks/brightness)", -1}, \
+  {3, "x=$(/home/paczur/.config/i3blocks/brightness); if [ -n $x ]; then echo  $x; fi", -1}, \
   {4, "/home/paczur/.config/i3blocks/battery", 60}, \
   {5, "echo  $(/home/paczur/.config/i3blocks/cpu)", 5}, \
   {6, "date '+󰃶 %a %d' && exit 1", 3600}, \
