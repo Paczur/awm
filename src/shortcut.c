@@ -1,4 +1,5 @@
 #include "shortcut.h"
+#include <xcb/xkb.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -219,6 +220,23 @@ void shortcut_enable(xcb_connection_t *conn, const xcb_screen_t *screen,
       sh = sh->next;
     }
   }
+}
+
+void shortcut_xkb(const xcb_generic_event_t* e) {
+  const xcb_xkb_state_notify_event_t *event = (const xcb_xkb_state_notify_event_t*)e;
+  if(event->xkbType == XCB_XKB_NEW_KEYBOARD_NOTIFY) {
+    puts("XKB_NEW_KEYBOARD_NOTIFY");
+  } else if(event->xkbType == XCB_XKB_MAP_NOTIFY) {
+    const xcb_xkb_map_notify_event_t *map = (const xcb_xkb_map_notify_event_t*)event;
+    puts("XKB_MAP_NOTIFY");
+    if(map->nKeySyms) {
+      puts("XKB_KEYSYMS_MAP");
+    } else if(map->nModMapKeys) {
+      puts("XKB_MODMAP_MAP");
+    }
+  }
+  puts("XKB");
+  fflush(stdout);
 }
 
 void shortcut_init(size_t start, size_t end) {

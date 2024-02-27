@@ -5,7 +5,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <xcb/randr.h>
+#include <xcb/xkb.h>
 #include <stdbool.h>
+
+static uint8_t xkb_event = -1;
 
 //XCB
 xcb_visualtype_t *visual_type;
@@ -52,6 +55,10 @@ void system_sh(const char* cmd) {
   }
 }
 
+static void setup_prefetch(void) {
+  xcb_prefetch_extension_data(conn, &xcb_xkb_id);
+  xcb_prefetch_extension_data(conn, &xcb_randr_id);
+}
 static void setup_visual(void) {
   xcb_depth_iterator_t iter_depths;
   xcb_depth_t *depth;
@@ -92,6 +99,24 @@ static void setup_wm(void) {
     XCB_EVENT_MASK_STRUCTURE_NOTIFY;
   xcb_change_window_attributes(conn, screen->root,
                                XCB_CW_EVENT_MASK, &values);
+}
+static void setup_xkb(void) {
+  const xcb_query_extension_reply_t *extreply;
+  extreply = xcb_get_extension_data(conn, &xcb_xkb_id);
+  if(extreply->present) {
+    xcb_xkb_use_extension(conn, XCB_XKB_MAJOR_VERSION, XCB_XKB_MINOR_VERSION);
+    xcb_xkb_select_events(conn,
+                          XCB_XKB_ID_USE_CORE_KBD,
+                          XCB_XKB_EVENT_TYPE_STATE_NOTIFY |
+                          XCB_XKB_EVENT_TYPE_MAP_NOTIFY |
+                          XCB_XKB_EVENT_TYPE_NEW_KEYBOARD_NOTIFY,
+                          0,
+                          XCB_XKB_EVENT_TYPE_STATE_NOTIFY |
+                          XCB_XKB_EVENT_TYPE_MAP_NOTIFY |
+                          XCB_XKB_EVENT_TYPE_NEW_KEYBOARD_NOTIFY,
+                          0xff, 0xff, NULL);
+    xkb_event = extreply->first_event;
+  }
 }
 
 void system_monitors(rect_t **monitors, size_t *monitor_count) {
@@ -139,10 +164,13 @@ void system_monitors(rect_t **monitors, size_t *monitor_count) {
   }
   free(randr_crtcs);
 }
+uint8_t system_xkb(void) { return xkb_event; }
 
 void system_init(void) {
   setup_wm();
+  setup_prefetch();
   setup_visual();
+  setup_xkb();
 }
 void system_deinit(void) {
   XCloseDisplay(dpy);

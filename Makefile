@@ -10,7 +10,7 @@ DEBUG=-D DEBUG -Og -ggdb3 -fsanitize=address -fsanitize=pointer-compare \
 -fsanitize-address-use-after-scope -fstack-check \
 -fno-stack-clash-protection
 TEXT=$(shell pkg-config --cflags --libs pangocairo fontconfig)
-X=$(shell pkg-config --cflags --libs x11-xcb xcb-randr)
+X=$(shell pkg-config --cflags --libs x11-xcb xcb-randr xcb-xkb)
 THREADS=-lpthread
 LIBS= $(X) $(TEXT) $(THREADS)
 RELEASE=-O2 -s -pipe -flto=4 -fwhole-program
@@ -37,9 +37,6 @@ debug: $(BIN)/idkwm-debug
 
 rename:
 	mv $(BIN)/idkwm $(BIN)/idkwm-debug
-
-valgrind: CFGLAS += $(VALGRIND)
-valgrind: clean $(BIN)/idkwm-debug
 
 clean:
 	rm -rf $(BIN) $(BUILD)

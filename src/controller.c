@@ -277,6 +277,7 @@ void c_init(void) {
   event_listener_add(XCB_UNMAP_NOTIFY, c_event_unmap);
   event_listener_add(XCB_FOCUS_IN, c_event_focus);
   event_listener_add(XCB_EXPOSE, c_event_expose);
+  event_listener_add(system_xkb(), shortcut_xkb);
   xcb_flush(conn);
 }
 
