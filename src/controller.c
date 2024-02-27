@@ -13,6 +13,7 @@
 #include <X11/XF86keysym.h>
 
 static MODE mode;
+static MODE next_mode = MODE_INVALID;
 #define LENGTH(x) (sizeof(x)/sizeof((x)[0]))
 #define MIN(x,y) ((x)<=(y)?(x):(y))
 
@@ -75,7 +76,10 @@ void c_launcher_run(void) {
 void c_launcher_select_left(void) { bar_launcher_select_left(); }
 void c_launcher_select_right(void) { bar_launcher_select_right(); }
 void c_launcher_erase(void) { bar_launcher_erase(); }
+void c_mode_delay(MODE m) { next_mode = m; }
+void c_mode_force(void) { if(next_mode != MODE_INVALID) c_mode_set(next_mode); }
 void c_mode_set(MODE m) {
+  next_mode = MODE_INVALID;
   if(m == MODE_NORMAL) {
     mode = MODE_NORMAL;
     xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, XCB_MOD_MASK_ANY);
@@ -115,10 +119,16 @@ void c_event_key_press(const xcb_generic_event_t *e) {
     }
     return;
   }
-  if(mode == MODE_INSERT) {
-    shortcut_handle(event->detail, SH_TYPE_INSERT_MODE, event->state);
-  } else {
+  if(mode == MODE_NORMAL) {
     shortcut_handle(event->detail, SH_TYPE_NORMAL_MODE, event->state);
+  } else {
+    shortcut_handle(event->detail, SH_TYPE_INSERT_MODE, event->state);
+  }
+}
+void c_event_key_release(const xcb_generic_event_t *e) {
+  const xcb_key_release_event_t *event = (const xcb_key_release_event_t*)e;
+  if(mode == MODE_NORMAL) {
+    shortcut_handle(event->detail, SH_TYPE_NORMAL_MODE_RELEASE, event->state);
   }
 }
 void c_event_create(const xcb_generic_event_t *e) {
@@ -156,31 +166,19 @@ static void convert_shortcuts(const xcb_get_keyboard_mapping_reply_t *kmapping,
                        size_t len) {
   xcb_mod_mask_t mod_mask;
   for(size_t i=0; i<len; i++) {
-    mod_mask=-1;
-    switch(conf_shortcuts[i].modifier) {
-    case MOD_NONE:
-      mod_mask = 0;
-    break;
-    case MOD_SHIFT:
-      mod_mask = XCB_MOD_MASK_SHIFT;
-    break;
-    case MOD_ALT:
-      mod_mask = XCB_MOD_MASK_1;
-    break;
-    case MOD_SUPER:
-      mod_mask = XCB_MOD_MASK_4;
-    break;
-    case MOD_CTRL:
-      mod_mask = XCB_MOD_MASK_CONTROL;
-    break;
-    }
-    if(mod_mask != (xcb_mod_mask_t)-1) {
-      shortcut_new(kmapping, setup->min_keycode, setup->max_keycode,
-                   type, conf_shortcuts[i].keysym, mod_mask,
-                   conf_shortcuts[i].function);
-    }
+    mod_mask=0;
+    if(conf_shortcuts[i].modifier & MOD_SHIFT)
+      mod_mask |= XCB_MOD_MASK_SHIFT;
+    if(conf_shortcuts[i].modifier & MOD_ALT)
+      mod_mask |= XCB_MOD_MASK_1;
+    if(conf_shortcuts[i].modifier & MOD_SUPER)
+      mod_mask |= XCB_MOD_MASK_4;
+    if(conf_shortcuts[i].modifier & MOD_CTRL)
+      mod_mask |= XCB_MOD_MASK_CONTROL;
+    shortcut_new(kmapping, setup->min_keycode, setup->max_keycode,
+                 type, conf_shortcuts[i].keysym, mod_mask,
+                 conf_shortcuts[i].function);
   }
-
 }
 
 static void c_init_bar(rect_t *t_rect, const rect_t *monitors,
@@ -234,11 +232,14 @@ static void c_init_shortcut(xcb_get_keyboard_mapping_cookie_t kmap_cookie) {
   config_shortcut_t insert_shortcuts[] = CONFIG_SHORTCUTS_INSERT_MODE;
   config_shortcut_t normal_shortcuts[] = CONFIG_SHORTCUTS_NORMAL_MODE;
   config_shortcut_t launcher_shortcuts[] = CONFIG_SHORTCUTS_LAUNCHER;
+  config_shortcut_t normal_release_shortcuts[] = CONFIG_SHORTCUTS_NORMAL_MODE_RELEASE;
   xcb_get_keyboard_mapping_reply_t *kmap_reply;
   shortcut_init(setup->min_keycode, setup->max_keycode);
   kmap_reply = xcb_get_keyboard_mapping_reply(conn, kmap_cookie, NULL);
   convert_shortcuts(kmap_reply, SH_TYPE_INSERT_MODE,
                     insert_shortcuts, LENGTH(insert_shortcuts));
+  convert_shortcuts(kmap_reply, SH_TYPE_NORMAL_MODE_RELEASE,
+                    normal_release_shortcuts, LENGTH(normal_release_shortcuts));
   convert_shortcuts(kmap_reply, SH_TYPE_NORMAL_MODE,
                     normal_shortcuts, LENGTH(normal_shortcuts));
   convert_shortcuts(kmap_reply, SH_TYPE_LAUNCHER,
@@ -270,6 +271,7 @@ void c_init(void) {
   c_mode_set(MODE_NORMAL);
   event_listener_add(XCB_MAP_REQUEST, c_event_map);
   event_listener_add(XCB_KEY_PRESS, c_event_key_press);
+  event_listener_add(XCB_KEY_RELEASE, c_event_key_release);
   event_listener_add(XCB_CREATE_NOTIFY, c_event_create);
   event_listener_add(XCB_DESTROY_NOTIFY, c_event_destroy);
   event_listener_add(XCB_UNMAP_NOTIFY, c_event_unmap);

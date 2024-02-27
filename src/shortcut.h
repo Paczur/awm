@@ -14,6 +14,7 @@ typedef struct shortcut_t {
 typedef enum SHORTCUT_TYPE {
   SH_TYPE_INSERT_MODE,
   SH_TYPE_NORMAL_MODE,
+  SH_TYPE_NORMAL_MODE_RELEASE,
   SH_TYPE_LAUNCHER,
   SH_TYPE_LENGTH
 } SHORTCUT_TYPE;
@@ -38,6 +39,7 @@ typedef struct shortcuts_unused_t {
 extern shortcuts_t shortcuts; //[shortcut_node_t]
 extern shortcuts_unused_t *shortcuts_unused; //(shortcut_node_t)
 
+void shortcuts_print(void);
 bool shortcut_handle(xcb_keycode_t, SHORTCUT_TYPE, uint16_t);
 void shortcut_deinit(void);
 void shortcuts_shrink(void);

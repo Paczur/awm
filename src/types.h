@@ -30,7 +30,8 @@ typedef struct rect_t {
 
 typedef enum {
   MODE_NORMAL,
-  MODE_INSERT
+  MODE_INSERT,
+  MODE_INVALID
 } MODE;
 
 #endif

@@ -1,19 +1,21 @@
+#define WITH_CHANGE(mod, key, f) \
+{mod, key, f}, {MOD_SUPER | mod, key, f ## _change}
 #define CONFIG_NUMBER_PATTERN(mod, f) \
-{mod, XK_1, f ## _0}, \
-{mod, XK_2, f ## _1}, \
-{mod, XK_3, f ## _2}, \
-{mod, XK_4, f ## _3}, \
-{mod, XK_5, f ## _4}, \
-{mod, XK_6, f ## _5}, \
-{mod, XK_7, f ## _6}, \
-{mod, XK_8, f ## _7}, \
-{mod, XK_9, f ## _8}, \
-{mod, XK_0, f ## _9}
+  WITH_CHANGE(mod, XK_1, f ## _0), \
+  WITH_CHANGE(mod, XK_2, f ## _1), \
+  WITH_CHANGE(mod, XK_3, f ## _2), \
+  WITH_CHANGE(mod, XK_4, f ## _3), \
+  WITH_CHANGE(mod, XK_5, f ## _4), \
+  WITH_CHANGE(mod, XK_6, f ## _5), \
+  WITH_CHANGE(mod, XK_7, f ## _6), \
+  WITH_CHANGE(mod, XK_8, f ## _7), \
+  WITH_CHANGE(mod, XK_9, f ## _8), \
+  WITH_CHANGE(mod, XK_0, f ## _9)
 #define CONFIG_DIRECTION_PATTERN(mod, f) \
-{mod, XK_h, f ## _left}, \
-{mod, XK_j, f ## _down}, \
-{mod, XK_k, f ## _up},   \
-{mod, XK_l, f ## _right}
+  WITH_CHANGE(mod, XK_h, f ## _left), \
+  WITH_CHANGE(mod, XK_j, f ## _down), \
+  WITH_CHANGE(mod, XK_k, f ## _up),   \
+  WITH_CHANGE(mod, XK_l, f ## _right)
 
 #define CONFIG_SHORTCUTS_NORMAL_MODE { \
   CONFIG_NUMBER_PATTERN(MOD_NONE,     layout_focus),        \
@@ -23,27 +25,30 @@
   CONFIG_DIRECTION_PATTERN(MOD_NONE,  focus_window),        \
   CONFIG_DIRECTION_PATTERN(MOD_SHIFT, swap_window),         \
   CONFIG_DIRECTION_PATTERN(MOD_ALT,   enlarge),             \
-  {MOD_NONE,  XF86XK_MonBrightnessDown, brightness_down}, \
-  {MOD_NONE,  XF86XK_MonBrightnessUp,   brightness_up},   \
-  {MOD_NONE,  XK_F1,                    brightness_down}, \
-  {MOD_NONE,  XK_F2,                    brightness_up},   \
-  {MOD_NONE,  XF86XK_AudioMute,         volume_mute},     \
-  {MOD_NONE,  XF86XK_AudioLowerVolume,  volume_down},     \
-  {MOD_NONE,  XF86XK_AudioRaiseVolume,  volume_up},       \
-  {MOD_SHIFT, XK_s,                     system_suspend},  \
-  {MOD_ALT,   XK_s,                     system_shutdown}, \
-  {MOD_NONE,  XK_F4,                    volume_mute},     \
-  {MOD_NONE,  XK_F5,                    volume_down},     \
-  {MOD_NONE,  XK_F6,                    volume_up},       \
-  {MOD_NONE,  XK_q,                     destroy},         \
-  {MOD_SHIFT, XK_q,                     shutdown},        \
-  {MOD_NONE,  XK_m,                     minimize},        \
-  {MOD_NONE,  XK_Escape,                insert_mode},     \
-  {MOD_NONE,  XK_i,                     insert_mode},     \
-  {MOD_NONE,  XK_equal,                 equal_sizes},     \
-  {MOD_NONE,  XK_Return,                terminal},        \
-  {MOD_NONE,  XK_f,                     librewolf},       \
-  {MOD_NONE,  XK_r,                     launch}           \
+  WITH_CHANGE(MOD_NONE,  XF86XK_MonBrightnessDown, brightness_down), \
+  WITH_CHANGE(MOD_NONE,  XF86XK_MonBrightnessUp,   brightness_up),   \
+  WITH_CHANGE(MOD_NONE,  XK_F1,                    brightness_down), \
+  WITH_CHANGE(MOD_NONE,  XK_F2,                    brightness_up),   \
+  WITH_CHANGE(MOD_NONE,  XF86XK_AudioMute,         volume_mute),     \
+  WITH_CHANGE(MOD_NONE,  XF86XK_AudioLowerVolume,  volume_down),     \
+  WITH_CHANGE(MOD_NONE,  XF86XK_AudioRaiseVolume,  volume_up),       \
+  WITH_CHANGE(MOD_SHIFT, XK_s,                     system_suspend),  \
+  WITH_CHANGE(MOD_ALT,   XK_s,                     system_shutdown), \
+  WITH_CHANGE(MOD_NONE,  XK_F4,                    volume_mute),     \
+  WITH_CHANGE(MOD_NONE,  XK_F5,                    volume_down),     \
+  WITH_CHANGE(MOD_NONE,  XK_F6,                    volume_up),       \
+  WITH_CHANGE(MOD_NONE,  XK_q,                     destroy),         \
+  WITH_CHANGE(MOD_SHIFT, XK_q,                     shutdown),        \
+  WITH_CHANGE(MOD_NONE,  XK_m,                     minimize),        \
+  WITH_CHANGE(MOD_NONE,  XK_Escape,                insert_mode),     \
+  WITH_CHANGE(MOD_NONE,  XK_i,                     insert_mode),     \
+  WITH_CHANGE(MOD_NONE,  XK_equal,                 equal_sizes),     \
+  WITH_CHANGE(MOD_NONE,  XK_Return,                terminal),        \
+  WITH_CHANGE(MOD_NONE,  XK_f,                     librewolf),       \
+  WITH_CHANGE(MOD_NONE,  XK_r,                     launch)           \
+}
+#define CONFIG_SHORTCUTS_NORMAL_MODE_RELEASE { \
+  {MOD_SUPER, XK_Super_L, mode_force}, \
 }
 #define CONFIG_SHORTCUTS_INSERT_MODE { \
   {MOD_NONE, XK_Super_L, normal_mode}, \
