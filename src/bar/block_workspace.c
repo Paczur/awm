@@ -30,7 +30,7 @@ void block_workspace_update(size_t focused, bool(*empty)(size_t),
     block_workspace_geometry[0].x = offset_left;
     block_workspace_geometry[0].w = 0;
   } else {
-    if(offset_left == block_workspace_geometry[0].x) {
+    if(offset_left == block_workspace_geometry[start].x) {
       block_workspace_geometry[start].x =
         block_next_x(block_workspace_geometry+(start-1));
       block_workspace_geometry[start].w = 0;
