@@ -1,269 +1,162 @@
 #include "shortcut.h"
-#include <xcb/xkb.h>
+#include <xkbcommon/xkbcommon-x11.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 
-shortcuts_t shortcuts;
-shortcuts_unused_t *shortcuts_unused;
+#define MAX_KEYSYMS 200 //105 is full size keyboard
 
-void shortcuts_unused_print(void) {
-  puts("UNUSED:");
-  shortcuts_unused_t *unused = shortcuts_unused;
-  while(unused != NULL) {
-    printf("%u ", unused->shortcut->keysym);
-    unused = unused->next;
-  }
-  puts("");
+static struct xkb_context *ctx;
+static int32_t core_device;
+static struct xkb_keymap *keymap;
+static struct xkb_state *xkbstate;
+static xcb_connection_t *conn;
+
+static shortcut_node_t *shortcut_map[MAX_KEYSYMS] = {};
+
+static void shortcut_free_keymap(void) {
+  xkb_state_unref(xkbstate);
+  xkb_keymap_unref(keymap);
 }
 
-void shortcuts_print(void) {
-  puts("SHORTCUTS");
-  for(size_t i=0; i<shortcuts.length; i++) {
-    if(shortcuts.values[i] == NULL) {
-      puts("NULL");
-    } else {
-      printf("%u\n", shortcuts.values[i]->keysym);
-    }
-  }
+static void shortcut_load_keymap(void) {
+  keymap = xkb_x11_keymap_new_from_device(ctx, conn, core_device,
+                                          XKB_KEYMAP_COMPILE_NO_FLAGS);
+  xkbstate = xkb_x11_state_new_from_device(keymap, conn, core_device);
 }
 
-xcb_keycode_t keysym_to_keycode(xcb_keysym_t keysym,
-                                const xcb_get_keyboard_mapping_reply_t *kmapping,
-                                size_t start, size_t end) {
-  xcb_keysym_t* keysyms = xcb_get_keyboard_mapping_keysyms(kmapping);
-  for(size_t i=start; i<end; i++) {
-    for(size_t j=0; j<kmapping->keysyms_per_keycode; j++) {
-      if(keysyms[(i-start) * kmapping->keysyms_per_keycode+j] ==
-         keysym)
-        return i;
-    }
-  }
-  return -1;
-}
 
 bool shortcut_handle(xcb_keycode_t keycode, SHORTCUT_TYPE type, uint16_t state) {
-  shortcut_t *sh;
-  size_t lookup;
+  const xkb_keysym_t* syms;
+  uint32_t full_state = (type<<16)|state;
+  full_state &= ~(XCB_MOD_MASK_2 | XCB_MOD_MASK_3 | XCB_MOD_MASK_5);
+  shortcut_t *t;
+  int num_syms;
+  size_t index;
 
-  lookup = keycode - shortcuts.offset;
-  if(lookup >= shortcuts.length)
-    return false;
-  if(shortcuts.values[lookup] == NULL) return false;
-  sh = shortcuts.values[lookup]->by_type[type];
-  while(sh != NULL) {
-    if(state == sh->mod_mask) {
-      sh->function();
-      return true;
-    } else {
-      sh = sh->next;
+  num_syms = xkb_state_key_get_syms(xkbstate, keycode, &syms);
+  for(int i=0; i<num_syms; i++) {
+    index = syms[i]%MAX_KEYSYMS;
+    while(shortcut_map[index] != NULL && shortcut_map[index]->keysym != syms[i])
+      index = (index+1)%MAX_KEYSYMS;
+    if(shortcut_map[index] != NULL) {
+      t = shortcut_map[index]->shortcuts;
+      while(t != NULL) {
+        if(t->state != full_state) {
+          t = t->next;
+        } else break;
+      }
+      if(t != NULL) {
+        t->function();
+        return true;
+      }
     }
   }
   return false;
 }
 
-void shortcuts_shrink(void) {
-  size_t start;
-  size_t end;
-  size_t length;
-  for(start=0; shortcuts.values[start] == NULL; start++) { }
-  for(end=shortcuts.length-1; shortcuts.values[end] == NULL; end--) {}
-  length = end - start;
-  memmove(shortcuts.values, shortcuts.values+start,
-          length*sizeof(shortcut_node_t*));
-  shortcuts.values = realloc(shortcuts.values, length*sizeof(shortcut_node_t*));
-  shortcuts.offset += start;
-  shortcuts.length = length;
-}
-
-bool shortcut_unused_add_node(shortcut_node_t *node) {
-  shortcuts_unused_t *unused = shortcuts_unused;
-  while(unused != NULL && unused->shortcut->keysym != node->keysym) {
-    unused = unused->next;
-  }
-  if(unused == NULL) {
-    unused = shortcuts_unused;
-    shortcuts_unused = malloc(sizeof(shortcuts_unused_t));
-    shortcuts_unused->next = unused;
-    shortcuts_unused->prev = NULL;
-    unused->prev = shortcuts_unused;
-    unused = shortcuts_unused;
-  }
-  if(unused->shortcut == NULL) {
-    unused->shortcut = node;
-    return true;
-  }
-  return false;
-}
-
-void shortcut_unused_add(xcb_keysym_t keysym, SHORTCUT_TYPE type,
-                         uint16_t mod_mask, void (*function) (void)) {
-  shortcuts_unused_t *unused = shortcuts_unused;
-  shortcut_t *sh;
-  while(unused != NULL && unused->shortcut->keysym != keysym) {
-    unused = unused->next;
-  }
-  if(unused == NULL) {
-    unused = shortcuts_unused;
-    shortcuts_unused = malloc(sizeof(shortcuts_unused_t));
-    shortcuts_unused->shortcut = NULL;
-    shortcuts_unused->next = unused;
-    shortcuts_unused->prev = NULL;
-    if(unused != NULL)
-      unused->prev = shortcuts_unused;
-    unused = shortcuts_unused;
-  }
-  if(unused->shortcut == NULL) {
-    unused->shortcut = malloc(sizeof(shortcut_node_t));
-    unused->shortcut->keysym = keysym;
-  }
-  sh = unused->shortcut->by_type[type];
-  unused->shortcut->by_type[type] = malloc(sizeof(shortcut_t));
-  unused->shortcut->by_type[type]->next = sh;
-  unused->shortcut->by_type[type]->function = function;
-  unused->shortcut->by_type[type]->mod_mask = mod_mask;
-}
-
-void shortcut_add(xcb_keysym_t keysym, xcb_keycode_t keycode,
-                  SHORTCUT_TYPE type, uint16_t mod_mask,
+void shortcut_add(xcb_keysym_t keysym, SHORTCUT_TYPE type, uint16_t mod_mask,
                   void (*function) (void)) {
-  shortcut_node_t *node;
+  shortcut_t *t;
+  if(mod_mask & XCB_MOD_MASK_SHIFT) {
+    keysym = xkb_keysym_to_upper(keysym);
+  } else {
+    keysym = xkb_keysym_to_lower(keysym);
+  }
+  size_t index = keysym%MAX_KEYSYMS;
+  while(shortcut_map[index] != NULL && shortcut_map[index]->keysym != keysym)
+    index = (index+1)%MAX_KEYSYMS;
+  if(shortcut_map[index] == NULL) {
+    shortcut_map[index] = malloc(sizeof(shortcut_node_t));
+    shortcut_map[index]->shortcuts = NULL;
+    shortcut_map[index]->keysym = keysym;
+  }
+  t = shortcut_map[index]->shortcuts;
+  shortcut_map[index]->shortcuts = malloc(sizeof(shortcut_t));
+  shortcut_map[index]->shortcuts->next = t;
+  t = shortcut_map[index]->shortcuts;
+  t->state = (type<<16) | (mod_mask);
+  t->function = function;
+}
+
+void shortcut_enable(const xcb_screen_t *screen, SHORTCUT_TYPE type) {
   shortcut_t *sh;
-  if(keycode < shortcuts.offset) {
-    memmove(shortcuts.values-(keycode-shortcuts.offset),
-            shortcuts.values, shortcuts.length*sizeof(shortcut_node_t*));
-    shortcuts.length -= keycode-shortcuts.offset;
-    shortcuts.offset += keycode-shortcuts.offset;
-  } else if(keycode-shortcuts.offset >= shortcuts.length) {
-    shortcuts.length = keycode-shortcuts.offset+1;
-    shortcuts.values = realloc(shortcuts.values, shortcuts.length *
-                               sizeof(shortcut_node_t*));
-  }
-  if(shortcuts.values[keycode-shortcuts.offset] == NULL) {
-    shortcuts.values[keycode-shortcuts.offset] = calloc(1,sizeof(shortcut_node_t));
-  }
-  node = shortcuts.values[keycode-shortcuts.offset];
-  node->keysym = keysym;
-  sh = node->by_type[type];
-  node->by_type[type] = malloc(sizeof(shortcut_t));
-  node->by_type[type]->next = sh;
-  node->by_type[type]->mod_mask = mod_mask;
-  node->by_type[type]->function = function;
-}
-
-void shortcut_new(const xcb_get_keyboard_mapping_reply_t *kmap,
-                  size_t first, size_t last,
-                  SHORTCUT_TYPE type, xcb_keysym_t keysym,
-                  uint16_t mod_mask, void (*function) (void)) {
-  xcb_keysym_t* keysyms = xcb_get_keyboard_mapping_keysyms(kmap);
-  bool found = false;
-  for(size_t i=first; i<last; i++) {
-    for(size_t j=0; j<kmap->keysyms_per_keycode; j++) {
-      if(keysyms[(i-first) * kmap->keysyms_per_keycode+j] ==
-         keysym) {
-        found = true;
-        shortcut_add(keysym, i, type, mod_mask, function);
-      }
-    }
-  }
-  if(!found) {
-    shortcut_unused_add(keysym, type, mod_mask, function);
-  }
-}
-
-void shortcuts_update(xcb_get_keyboard_mapping_reply_t *kmap,
-                      size_t start, size_t end) {
-  size_t common_start;
-  size_t common_end;
-  bool used;
   bool found;
-  xcb_keysym_t *keysyms = xcb_get_keyboard_mapping_keysyms(kmap);
-  shortcut_node_t *node;
+  xcb_mod_mask_t mask;
+  int num_syms;
+  const xkb_keysym_t *keysyms;
+  xkb_keycode_t min = xkb_keymap_min_keycode(keymap);
+  xkb_keycode_t max = xkb_keymap_max_keycode(keymap);
+  xcb_mod_mask_t *used = malloc((max-min+1) * sizeof(xcb_mod_mask_t));
+  memset(used, (xcb_mod_mask_t)-1, sizeof(xcb_mod_mask_t)*(max-min+1));
 
-  common_start = (start > shortcuts.offset) ? start : shortcuts.offset;
-  common_end = (shortcuts.offset+shortcuts.length > end) ?
-    end : shortcuts.offset+shortcuts.length;
-
-  for(size_t i=common_start; i<common_end; i++) {
-    found = false;
-    for(size_t j=0; j<kmap->keysyms_per_keycode; j++) {
-      if(shortcuts.values[i-shortcuts.offset] != NULL &&
-         shortcuts.values[i-shortcuts.offset]->keysym ==
-         keysyms[(i-start)*kmap->keysyms_per_keycode+j]) {
-        found = true;
-        break;
+  xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, XCB_MOD_MASK_ANY);
+  if(type == SH_TYPE_NORMAL_MODE || type == SH_TYPE_NORMAL_MODE_RELEASE) {
+    xcb_grab_key(conn, 1, screen->root, XCB_MOD_MASK_ANY, XCB_GRAB_ANY,
+                 XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+    return;
+  }
+  for(size_t i=0; i<MAX_KEYSYMS; i++) {
+    if(shortcut_map[i] != NULL) {
+      found = false;
+      sh = shortcut_map[i]->shortcuts;
+      mask = 0;
+      while(sh != NULL) {
+        if((sh->state>>16) == type) {
+          mask |= sh->state&0xFFFF;
+          found = true;
+        }
+        sh = sh->next;
+      }
+      if(found) {
+        for(size_t j=min; j<=max; j++) {
+          num_syms = xkb_state_key_get_syms(xkbstate, j, &keysyms);
+          for(int k=0; k<num_syms; k++) {
+            if(keysyms[k] == shortcut_map[i]->keysym) {
+              used[j-min] = mask;
+              break;
+            }
+          }
+        }
       }
     }
-    if(!found) {
-      node = shortcuts.values[i-shortcuts.offset];
-      used = shortcut_unused_add_node(node);
-      shortcuts.values[i-shortcuts.offset] = NULL;
-      if(!used)
-        free(node);
-    }
   }
-  //TODO: Remove shortcuts
-  //TODO: Add shortcuts
- }
-
-void shortcut_enable(xcb_connection_t *conn, const xcb_screen_t *screen,
-                     SHORTCUT_TYPE type) {
-  shortcut_t *sh;
-  xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, XCB_MOD_MASK_ANY);
-  for(size_t i=0; i<shortcuts.length; i++) {
-    if(shortcuts.values[i] == NULL) continue;
-    sh = shortcuts.values[i]->by_type[type];
-    while(sh != NULL) {
-      xcb_grab_key(conn, 1, screen->root, sh->mod_mask,
-                   i+shortcuts.offset,
+  for(size_t i=0; i<=max-min; i++) {
+    if(used[i] != (xcb_mod_mask_t)-1) {
+      xcb_grab_key(conn, 1, screen->root, used[i], i+min,
                    XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
-      sh = sh->next;
     }
   }
 }
 
-void shortcut_xkb(const xcb_generic_event_t* e) {
-  const xcb_xkb_state_notify_event_t *event = (const xcb_xkb_state_notify_event_t*)e;
-  if(event->xkbType == XCB_XKB_NEW_KEYBOARD_NOTIFY) {
-    puts("XKB_NEW_KEYBOARD_NOTIFY");
-  } else if(event->xkbType == XCB_XKB_MAP_NOTIFY) {
-    const xcb_xkb_map_notify_event_t *map = (const xcb_xkb_map_notify_event_t*)event;
-    puts("XKB_MAP_NOTIFY");
-    if(map->nKeySyms) {
-      puts("XKB_KEYSYMS_MAP");
-    } else if(map->nModMapKeys) {
-      puts("XKB_MODMAP_MAP");
-    }
+void shortcut_event_state(const xcb_xkb_state_notify_event_t* event) {
+  if(event->xkbType == XCB_XKB_STATE_NOTIFY) {
+    xkb_state_update_mask(xkbstate,
+                          event->baseMods,
+                          event->latchedMods,
+                          event->lockedMods,
+                          event->baseGroup,
+                          event->latchedGroup,
+                          event->lockedGroup);
+  } else if(event->xkbType == XCB_XKB_NEW_KEYBOARD_NOTIFY ||
+            event->xkbType == XCB_XKB_MAP_NOTIFY) {
+    shortcut_free_keymap();
+    shortcut_load_keymap();
   }
-  puts("XKB");
-  fflush(stdout);
 }
 
-void shortcut_init(size_t start, size_t end) {
-  shortcuts.offset = start;
-  shortcuts.length = end-start;
-  shortcuts.values = calloc(shortcuts.length, sizeof(shortcut_node_t));
+int shortcut_utf8(xcb_keycode_t keycode, char* buff, size_t size) {
+  return xkb_state_key_get_utf8(xkbstate, keycode, buff, size);
+}
+
+void shortcut_init(xcb_connection_t *c) {
+  conn = c;
+  ctx = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+  core_device = xkb_x11_get_core_keyboard_device_id(conn);
+  shortcut_load_keymap();
 }
 
 void shortcut_deinit(void) {
-  shortcut_t *sh;
-  shortcut_t *t;
-  for(size_t i=0; i<shortcuts.length; i++) {
-    if(shortcuts.values[i] != NULL) {
-      for(size_t j=0; j<SH_TYPE_LENGTH; j++) {
-        sh = shortcuts.values[i]->by_type[j];
-        if(sh != NULL) {
-          while(sh->next != NULL) {
-            t = sh->next;
-            free(sh);
-            sh = t;
-          }
-          free(sh);
-        }
-      }
-      free(shortcuts.values[i]);
-    }
-  }
-  free(shortcuts.values);
-  shortcuts.values = NULL;
+  shortcut_free_keymap();
+  xkb_context_unref(ctx);
 }

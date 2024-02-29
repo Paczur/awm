@@ -56,7 +56,7 @@ void block_workspace_update(size_t focused, bool(*empty)(size_t),
       }
     }
     if(block_workspace.blocks[i].state[0]) {
-      text[0] = (i < MAX_WORKSPACE_BLOCKS-1) ? i+'1' : '0';
+      text[0] = (i+1) % 10 + '0';
       block_set_text(block_workspace.blocks+i, text);
       block_geometry_left(block_workspace.blocks+i,
                           block_workspace.min_width,

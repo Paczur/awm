@@ -11,6 +11,17 @@
   WITH_CHANGE(mod, XK_8, f ## _7), \
   WITH_CHANGE(mod, XK_9, f ## _8), \
   WITH_CHANGE(mod, XK_0, f ## _9)
+#define CONFIG_SHIFTED_NUMBER_PATTERN(mod, f) \
+  WITH_CHANGE(MOD_SHIFT, XK_exclam, f ## _0), \
+  WITH_CHANGE(MOD_SHIFT, XK_at, f ## _1), \
+  WITH_CHANGE(MOD_SHIFT, XK_numbersign, f ## _2), \
+  WITH_CHANGE(MOD_SHIFT, XK_dollar, f ## _3), \
+  WITH_CHANGE(MOD_SHIFT, XK_percent, f ## _4), \
+  WITH_CHANGE(MOD_SHIFT, XK_asciicircum, f ## _5), \
+  WITH_CHANGE(MOD_SHIFT, XK_ampersand, f ## _6), \
+  WITH_CHANGE(MOD_SHIFT, XK_asterisk, f ## _7), \
+  WITH_CHANGE(MOD_SHIFT, XK_parenleft, f ## _8), \
+  WITH_CHANGE(MOD_SHIFT, XK_parenright, f ## _9)
 #define CONFIG_DIRECTION_PATTERN(mod, f) \
   WITH_CHANGE(mod, XK_h, f ## _left), \
   WITH_CHANGE(mod, XK_j, f ## _down), \
@@ -18,13 +29,13 @@
   WITH_CHANGE(mod, XK_l, f ## _right)
 
 #define CONFIG_SHORTCUTS_NORMAL_MODE { \
-  CONFIG_NUMBER_PATTERN(MOD_NONE,     layout_focus),        \
-  CONFIG_NUMBER_PATTERN(MOD_SHIFT,    layout_swap_focused), \
-  CONFIG_NUMBER_PATTERN(MOD_ALT,      workspace),           \
-  CONFIG_NUMBER_PATTERN(MOD_CTRL,     show),                \
-  CONFIG_DIRECTION_PATTERN(MOD_NONE,  focus_window),        \
-  CONFIG_DIRECTION_PATTERN(MOD_SHIFT, swap_window),         \
-  CONFIG_DIRECTION_PATTERN(MOD_ALT,   enlarge),             \
+  CONFIG_NUMBER_PATTERN(MOD_NONE,         layout_focus),        \
+  CONFIG_SHIFTED_NUMBER_PATTERN(MOD_NONE, layout_swap_focused), \
+  CONFIG_NUMBER_PATTERN(MOD_ALT,          workspace),           \
+  CONFIG_NUMBER_PATTERN(MOD_CTRL,         show),                \
+  CONFIG_DIRECTION_PATTERN(MOD_NONE,      focus_window),        \
+  CONFIG_DIRECTION_PATTERN(MOD_SHIFT,     swap_window),         \
+  CONFIG_DIRECTION_PATTERN(MOD_ALT,       enlarge),             \
   WITH_CHANGE(MOD_NONE,  XF86XK_MonBrightnessDown, brightness_down), \
   WITH_CHANGE(MOD_NONE,  XF86XK_MonBrightnessUp,   brightness_up),   \
   WITH_CHANGE(MOD_NONE,  XK_F1,                    brightness_down), \

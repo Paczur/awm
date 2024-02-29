@@ -16,11 +16,6 @@ xcb_connection_t* conn;
 const xcb_setup_t* setup;
 xcb_screen_t* screen;
 
-//XLIB
-XIM xim;
-XIC xic;
-Display *dpy;
-
 int system_sh_out(const char *cmd, char *out, size_t len) {
   FILE *f;
   int pid;
@@ -79,18 +74,10 @@ static void setup_visual(void) {
     }
   }
 }
-static void setup_xlib(void) {
-  dpy = XOpenDisplay(NULL);
-  XSetEventQueueOwner(dpy, XCBOwnsEventQueue);
-  xim = XOpenIM(dpy, 0, 0, 0);
-  xic = XCreateIC(xim,
-                  XNInputStyle, XIMPreeditNothing | XIMStatusNothing, NULL);
-}
 static void setup_wm(void) {
   uint32_t values;
 
-  setup_xlib();
-  conn = XGetXCBConnection(dpy);
+  conn = xcb_connect(NULL, NULL);
   setup = xcb_get_setup(conn);
   screen = xcb_setup_roots_iterator(setup).data;
 
@@ -173,5 +160,5 @@ void system_init(void) {
   setup_xkb();
 }
 void system_deinit(void) {
-  XCloseDisplay(dpy);
+  xcb_disconnect(conn);
 }

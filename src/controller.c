@@ -79,16 +79,11 @@ void c_launcher_erase(void) { bar_launcher_erase(); }
 void c_mode_delay(MODE m) { next_mode = m; }
 void c_mode_force(void) { if(next_mode != MODE_INVALID) c_mode_set(next_mode); }
 void c_mode_set(MODE m) {
+  SHORTCUT_TYPE type = (m == MODE_INSERT)?
+    SH_TYPE_INSERT_MODE:SH_TYPE_NORMAL_MODE;
   next_mode = MODE_INVALID;
-  if(m == MODE_NORMAL) {
-    mode = MODE_NORMAL;
-    xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, XCB_MOD_MASK_ANY);
-    xcb_grab_key(conn, 1, screen->root, XCB_MOD_MASK_ANY, XCB_GRAB_ANY,
-                 XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
-  } else {
-    mode = MODE_INSERT;
-    shortcut_enable(conn, screen, SH_TYPE_INSERT_MODE);
-  }
+  shortcut_enable(screen, type);
+  mode = m;
   c_bar_update_mode();
 }
 void c_bar_block_update(size_t n) { bar_update_info(n); }
@@ -101,19 +96,12 @@ void c_event_map(const xcb_generic_event_t *e) {
     c_bar_update_minimized();
 }
 void c_event_key_press(const xcb_generic_event_t *e) {
-  XKeyEvent keyev;
   char buff[10];
   size_t len;
   const xcb_key_press_event_t *event = (const xcb_key_press_event_t*)e;
   if(bar_launcher_window(event->event)) {
     if(!shortcut_handle(event->detail, SH_TYPE_LAUNCHER, event->state)) {
-      keyev = (XKeyEvent) {
-        .type = KeyPress,
-          .display = dpy,
-          .keycode = event->detail,
-          .state = event->state
-      };
-      len = Xutf8LookupString(xic, &keyev, buff, sizeof(buff), NULL, NULL);
+      len = shortcut_utf8(event->detail, buff, 10);
       if(len > 0)
         bar_launcher_append(buff, len);
     }
@@ -156,14 +144,14 @@ void c_event_focus(const xcb_generic_event_t *e) {
 }
 void c_event_expose(const xcb_generic_event_t *e) {
   const xcb_expose_event_t *event = (const xcb_expose_event_t*)e;
-  puts("EXPOSE");
-  fflush(stdout);
   bar_redraw(event->window);
 }
+void c_event_xkb(const xcb_generic_event_t *e) {
+  shortcut_event_state((xcb_xkb_state_notify_event_t*)e);
+}
 
-static void convert_shortcuts(const xcb_get_keyboard_mapping_reply_t *kmapping,
-                       SHORTCUT_TYPE type, config_shortcut_t *conf_shortcuts,
-                       size_t len) {
+static void convert_shortcuts(SHORTCUT_TYPE type,
+                              config_shortcut_t *conf_shortcuts, size_t len) {
   xcb_mod_mask_t mod_mask;
   for(size_t i=0; i<len; i++) {
     mod_mask=0;
@@ -175,8 +163,7 @@ static void convert_shortcuts(const xcb_get_keyboard_mapping_reply_t *kmapping,
       mod_mask |= XCB_MOD_MASK_4;
     if(conf_shortcuts[i].modifier & MOD_CTRL)
       mod_mask |= XCB_MOD_MASK_CONTROL;
-    shortcut_new(kmapping, setup->min_keycode, setup->max_keycode,
-                 type, conf_shortcuts[i].keysym, mod_mask,
+    shortcut_add(conf_shortcuts[i].keysym, type, mod_mask,
                  conf_shortcuts[i].function);
   }
 }
@@ -228,39 +215,32 @@ static void c_init_layout(rect_t *t_rect, const rect_t *monitors,
   layout_init(&linit);
 }
 
-static void c_init_shortcut(xcb_get_keyboard_mapping_cookie_t kmap_cookie) {
+static void c_init_shortcut(void) {
   config_shortcut_t insert_shortcuts[] = CONFIG_SHORTCUTS_INSERT_MODE;
   config_shortcut_t normal_shortcuts[] = CONFIG_SHORTCUTS_NORMAL_MODE;
   config_shortcut_t launcher_shortcuts[] = CONFIG_SHORTCUTS_LAUNCHER;
   config_shortcut_t normal_release_shortcuts[] = CONFIG_SHORTCUTS_NORMAL_MODE_RELEASE;
-  xcb_get_keyboard_mapping_reply_t *kmap_reply;
-  shortcut_init(setup->min_keycode, setup->max_keycode);
-  kmap_reply = xcb_get_keyboard_mapping_reply(conn, kmap_cookie, NULL);
-  convert_shortcuts(kmap_reply, SH_TYPE_INSERT_MODE,
-                    insert_shortcuts, LENGTH(insert_shortcuts));
-  convert_shortcuts(kmap_reply, SH_TYPE_NORMAL_MODE_RELEASE,
-                    normal_release_shortcuts, LENGTH(normal_release_shortcuts));
-  convert_shortcuts(kmap_reply, SH_TYPE_NORMAL_MODE,
-                    normal_shortcuts, LENGTH(normal_shortcuts));
-  convert_shortcuts(kmap_reply, SH_TYPE_LAUNCHER,
-                    launcher_shortcuts, LENGTH(launcher_shortcuts));
-  free(kmap_reply);
+  shortcut_init(conn);
+  convert_shortcuts(SH_TYPE_INSERT_MODE, insert_shortcuts, LENGTH(insert_shortcuts));
+  convert_shortcuts(SH_TYPE_NORMAL_MODE_RELEASE, normal_release_shortcuts,
+                    LENGTH(normal_release_shortcuts));
+  convert_shortcuts(SH_TYPE_NORMAL_MODE, normal_shortcuts,
+                    LENGTH(normal_shortcuts));
+  convert_shortcuts(SH_TYPE_LAUNCHER, launcher_shortcuts,
+                    LENGTH(launcher_shortcuts));
 }
 
 void c_loop(void) { event_run(conn); }
 
 void c_init(void) {
-  xcb_get_keyboard_mapping_cookie_t kmap_cookie;
 
   rect_t *monitors;
   size_t monitor_count;
   rect_t *t_rect;
 
   system_init();
-  kmap_cookie = xcb_get_keyboard_mapping(conn, setup->min_keycode,
-                                         setup->max_keycode-setup->min_keycode);
-  c_init_shortcut(kmap_cookie);
 
+  c_init_shortcut();
   system_monitors(&monitors, &monitor_count);
   t_rect = malloc(monitor_count*sizeof(rect_t));
   c_init_layout(t_rect, monitors, monitor_count);
@@ -277,7 +257,7 @@ void c_init(void) {
   event_listener_add(XCB_UNMAP_NOTIFY, c_event_unmap);
   event_listener_add(XCB_FOCUS_IN, c_event_focus);
   event_listener_add(XCB_EXPOSE, c_event_expose);
-  event_listener_add(system_xkb(), shortcut_xkb);
+  event_listener_add(system_xkb(), c_event_xkb);
   xcb_flush(conn);
 }
 
