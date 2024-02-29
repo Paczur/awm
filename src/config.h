@@ -65,6 +65,7 @@ F_DEC(launcher_erase);
 F_DEC(insert_mode);
 F_DEC(normal_mode);
 F_DEC(mode_force);
+F_DEC(fullscreen);
 
 extern const char *const config_bar_minimized_name_replacements[][2];
 

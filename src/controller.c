@@ -35,9 +35,24 @@ static void c_bar_update_mode(void) {
 
 void c_shutdown(void) { event_stop(); }
 void c_workspace_switch(size_t n) {
+  bool prev;
+  bool curr;
   size_t min = MIN(n, layout_get_focused_workspace());
+  prev = layout_workspace_fullscreen(layout_get_focused_workspace());
+  curr = layout_workspace_fullscreen(n);
   layout_switch_workspace(n);
+  if(curr != prev)
+    bar_visibility(!curr);
   c_bar_update_workspace(min);
+}
+void c_workspace_fullscreen(size_t n) {
+  bool ret = layout_fullscreen(n);
+  if(layout_get_focused_workspace() == n) {
+    bar_visibility(!ret);
+  }
+}
+void c_workspace_focused_fullscreen(void) {
+  c_workspace_fullscreen(layout_get_focused_workspace());
 }
 void c_window_show(size_t n) {
   layout_show(n);
@@ -206,7 +221,8 @@ static void c_init_layout(rect_t *t_rect, const rect_t *monitors,
     t_rect[i].h = monitors[i].h - CONFIG_BAR_HEIGHT;
   }
   layout_init_t linit = (layout_init_t) {
-    conn, screen, .workareas = t_rect, .workarea_count = monitor_count,
+    conn, screen, .workareas = t_rect,
+    .workareas_fullscreen = monitors, .workarea_count = monitor_count,
       .name_replacements = (const char *const [][2])CONFIG_BAR_MINIMIZED_NAME_REPLACEMENTS,
       .name_replacements_length = LENGTH((char*[][2])CONFIG_BAR_MINIMIZED_NAME_REPLACEMENTS),
       .gaps = CONFIG_GAPS, .spawn_order = (const size_t[])CONFIG_SPAWN_ORDER,

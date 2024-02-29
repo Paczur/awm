@@ -79,6 +79,7 @@ const window_list_t *layout_get_minimized(void) { return windows_minimized; }
 const workspace_t *layout_get_workspaces(void) { return workspaces; }
 size_t layout_get_focused_workspace(void) { return workspace_focused; }
 bool layout_workspace_empty(size_t i) { return workspace_empty(i); }
+bool layout_workspace_fullscreen(size_t n) { return workspaces[n].fullscreen; }
 void layout_switch_workspace(size_t n) { workspace_switch(n); }
 
 void layout_focus(size_t n) { grid_focus(n); }
@@ -96,6 +97,17 @@ void layout_resize_w_focused(int n) {
 }
 void layout_resize_h_focused(int n) {
   grid_resize_h(grid_pos2mon(grid_focused()), n);
+}
+
+bool layout_fullscreen(size_t n) {
+  bool ret = workspace_fullscreen(n);
+  if(n == workspace_focused) {
+    for(size_t i=0; i<workarea_count; i++)
+      grid_update(i);
+  } else {
+    workspace_update(n);
+  }
+  return ret;
 }
 
 void layout_minimize(void) {
@@ -118,7 +130,8 @@ void layout_show(size_t n) {
 void layout_init(const layout_init_t *init) {
   conn = init->conn;
   screen = init->screen;
-  workarea_init((workarea_t*)init->workareas, init->workarea_count);
+  workarea_init((workarea_t*)init->workareas,
+                (workarea_t*)init->workareas_fullscreen, init->workarea_count);
   window_init(init->conn, init->name_replacements, init->name_replacements_length);
   workspace_init(init->conn);
   grid_init(init->conn, init->spawn_order, init->spawn_order_length, init->gaps);

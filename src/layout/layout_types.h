@@ -37,12 +37,14 @@ typedef struct workspace_t {
   size_t focus;
   int *cross;
   bool *update;
+  bool fullscreen: 1;
 } workspace_t;
 
 typedef struct layout_init_t {
   xcb_connection_t *conn;
   const xcb_screen_t *screen;
   const rect_t *workareas;
+  const rect_t *workareas_fullscreen;
   size_t workarea_count;
   const char *const(*name_replacements)[2];
   size_t name_replacements_length;

@@ -19,6 +19,7 @@
   to_block_settings(b, def ## _BACKGROUND, def ## _FOREGROUND)
 
 static bool launcher_visible;
+static bool bar_visible;
 static xcb_connection_t *conn;
 static const xcb_screen_t *screen;
 
@@ -33,54 +34,69 @@ static void bar_launcher_hint_refresh(void) {
 }
 
 void bar_launcher_show(void) {
-  launcher_container_show();
-  launcher_visible = true;
-  launcher_prompt_clear();
-  xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, XCB_MOD_MASK_ANY);
-  for(size_t i=0; i<bar_container_count; i++) {
-    xcb_grab_key(conn, 1, bar_containers.launcher[i], XCB_MOD_MASK_ANY,
-                 XCB_GRAB_ANY, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+  if(bar_visible) {
+    launcher_container_show();
+    launcher_visible = true;
+    launcher_prompt_clear();
+    xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, XCB_MOD_MASK_ANY);
+    for(size_t i=0; i<bar_container_count; i++) {
+      xcb_grab_key(conn, 1, bar_containers.launcher[i], XCB_MOD_MASK_ANY,
+                   XCB_GRAB_ANY, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+    }
+    xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT,
+                        bar_containers.launcher[0], XCB_CURRENT_TIME);
+    launcher_trie_unmark(launcher_trie_tree);
+    launcher_trie_populate(&launcher_trie_tree);
+    launcher_trie_cleanup(launcher_trie_tree);
+    bar_launcher_hint_refresh();
   }
-  xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT,
-                      bar_containers.launcher[0], XCB_CURRENT_TIME);
-  launcher_trie_unmark(launcher_trie_tree);
-  launcher_trie_populate(&launcher_trie_tree);
-  launcher_trie_cleanup(launcher_trie_tree);
-  bar_launcher_hint_refresh();
 }
 
 void bar_launcher_hide(void) {
-  launcher_container_hide();
-  launcher_visible = false;
-  for(size_t i=0; i<bar_container_count; i++) {
-    xcb_ungrab_key(conn, XCB_GRAB_ANY, bar_containers.launcher[i], XCB_MOD_MASK_ANY);
+  if(launcher_visible) {
+    launcher_container_hide();
+    launcher_visible = false;
+    for(size_t i=0; i<bar_container_count; i++) {
+      xcb_ungrab_key(conn, XCB_GRAB_ANY, bar_containers.launcher[i], XCB_MOD_MASK_ANY);
+    }
   }
 }
 
 void bar_launcher_append(const char* buff, size_t len) {
-  launcher_prompt_append(buff, len);
-  bar_launcher_hint_refresh();
+  if(launcher_visible) {
+    launcher_prompt_append(buff, len);
+    bar_launcher_hint_refresh();
+  }
 }
 
 void bar_launcher_erase(void) {
-  launcher_prompt_erase();
-  bar_launcher_hint_refresh();
+  if(launcher_visible) {
+    launcher_prompt_erase();
+    bar_launcher_hint_refresh();
+  }
 }
 
 void bar_launcher_select_left(void) {
-  launcher_hint_selected =
-    (launcher_hint_selected+launcher_hint_count-1)%launcher_hint_count;
-  launcher_hint_update(block_next_x(&launcher_prompt_geometry));
+  if(launcher_visible) {
+    launcher_hint_selected =
+      (launcher_hint_selected+launcher_hint_count-1)%launcher_hint_count;
+    launcher_hint_update(block_next_x(&launcher_prompt_geometry));
+  }
 }
 
 void bar_launcher_select_right(void) {
-  launcher_hint_selected = (launcher_hint_selected+1)%launcher_hint_count;
-  launcher_hint_update(block_next_x(&launcher_prompt_geometry));
+  if(launcher_visible) {
+    launcher_hint_selected = (launcher_hint_selected+1)%launcher_hint_count;
+    launcher_hint_update(block_next_x(&launcher_prompt_geometry));
+  }
 }
 
 char *bar_launcher_return(void) {
-  bar_launcher_hide();
-  return launcher_trie_hints[launcher_hint_selected];
+  if(launcher_visible) {
+    bar_launcher_hide();
+    return launcher_trie_hints[launcher_hint_selected];
+  }
+  return NULL;
 }
 
 bool bar_launcher_window(xcb_window_t window) {
@@ -93,58 +109,73 @@ bool bar_launcher_window(xcb_window_t window) {
 }
 
 void bar_update_minimized(void) {
-  block_minimized_update(minimized_list(), minimized_name_offset,
-                         block_next_x(block_workspace_geometry+MAX_WORKSPACE_BLOCKS-1),
-                         block_info_offset_right);
+  if(bar_visible) {
+    block_minimized_update(minimized_list(), minimized_name_offset,
+                           block_next_x(block_workspace_geometry+MAX_WORKSPACE_BLOCKS-1),
+                           block_info_offset_right);
+  }
 }
 
 void bar_update_workspace(size_t n) {
-  size_t pos = block_next_x(block_workspace_geometry+(MAX_WORKSPACE_BLOCKS-1));
-  bool update = (pos == block_minimized_geometry[0].x);
-  block_workspace_update(focused_workspace(), workspace_empty,
-                         block_next_x(&block_mode_geometry), n);
-  if(update)
-    bar_update_minimized();
+  if(bar_visible) {
+    size_t pos = block_next_x(block_workspace_geometry+(MAX_WORKSPACE_BLOCKS-1));
+    bool update = (pos == block_minimized_geometry[0].x);
+    block_workspace_update(focused_workspace(), workspace_empty,
+                           block_next_x(&block_mode_geometry), n);
+    if(update)
+      bar_update_minimized();
+  }
 }
 
 void bar_update_mode(MODE m) {
-  size_t pos = block_next_x(&block_mode_geometry);
-  block_mode_update(m == MODE_NORMAL);
-  if(block_next_x(&block_mode_geometry) != pos)
-    bar_update_workspace(0);
-}
-
-void bar_update_info_highlight(int n, int delay) {
-  block_info_update_highlight(n, delay);
-}
-
-void bar_update_info(int n) {
-  block_info_update(n);
+  if(bar_visible) {
+    size_t pos = block_next_x(&block_mode_geometry);
+    block_mode_update(m == MODE_NORMAL);
+    if(block_next_x(&block_mode_geometry) != pos)
+      bar_update_workspace(0);
+  }
 }
 
 void bar_redraw(xcb_window_t window) {
-  size_t bar = bar_container_find(window);
-  if(bar >= bar_container_count) {
-    if(!launcher_visible) {
-      if(block_mode_find_redraw(window)) return;
-      if(block_workspace_find_redraw(window)) return;
-      if(block_info_find_redraw(window)) return;
-      if(block_minimized_find_redraw(window)) return;
-    } else {
-      if(launcher_prompt_find_redraw(window)) return;
-      if(launcher_hint_find_redraw(window)) return;
+  if(bar_visible) {
+    size_t bar = bar_container_find(window);
+    if(bar >= bar_container_count) {
+      if(!launcher_visible) {
+        if(block_mode_find_redraw(window)) return;
+        if(block_workspace_find_redraw(window)) return;
+        if(block_info_find_redraw(window)) return;
+        if(block_minimized_find_redraw(window)) return;
+      } else {
+        if(launcher_prompt_find_redraw(window)) return;
+        if(launcher_hint_find_redraw(window)) return;
+      }
+      return;
     }
-    return;
   }
-  if(!launcher_visible) {
-    block_mode_redraw(bar);
-    block_workspace_redraw(bar);
-    block_info_redraw(bar);
-    block_minimized_redraw(bar);
+}
+
+void bar_update_info_highlight(int n, int delay) {
+  if(bar_visible)
+    block_info_update_highlight(n, delay);
+}
+
+void bar_update_info(int n) {
+  if(bar_visible)
+    block_info_update(n);
+}
+
+void bar_visibility(bool st) {
+  if(st) {
+    for(size_t i=0; i<bar_container_count; i++) {
+      xcb_map_window(conn, bar_containers.id[i]);
+    }
   } else {
-    launcher_prompt_redraw(bar);
-    launcher_hint_redraw(bar);
+    bar_launcher_hide();
+    for(size_t i=0; i<bar_container_count; i++) {
+      xcb_unmap_window(conn, bar_containers.id[i]);
+    }
   }
+  bar_visible = st;
 }
 
 void bar_init(const bar_init_t *init) {
@@ -170,6 +201,7 @@ void bar_init(const bar_init_t *init) {
     containers.w[i] = init->bar_containers[i].w;
   }
   bar_container_init(conn, screen, containers, init->bar_container_count);
+  bar_visible = true;
   block_init(conn, screen, init->visual_type);
   font = pango_font_description_from_string(init->bar_font);
   block_mode_init(font, &init->block_mode);

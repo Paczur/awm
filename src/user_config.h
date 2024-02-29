@@ -55,8 +55,9 @@
   WITH_CHANGE(MOD_NONE,  XK_i,                     insert_mode),     \
   WITH_CHANGE(MOD_NONE,  XK_equal,                 equal_sizes),     \
   WITH_CHANGE(MOD_NONE,  XK_Return,                terminal),        \
-  WITH_CHANGE(MOD_NONE,  XK_f,                     librewolf),       \
-  WITH_CHANGE(MOD_NONE,  XK_r,                     launch)           \
+  WITH_CHANGE(MOD_NONE,  XK_f,                     fullscreen),      \
+  WITH_CHANGE(MOD_NONE,  XK_r,                     launch),          \
+  WITH_CHANGE(MOD_NONE,  XK_b,                     librewolf)        \
 }
 #define CONFIG_SHORTCUTS_NORMAL_MODE_RELEASE { \
   {MOD_SUPER, XK_Super_L, mode_force}, \

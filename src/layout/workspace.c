@@ -22,6 +22,10 @@ bool workspace_empty(size_t n) {
   return true;
 }
 
+bool workspace_fullscreen(size_t n) {
+  workspaces[n].fullscreen ^= 1;
+  return workspaces[n].fullscreen;
+}
 
 void workspace_switch(size_t n) {
   size_t old_focus;
@@ -49,6 +53,11 @@ void workspace_switch(size_t n) {
       xcb_unmap_window(conn, workspaces[old_focus].grid[i].window->id);
     }
   }
+}
+
+void workspace_update(size_t n) {
+  for(size_t i=0; i<workarea_count; i++)
+    workspaces[n].update[i] = true;
 }
 
 

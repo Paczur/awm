@@ -9,7 +9,9 @@ const window_list_t *layout_get_minimized(void);
 const workspace_t *layout_get_workspaces(void);
 size_t layout_get_focused_workspace(void);
 bool layout_workspace_empty(size_t);
+bool layout_workspace_fullscreen(size_t);
 void layout_switch_workspace(size_t);
+bool layout_fullscreen(size_t);
 
 void layout_focus(size_t);
 size_t layout_above(void);

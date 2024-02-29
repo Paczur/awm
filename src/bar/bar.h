@@ -18,6 +18,7 @@ void bar_update_workspace(size_t);
 void bar_update_mode(MODE);
 void bar_update_info_highlight(int, int);
 void bar_update_info(int);
+void bar_visibility(bool);
 
 void bar_redraw(xcb_window_t);
 
