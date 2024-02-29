@@ -31,6 +31,7 @@ void event_run(xcb_connection_t *conn) {
        event_dispatch[event->response_type] != NULL) {
       event_dispatch[event->response_type](event);
       xcb_flush(conn);
+      fflush(stdout);
     }
     free(event);
   }

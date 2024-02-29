@@ -8,11 +8,6 @@
 typedef struct grid_cell_t grid_cell_t;
 typedef struct window_t window_t;
 
-#define HOR_CELLS_PER_WORKAREA 2
-#define VERT_CELLS_PER_WORKAREA 2
-#define CELLS_PER_WORKAREA 4
-#define GRID_AXIS 2
-
 grid_cell_t *grid_focusedc(void);
 window_t *grid_focusedw(void);
 size_t grid_focused(void);

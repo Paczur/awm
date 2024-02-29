@@ -319,7 +319,7 @@ void grid_place_window(window_t *window, size_t grid_i, bool assume_map) {
   int mask = XCB_EVENT_MASK_FOCUS_CHANGE | XCB_EVENT_MASK_ENTER_WINDOW;
   grid_pos2cell(grid_i)->window = window;
   grid_pos2cell(grid_i)->origin = grid_i;
-  window->pos = workspace_focused;
+  window->state = workspace_focused;
   if(!assume_map)
     xcb_map_window(conn, window->id);
   grid_update(m);
@@ -514,7 +514,7 @@ void grid_event_focus(xcb_window_t window) {
 }
 
 bool grid_event_map(window_t *window) {
-  if(window->pos >= 0) return true;
+  if(window->state >= WINDOW_WORKSPACE_START) return true;
   size_t next = grid_next_pos();
 
   if(grid_pos_invalid(next))
@@ -528,7 +528,7 @@ void grid_event_unmap(xcb_window_t window) {
   size_t pos = grid_xwin2pos(window);
   if(grid_pos_invalid(pos)) return;
   pos = grid_pos2origin(pos);
-  grid_pos2win(pos)->pos = -2;
+  grid_pos2win(pos)->state = WINDOW_WITHDRAWN;
   grid_pos2cell(pos)->window = NULL;
   grid_pos2cell(pos)->origin = -1;
   if(grid_focused() == pos)

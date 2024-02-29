@@ -3,8 +3,6 @@
 
 #include <xcb/xcb.h>
 
-#define WINDOW_NAME_MAX_LENGTH 40
-
 typedef struct window_list_t window_list_t;
 typedef struct window_t window_t;
 
@@ -17,7 +15,8 @@ window_t *window_minimized_nth(size_t n);
 void window_show(const window_t *window);
 void window_minimize(window_t*);
 
-void window_init(xcb_connection_t*, const char *const(*)[2], size_t);
+void window_init(xcb_connection_t*, const char *const(*)[2], size_t,
+                 xcb_get_property_reply_t*(*)(xcb_window_t, size_t));
 void window_deinit(void);
 
 int window_event_destroy(xcb_window_t, window_t**);

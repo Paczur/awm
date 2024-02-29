@@ -6,8 +6,6 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-#define MAX_WORKSPACES 10
-
 extern workspace_t workspaces[MAX_WORKSPACES];
 extern size_t workspace_focused;
 

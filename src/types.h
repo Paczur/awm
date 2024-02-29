@@ -7,6 +7,12 @@ typedef unsigned char uchar;
 
 #define LENGTH(x) (sizeof(x)/sizeof((x)[0]))
 
+typedef enum WINDOW_STATE {
+  WINDOW_WITHDRAWN = -2,
+  WINDOW_ICONIC = -1,
+  WINDOW_WORKSPACE_START = 0,
+} WINDOW_STATE;
+
 typedef struct list_t {
   struct list *next;
 } list_t;

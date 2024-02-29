@@ -10,7 +10,7 @@ DEBUG=-D DEBUG -Og -ggdb3 -fsanitize=address -fsanitize=pointer-compare \
 -fsanitize-address-use-after-scope -fstack-check \
 -fno-stack-clash-protection
 TEXT=$(shell pkg-config --cflags --libs pangocairo fontconfig)
-X=$(shell pkg-config --cflags --libs xcb xcb-randr xcb-xkb xkbcommon-x11)
+X=$(shell pkg-config --cflags --libs xcb xcb-randr xcb-xkb xkbcommon-x11 xcb-icccm)
 THREADS=-lpthread
 LIBS= $(X) $(TEXT) $(THREADS)
 RELEASE=-O2 -s -pipe -flto=4 -fwhole-program

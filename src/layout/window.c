@@ -7,9 +7,9 @@
 #define MIN(x,y) (((x)<=(y))?(x):(y))
 
 static xcb_connection_t *conn;
-static xcb_atom_t wm_class;
 static char *(*classes)[2];
 static size_t classes_length;
+static xcb_get_property_reply_t* (*get_class)(xcb_window_t, size_t);
 window_list_t *windows_minimized;
 window_t *windows;
 
@@ -19,9 +19,7 @@ static void window_set_name(window_t *window) {
   size_t length[2];
   char *class;
   window->name = calloc(WINDOW_NAME_MAX_LENGTH, sizeof(char));
-  xcb_get_property_cookie_t cookie =
-    xcb_get_property(conn, 0, window->id, wm_class, XCB_ATOM_STRING, 0, 50);
-  reply = xcb_get_property_reply(conn, cookie, NULL);
+  reply = get_class(window->id, WINDOW_NAME_MAX_LENGTH);
   class = xcb_get_property_value(reply);
   length[1] = xcb_get_property_value_length(reply);
   if(length[1] == 0) {
@@ -93,7 +91,7 @@ void window_show(const window_t *window) {
 //unmapping done before this function call
 void window_minimize(window_t *window) {
   window_list_t *min;
-  window->pos = -1;
+  window->state = WINDOW_ICONIC;
   min = malloc(sizeof(window_list_t));
   min->next = windows_minimized;
   windows_minimized = min;
@@ -104,9 +102,11 @@ void window_minimize(window_t *window) {
 
 
 void window_init(xcb_connection_t *c, const char *const(*names)[2],
-                 size_t names_length) {
+                 size_t names_length,
+                 xcb_get_property_reply_t *(*gc)(xcb_window_t, size_t)) {
   size_t len;
   conn = c;
+  get_class = gc;
   classes = malloc(names_length*sizeof(char*[2]));
   for(size_t i=0; i<names_length; i++) {
     len = strlen(names[i][0])+1;
@@ -117,17 +117,6 @@ void window_init(xcb_connection_t *c, const char *const(*names)[2],
     strncpy(classes[i][1], names[i][1], len);
   }
   classes_length = names_length;
-  char wm_class_str[] = "WM_CLASS";
-  xcb_intern_atom_reply_t *reply = NULL;
-  xcb_intern_atom_cookie_t cookie;
-  cookie = xcb_intern_atom(conn, 0, sizeof(wm_class_str)-1, wm_class_str);
-  while(reply == NULL) {
-    reply = xcb_intern_atom_reply(conn, cookie, NULL);
-    if(reply == NULL) { cookie = xcb_intern_atom(conn, 0, sizeof(wm_class_str)-1, wm_class_str);
-    }
-  }
-  wm_class = reply->atom;
-  free(reply);
 }
 
 void window_deinit(void) {
@@ -157,7 +146,7 @@ int window_event_destroy(xcb_window_t window, window_t **wp) {
   window_t *w = window_find(window);
   window_list_t *wlist = windows_minimized;
   window_list_t *t;
-  size_t pos;
+  int state;
   if(w == NULL) return -3;
   if(w->prev != NULL) {
     w->prev->next = w->next;
@@ -169,9 +158,9 @@ int window_event_destroy(xcb_window_t window, window_t **wp) {
   }
   if(w->name != NULL)
     free(w->name);
-  pos = w->pos;
+  state = w->state;
 
-  if(pos == (size_t)-1) {
+  if(state == -1) {
     if(wlist->window == w) {
       windows_minimized = wlist->next;
       free(wlist);
@@ -186,7 +175,7 @@ int window_event_destroy(xcb_window_t window, window_t **wp) {
 
   *wp = w;
   free(w);
-  return pos;
+  return state;
 }
 
 void window_event_create(xcb_window_t window) {
@@ -195,7 +184,7 @@ void window_event_create(xcb_window_t window) {
     windows->prev = w;
   w->id = window;
   w->name = NULL;
-  w->pos = -2;
+  w->state = WINDOW_WITHDRAWN;
   w->next = windows;
   w->prev = NULL;
   windows = w;

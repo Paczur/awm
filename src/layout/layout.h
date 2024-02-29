@@ -19,18 +19,20 @@ size_t layout_below(void);
 size_t layout_to_right(void);
 size_t layout_to_left(void);
 size_t layout_focused(void);
+xcb_window_t layout_focused_xwin(void);
 void layout_swap_focused(size_t);
 void layout_reset_sizes_focused(void);
 void layout_resize_w_focused(int);
 void layout_resize_h_focused(int);
 void layout_show(size_t);
 void layout_minimize(void);
-void layout_destroy(void);
+void layout_destroy(size_t);
 
 void layout_init(const layout_init_t*);
 void layout_deinit(void);
 
 bool layout_event_map(xcb_window_t);
+void layout_event_map_notify(xcb_window_t);
 void layout_event_unmap(xcb_window_t);
 void layout_event_create(xcb_window_t);
 int layout_event_destroy(xcb_window_t);

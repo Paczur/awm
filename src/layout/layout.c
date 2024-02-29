@@ -9,6 +9,7 @@
 
 static xcb_connection_t *conn;
 static const xcb_screen_t *screen;
+static void (*state_changed)(xcb_window_t, WINDOW_STATE);
 
 static void layout_adopt(void) {
   xcb_query_tree_cookie_t cookie;
@@ -51,10 +52,13 @@ static void layout_adopt(void) {
       free(greply);
       greply = NULL;
       if(found) {
-        if(areply->map_state == XCB_MAP_STATE_UNMAPPED)
+        if(areply->map_state == XCB_MAP_STATE_UNMAPPED) {
+          state_changed(children[i], WINDOW_ICONIC);
           window_minimize(window_find(children[i]));
-        else
+        } else {
+          state_changed(children[i], 0);
           layout_event_map(children[i]);
+        }
       }
     }
     free(areply);
@@ -98,6 +102,10 @@ void layout_resize_w_focused(int n) {
 void layout_resize_h_focused(int n) {
   grid_resize_h(grid_pos2mon(grid_focused()), n);
 }
+xcb_window_t layout_focused_xwin(void) {
+  const window_t *w = grid_focusedw();
+  return (w == NULL) ? (xcb_window_t)-1 : w->id;
+}
 
 bool layout_fullscreen(size_t n) {
   bool ret = workspace_fullscreen(n);
@@ -111,28 +119,36 @@ bool layout_fullscreen(size_t n) {
 }
 
 void layout_minimize(void) {
-  grid_minimize(grid_focused());
-  window_minimize(grid_focusedw());
+  if(grid_focusedw() != NULL) {
+    grid_minimize(grid_focused());
+    state_changed(grid_focusedw()->id, WINDOW_ICONIC);
+    window_minimize(grid_focusedw());
+  }
 }
 
-void layout_destroy(void) {
-  grid_destroy(grid_focused());
+void layout_destroy(size_t n) {
+  grid_destroy(n);
 }
 
 void layout_show(size_t n) {
   window_t *w = window_minimized_nth(n);
   if(w == NULL) return;
   window_show(w);
-  if(!grid_show(w))
+  if(!grid_show(w)) {
     window_minimize(w);
+  } else {
+    state_changed(w->id, 0);
+  }
 }
 
 void layout_init(const layout_init_t *init) {
   conn = init->conn;
   screen = init->screen;
+  state_changed = init->state_changed;
   workarea_init((workarea_t*)init->workareas,
                 (workarea_t*)init->workareas_fullscreen, init->workarea_count);
-  window_init(init->conn, init->name_replacements, init->name_replacements_length);
+  window_init(init->conn, init->name_replacements, init->name_replacements_length,
+              init->get_class);
   workspace_init(init->conn);
   grid_init(init->conn, init->spawn_order, init->spawn_order_length, init->gaps);
   layout_adopt();
@@ -159,6 +175,10 @@ bool layout_event_map(xcb_window_t window) {
   return true;
 }
 
+void layout_event_map_notify(xcb_window_t window) {
+  state_changed(window, 0);
+}
+
 void layout_event_create(xcb_window_t window) { window_event_create(window); }
 void layout_event_focus(xcb_window_t window) { grid_event_focus(window); }
 
@@ -174,5 +194,6 @@ int layout_event_destroy(xcb_window_t window) {
 
 void layout_event_unmap(xcb_window_t window) {
   grid_event_unmap(window);
+  state_changed(window, WINDOW_WITHDRAWN);
   layout_focus_restore();
 }

@@ -2,6 +2,7 @@
 #include "system.h"
 #include "bar/bar.h"
 #include "layout/layout.h"
+#include "hint/hint.h"
 #include "event.h"
 #include "shortcut.h"
 #include "config.h"
@@ -72,7 +73,10 @@ void c_window_focused_resize_w(int n) { layout_resize_w_focused(n); }
 void c_window_focused_resize_h(int n) { layout_resize_h_focused(n); }
 void c_window_focused_reset_size(void) { layout_reset_sizes_focused(); }
 void c_run(const char* cmd) { system_sh(cmd); }
-void c_window_focused_destroy(void) { layout_destroy(); }
+void c_window_focused_destroy(void) {
+  if(!hint_delete_window(layout_focused_xwin()))
+    layout_destroy(layout_focused());
+}
 void c_window_focused_minimize(void) {
   layout_minimize();
   c_bar_update_minimized();
@@ -105,10 +109,22 @@ void c_bar_block_update(size_t n) { bar_update_info(n); }
 void c_bar_block_update_highlight(size_t n, int delay) {
   bar_update_info_highlight(n, delay);
 }
+void c_event_message(const xcb_generic_event_t *e) {
+  const xcb_client_message_event_t *event = (const xcb_client_message_event_t*)e;
+  if(hint_is_wm_change_state(event->type) &&
+     event->format == 32 &&
+     hint_is_iconic_state(event->data.data8[0])) {
+    //TODO: Minimize window
+  }
+}
 void c_event_map(const xcb_generic_event_t *e) {
   const xcb_map_request_event_t *event = (const xcb_map_request_event_t*)e;
   if(!layout_event_map(event->window))
     c_bar_update_minimized();
+}
+void c_event_map_notify(const xcb_generic_event_t *e) {
+  const xcb_map_notify_event_t *event = (const xcb_map_notify_event_t*)e;
+  layout_event_map_notify(event->window);
 }
 void c_event_key_press(const xcb_generic_event_t *e) {
   char buff[10];
@@ -221,7 +237,8 @@ static void c_init_layout(rect_t *t_rect, const rect_t *monitors,
     t_rect[i].h = monitors[i].h - CONFIG_BAR_HEIGHT;
   }
   layout_init_t linit = (layout_init_t) {
-    conn, screen, .workareas = t_rect,
+    conn, screen, hint_window_class, .workareas = t_rect,
+    .state_changed = hint_update_state,
     .workareas_fullscreen = monitors, .workarea_count = monitor_count,
       .name_replacements = (const char *const [][2])CONFIG_BAR_MINIMIZED_NAME_REPLACEMENTS,
       .name_replacements_length = LENGTH((char*[][2])CONFIG_BAR_MINIMIZED_NAME_REPLACEMENTS),
@@ -256,6 +273,7 @@ void c_init(void) {
 
   system_init();
 
+  hint_init(conn, screen);
   c_init_shortcut();
   system_monitors(&monitors, &monitor_count);
   t_rect = malloc(monitor_count*sizeof(rect_t));
@@ -266,6 +284,7 @@ void c_init(void) {
 
   c_mode_set(MODE_NORMAL);
   event_listener_add(XCB_MAP_REQUEST, c_event_map);
+  event_listener_add(XCB_MAP_NOTIFY, c_event_map_notify);
   event_listener_add(XCB_KEY_PRESS, c_event_key_press);
   event_listener_add(XCB_KEY_RELEASE, c_event_key_release);
   event_listener_add(XCB_CREATE_NOTIFY, c_event_create);
@@ -273,11 +292,13 @@ void c_init(void) {
   event_listener_add(XCB_UNMAP_NOTIFY, c_event_unmap);
   event_listener_add(XCB_FOCUS_IN, c_event_focus);
   event_listener_add(XCB_EXPOSE, c_event_expose);
+  event_listener_add(XCB_CLIENT_MESSAGE, c_event_message);
   event_listener_add(system_xkb(), c_event_xkb);
   xcb_flush(conn);
 }
 
 void c_deinit(void) {
+  hint_deinit();
   bar_deinit();
   layout_deinit();
   shortcut_deinit();
