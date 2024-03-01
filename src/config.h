@@ -47,6 +47,7 @@ F_DEC(enlarge_up);
 F_DEC(equal_sizes);
 F_DEC(terminal);
 F_DEC(destroy);
+F_DEC(destroy_force);
 F_DEC(minimize);
 F_DEC(librewolf);
 F_DEC(launch);

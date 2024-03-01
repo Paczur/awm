@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <xcb/xcb_icccm.h>
 #include <stdio.h>
+#include <unistd.h>
+#include <string.h>
 
 #define INTERN_COOKIE(_prefix) \
   xcb_intern_atom_cookie_t _prefix ## _cookie; \
@@ -19,13 +21,33 @@
     } \
   } while(0)
 
+#define MAX_HOSTNAME_LENGTH 50
+#define HINT_CHECKS_PER_SECOND 1
+
 static xcb_atom_t wm_protocols;
 static xcb_atom_t wm_delete_window;
 static xcb_atom_t wm_class;
 static xcb_atom_t wm_state;
 static xcb_atom_t wm_change_state;
+static xcb_atom_t wm_client_machine;
 static xcb_connection_t *conn;
 static const xcb_screen_t *screen;
+static char hostname[MAX_HOSTNAME_LENGTH];
+static size_t hostname_length;
+static plist_t **window_list;
+static size_t window_state_offset;
+static size_t window_id_offset;
+static bool thread_run = true;
+static pthread_t thread;
+
+static void* hint_periodic(void*) {
+  struct timespec ts =
+    (struct timespec) { .tv_nsec = 1000000000/HINT_CHECKS_PER_SECOND };
+  while(thread_run) {
+    nanosleep(&ts, &ts);
+  }
+  return NULL;
+}
 
 static void hint_intern_atoms(void) {
   char prot_str[] = "WM_PROTOCOLS";
@@ -33,17 +55,20 @@ static void hint_intern_atoms(void) {
   char class_str[] = "WM_CLASS";
   char state_str[] = "WM_STATE";
   char ch_state_str[] = "WM_CHANGE_STATE";
+  char client_str[] = "WM_CLIENT_MACHINE";
   INTERN_COOKIE(prot);
   INTERN_COOKIE(del_win);
   INTERN_COOKIE(class);
   INTERN_COOKIE(state);
   INTERN_COOKIE(ch_state);
+  INTERN_COOKIE(client);
 
   INTERN_REPLY(prot, wm_protocols);
   INTERN_REPLY(del_win, wm_delete_window);
   INTERN_REPLY(class, wm_class);
   INTERN_REPLY(state, wm_state);
   INTERN_REPLY(ch_state, wm_change_state);
+  INTERN_REPLY(client, wm_client_machine);
 }
 
 static void hint_set_protocols(void) {
@@ -95,11 +120,19 @@ void hint_update_state(xcb_window_t window, WINDOW_STATE state) {
                       wm_state, 32, 2, &st);
 }
 
+void hint_set_window_hints(xcb_window_t window) {
+  xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window, wm_client_machine,
+                      XCB_ATOM_STRING, 8, hostname_length, hostname);
+}
+
 void hint_init(xcb_connection_t *c, const xcb_screen_t *s) {
   conn = c;
   screen = s;
+  gethostname(hostname, MAX_HOSTNAME_LENGTH);
+  hostname_length = strlen(hostname);
   hint_intern_atoms();
   hint_set_protocols();
+  pthread_create(&thread, NULL, hint_periodic, NULL);
 }
 
 void hint_deinit(void) {}

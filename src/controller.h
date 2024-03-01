@@ -4,6 +4,7 @@
 #include "types.h"
 #include <stddef.h>
 #include <xcb/xcb.h>
+#include <stdbool.h>
 
 void c_shutdown(void);
 void c_workspace_switch(size_t);
@@ -24,7 +25,7 @@ void c_window_focused_resize_w(int);
 void c_window_focused_resize_h(int);
 void c_window_focused_reset_size(void);
 void c_run(const char*);
-void c_window_focused_destroy(void);
+void c_window_focused_destroy(bool);
 void c_window_focused_minimize(void);
 void c_launcher_show(void);
 void c_launcher_cancel(void);

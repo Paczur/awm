@@ -43,15 +43,6 @@ static grid_cell_t *grid_pos2originc(size_t n) {
   return workspace->grid+workspace->grid[n].origin;
 }
 
-static size_t grid_xwin2pos(xcb_window_t window) {
-  for(size_t i=0; i<workarea_count*CELLS_PER_WORKAREA; i++) {
-    if(grid_pos2win(i) != NULL &&
-       grid_pos2win(i)->id == window)
-      return i;
-  }
-  return -1;
-}
-
 static bool grid_mon_empty(size_t m) {
   return workspace_focusedw()->grid[grid_mon2pos(m)].window == NULL;
 }
@@ -147,6 +138,24 @@ static void grid_force_update(size_t pos) {
 }
 
 
+size_t grid_ord2pos(size_t n) {
+  size_t i;
+  if(n >= spawn_order_len)
+    n = spawn_order_len-1;
+  for(i=n; i<spawn_order_len && grid_pos_invalid(spawn_order[i]); i++) {}
+  if(i == spawn_order_len)
+    for(i=n; i+1>i && grid_pos_invalid(spawn_order[i]); i--) {}
+  return i;
+}
+
+size_t grid_xwin2pos(xcb_window_t window) {
+  for(size_t i=0; i<workarea_count*CELLS_PER_WORKAREA; i++) {
+    if(grid_pos2win(i) != NULL &&
+       grid_pos2win(i)->id == window)
+      return i;
+  }
+  return -1;
+}
 
 grid_cell_t *grid_focusedc(void) {
   const workspace_t *workspace = workspace_focusedw();

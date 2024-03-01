@@ -59,7 +59,7 @@ void c_window_show(size_t n) {
   layout_show(n);
   c_bar_update_minimized();
 }
-void c_window_focus(size_t n) { layout_focus(n); }
+void c_window_focus(size_t n) { layout_focus_by_spawn(n); }
 void c_window_focused_swap(size_t n) { layout_swap_focused(n); }
 void c_window_focus_down(void) { c_window_focus(layout_below()); }
 void c_window_focus_up(void) { c_window_focus(layout_above()); }
@@ -73,12 +73,12 @@ void c_window_focused_resize_w(int n) { layout_resize_w_focused(n); }
 void c_window_focused_resize_h(int n) { layout_resize_h_focused(n); }
 void c_window_focused_reset_size(void) { layout_reset_sizes_focused(); }
 void c_run(const char* cmd) { system_sh(cmd); }
-void c_window_focused_destroy(void) {
-  if(!hint_delete_window(layout_focused_xwin()))
+void c_window_focused_destroy(bool force) {
+  if(force || !hint_delete_window(layout_focused_xwin()))
     layout_destroy(layout_focused());
 }
 void c_window_focused_minimize(void) {
-  layout_minimize();
+  layout_focused_minimize();
   c_bar_update_minimized();
 }
 void c_launcher_show(void) { bar_launcher_show(); }
@@ -114,7 +114,7 @@ void c_event_message(const xcb_generic_event_t *e) {
   if(hint_is_wm_change_state(event->type) &&
      event->format == 32 &&
      hint_is_iconic_state(event->data.data8[0])) {
-    //TODO: Minimize window
+    layout_minimize(event->window);
   }
 }
 void c_event_map(const xcb_generic_event_t *e) {
@@ -266,9 +266,10 @@ static void c_init_shortcut(void) {
 void c_loop(void) { event_run(conn); }
 
 void c_init(void) {
-
   rect_t *monitors;
   size_t monitor_count;
+  size_t bar_count;
+  const bar_containers_t *bars;
   rect_t *t_rect;
 
   system_init();
@@ -281,6 +282,10 @@ void c_init(void) {
   c_init_bar(t_rect, monitors, monitor_count);
   free(monitors);
   free(t_rect);
+  bar_count = bar_get_containers(&bars);
+  for(size_t i=0; i<bar_count; i++) {
+    hint_set_window_hints(bars->id[i]);
+  }
 
   c_mode_set(MODE_NORMAL);
   event_listener_add(XCB_MAP_REQUEST, c_event_map);

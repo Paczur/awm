@@ -8,6 +8,8 @@
 typedef struct grid_cell_t grid_cell_t;
 typedef struct window_t window_t;
 
+size_t grid_ord2pos(size_t);
+size_t grid_xwin2pos(xcb_window_t);
 grid_cell_t *grid_focusedc(void);
 window_t *grid_focusedw(void);
 size_t grid_focused(void);

@@ -4,6 +4,7 @@
 #include "bar_types.h"
 #include <stdbool.h>
 
+size_t bar_get_containers(const bar_containers_t**);
 void bar_launcher_show(void);
 void bar_launcher_hide(void);
 bool bar_launcher_window(xcb_window_t);

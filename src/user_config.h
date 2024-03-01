@@ -49,7 +49,8 @@
   WITH_CHANGE(MOD_NONE,  XK_F5,                    volume_down),     \
   WITH_CHANGE(MOD_NONE,  XK_F6,                    volume_up),       \
   WITH_CHANGE(MOD_NONE,  XK_q,                     destroy),         \
-  WITH_CHANGE(MOD_SHIFT, XK_q,                     shutdown),        \
+  WITH_CHANGE(MOD_SHIFT, XK_q,                     destroy_force),   \
+  WITH_CHANGE(MOD_ALT,   XK_q,                     shutdown),        \
   WITH_CHANGE(MOD_NONE,  XK_m,                     minimize),        \
   WITH_CHANGE(MOD_NONE,  XK_Escape,                insert_mode),     \
   WITH_CHANGE(MOD_NONE,  XK_i,                     insert_mode),     \

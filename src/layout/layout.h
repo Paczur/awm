@@ -14,6 +14,7 @@ void layout_switch_workspace(size_t);
 bool layout_fullscreen(size_t);
 
 void layout_focus(size_t);
+void layout_focus_by_spawn(size_t);
 size_t layout_above(void);
 size_t layout_below(void);
 size_t layout_to_right(void);
@@ -25,7 +26,8 @@ void layout_reset_sizes_focused(void);
 void layout_resize_w_focused(int);
 void layout_resize_h_focused(int);
 void layout_show(size_t);
-void layout_minimize(void);
+void layout_focused_minimize(void);
+void layout_minimize(xcb_window_t);
 void layout_destroy(size_t);
 
 void layout_init(const layout_init_t*);

@@ -87,6 +87,7 @@ bool layout_workspace_fullscreen(size_t n) { return workspaces[n].fullscreen; }
 void layout_switch_workspace(size_t n) { workspace_switch(n); }
 
 void layout_focus(size_t n) { grid_focus(n); }
+void layout_focus_by_spawn(size_t n) { grid_focus(grid_ord2pos(n)); }
 size_t layout_above(void) { return grid_above(); }
 size_t layout_below(void) { return grid_below(); }
 size_t layout_to_right(void) { return grid_to_right(); }
@@ -118,7 +119,17 @@ bool layout_fullscreen(size_t n) {
   return ret;
 }
 
-void layout_minimize(void) {
+void layout_minimize(xcb_window_t window) {
+  size_t pos;
+  window_t *win = window_find(window);
+  if(win->state < 0) return;
+  pos = grid_xwin2pos(window);
+  grid_minimize(pos);
+  state_changed(window, WINDOW_ICONIC);
+  window_minimize(win);
+}
+
+void layout_focused_minimize(void) {
   if(grid_focusedw() != NULL) {
     grid_minimize(grid_focused());
     state_changed(grid_focusedw()->id, WINDOW_ICONIC);

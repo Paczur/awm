@@ -33,6 +33,11 @@ static void bar_launcher_hint_refresh(void) {
   launcher_hint_update(block_next_x(&launcher_prompt_geometry));
 }
 
+size_t bar_get_containers(const bar_containers_t **cont) {
+  *cont = &bar_containers;
+  return bar_container_count;
+}
+
 void bar_launcher_show(void) {
   if(bar_visible) {
     launcher_container_show();
@@ -94,6 +99,8 @@ void bar_launcher_select_right(void) {
 char *bar_launcher_return(void) {
   if(launcher_visible) {
     bar_launcher_hide();
+    if(launcher_trie_hints[launcher_hint_selected][0] == 0)
+      return launcher_prompt_search;
     return launcher_trie_hints[launcher_hint_selected];
   }
   return NULL;
