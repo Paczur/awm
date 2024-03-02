@@ -1,0 +1,17 @@
+#!/bin/env bash
+value=($(volume g))
+ex=1
+volume="${value[0]}"
+
+if [ "${volume}" = "muted" ]; then
+  volume="󰝟 ${value[1]}%"
+  ex=0
+elif [ "$volume" -lt "33" ]; then
+  volume="󰕿 ${volume}%"
+elif [ "$volume" -lt "66" ]; then
+  volume="󰖀 ${volume}%"
+else
+  volume="󰕾 ${volume}%"
+fi
+echo "$volume"
+exit "$ex"

@@ -1,0 +1,8 @@
+#!/bin/env dash
+
+ex=0
+value="$(mpstat 1 1 | grep Average | sed 's/.* //' | xargs echo 100- | bc)"
+echo " ${value}%"
+if [ $(echo "${value} > 90" | bc) -eq 1 ]; then
+  exit 1
+fi

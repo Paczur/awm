@@ -118,12 +118,12 @@
 #define CONFIG_BAR_INFO_HIGHLIGHTED_BACKGROUND "111111"
 #define CONFIG_BAR_INFO_HIGHLIGHTED_FOREGROUND "FFFFFF"
 #define CONFIG_BAR_INFO_BLOCKS { \
-  {0, "/home/paczur/.config/i3blocks/net", 60}, \
-  {1, "/home/paczur/.config/i3blocks/volume", -1}, \
-  {2, "/home/paczur/.config/i3blocks/dnd", -1}, \
-  {3, "x=$(/home/paczur/.config/i3blocks/brightness); if [ -n \"$x\" ]; then echo  $x; fi", -1}, \
-  {4, "/home/paczur/.config/i3blocks/battery", 60}, \
-  {5, "echo  $(/home/paczur/.config/i3blocks/cpu)", 5}, \
+  {0, "/home/paczur/Projects/C/IdkWM/scripts/net", 60}, \
+  {1, "/home/paczur/Projects/C/IdkWM/scripts/volume", -1}, \
+  {2, "/home/paczur/Projects/C/IdkWM/scripts/dnd", -1}, \
+  {3, "/home/paczur/Projects/C/IdkWM/scripts/brightness)", -1}, \
+  {4, "/home/paczur/Projects/C/IdkWM/scripts/battery", 60}, \
+  {5, "/home/paczur/Projects/C/IdkWM/scripts/cpu", 5}, \
   {6, "date '+󰃶 %a %d' && exit 1", 3600}, \
   {7, "date '+ %H:%M' && exit 1", 30}, \
 }

@@ -1,0 +1,13 @@
+#!/bin/env dash
+process="$(ps -A | grep dunst)"
+ex=0
+
+if [ -z "$process" ]; then
+  mode=""
+else
+  mode=""
+  ex=1
+fi
+
+echo "$mode"
+exit $ex
