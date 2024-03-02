@@ -121,8 +121,9 @@
   {0, "/home/paczur/Projects/C/IdkWM/scripts/net", 60}, \
   {1, "/home/paczur/Projects/C/IdkWM/scripts/volume", -1}, \
   {2, "/home/paczur/Projects/C/IdkWM/scripts/dnd", -1}, \
-  {3, "/home/paczur/Projects/C/IdkWM/scripts/brightness)", -1}, \
+  {3, "/home/paczur/Projects/C/IdkWM/scripts/brightness", -1}, \
   {4, "/home/paczur/Projects/C/IdkWM/scripts/battery", 60}, \
+  {8, "/home/paczur/Projects/C/IdkWM/scripts/gpu", 60}, \
   {5, "/home/paczur/Projects/C/IdkWM/scripts/cpu", 5}, \
   {6, "date '+󰃶 %a %d' && exit 1", 3600}, \
   {7, "date '+ %H:%M' && exit 1", 30}, \

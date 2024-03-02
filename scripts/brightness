@@ -3,5 +3,5 @@ old="${full_text}"
 value=$(xbacklight -get)
 if [ -n "$value" ]; then
   value="${value%.*}%"
-  echo "$value"
+  echo " $value"
 fi
