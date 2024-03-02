@@ -1,25 +1,29 @@
 #!/bin/env dash
 
-charge_now="$(cat /sys/class/power_supply/BAT1/charge_now)"
-charge_full="$(cat /sys/class/power_supply/BAT1/charge_full)"
-percent="$(($charge_now*100/$charge_full))"
-ex=0
+if [ -e "/sys/class/power_supply/BAT1/charge_now" ] &&
+   [ -e "/sys/class/power_supply/BAT1/charge_full" ]; then
+   charge_now="$(cat /sys/class/power_supply/BAT1/charge_now)"
+   charge_full="$(cat /sys/class/power_supply/BAT1/charge_full)"
+   percent="$(($charge_now*100/$charge_full))"
+   ex=0
 
-if [ "$(cat /sys/class/power_supply/BAT1/status)" != "Discharging" ]; then
-  status=""
-elif [ $percent -le 13 ]; then
-  status=""
-  ex=2
-elif [ $percent -le 38 ]; then
-  status=""
-  ex=1
-elif [ $percent -le 63 ]; then
-  status=""
-elif [ $percent -le 88 ]; then
-  status=""
-else
-  status=""
+   if [ -e "/sys/class/power_supply/BAT1/status" ] &&
+      [ "$(cat /sys/class/power_supply/BAT1/status)" != "Discharging" ]; then
+     status=""
+   elif [ $percent -le 13 ]; then
+     status=""
+     ex=2
+   elif [ $percent -le 38 ]; then
+     status=""
+     ex=1
+   elif [ $percent -le 63 ]; then
+     status=""
+   elif [ $percent -le 88 ]; then
+     status=""
+   else
+     status=""
+   fi
+
+   echo "$status $percent%"
+   exit "$ex"
 fi
-
-echo "$status $percent%"
-exit "$ex"

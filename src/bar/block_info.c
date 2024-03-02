@@ -67,23 +67,25 @@ static void *block_info_update_periodic(void*) {
         block_info.state[i].countdown--;
       }
     }
-    if(max >= 0) {
-      for(int i=0; i<max+1; i++) {
-        block_set_text(block_info.blocks+i, block_info.state[i].text);
+    if(info_run_flag) {
+      if(max >= 0) {
+        for(int i=0; i<max+1; i++) {
+          block_set_text(block_info.blocks+i, block_info.state[i].text);
+        }
+        block_geometry_update_right(block_info.blocks, block_info_geometry,
+                                    max+1,
+                                    (max+1 == MAX_INFO_BLOCKS)?0:
+                                    block_combined_width(block_info_geometry+max+1,
+                                                         MAX_INFO_BLOCKS-max-1),
+                                    block_info_get_settings,
+                                    block_info.min_width);
+        block_info_offset_right =
+          block_combined_width(block_info_geometry, MAX_INFO_BLOCKS);
+        callback();
+        xcb_flush(conn);
       }
-      block_geometry_update_right(block_info.blocks, block_info_geometry,
-                                  max+1,
-                                  (max+1 == MAX_INFO_BLOCKS)?0:
-                                  block_combined_width(block_info_geometry+max+1,
-                                                       MAX_INFO_BLOCKS-max-1),
-                                  block_info_get_settings,
-                                  block_info.min_width);
-      block_info_offset_right =
-        block_combined_width(block_info_geometry, MAX_INFO_BLOCKS);
-      callback();
-      xcb_flush(conn);
+      nanosleep(&ts, &ts);
     }
-    nanosleep(&ts, &ts);
   }
   info_run_finished = true;
   return NULL;

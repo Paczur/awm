@@ -84,11 +84,10 @@ void shortcut_enable(const xcb_screen_t *screen, SHORTCUT_TYPE type) {
   bool found;
   xcb_mod_mask_t mask;
   int num_syms;
+  xcb_mod_mask_t *used;
   const xkb_keysym_t *keysyms;
   xkb_keycode_t min = xkb_keymap_min_keycode(keymap);
   xkb_keycode_t max = xkb_keymap_max_keycode(keymap);
-  xcb_mod_mask_t *used = malloc((max-min+1) * sizeof(xcb_mod_mask_t));
-  memset(used, (xcb_mod_mask_t)-1, sizeof(xcb_mod_mask_t)*(max-min+1));
 
   xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, XCB_MOD_MASK_ANY);
   if(type == SH_TYPE_NORMAL_MODE || type == SH_TYPE_NORMAL_MODE_RELEASE) {
@@ -96,6 +95,8 @@ void shortcut_enable(const xcb_screen_t *screen, SHORTCUT_TYPE type) {
                  XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
     return;
   }
+  used = malloc((max-min+1) * sizeof(xcb_mod_mask_t));
+  memset(used, (xcb_mod_mask_t)-1, sizeof(xcb_mod_mask_t)*(max-min+1));
   for(size_t i=0; i<MAX_KEYSYMS; i++) {
     if(shortcut_map[i] != NULL) {
       found = false;
@@ -127,6 +128,7 @@ void shortcut_enable(const xcb_screen_t *screen, SHORTCUT_TYPE type) {
                    XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
     }
   }
+  free(used);
 }
 
 void shortcut_event_state(const xcb_xkb_state_notify_event_t* event) {
