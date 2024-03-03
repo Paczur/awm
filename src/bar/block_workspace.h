@@ -8,7 +8,7 @@
 
 extern block_geometry_t block_workspace_geometry[MAX_WORKSPACE_BLOCKS];
 
-void block_workspace_update(size_t, bool(*)(size_t), size_t, size_t);
+void block_workspace_update(size_t, size_t, size_t);
 
 void block_workspace_redraw(size_t);
 bool block_workspace_find_redraw(xcb_window_t);

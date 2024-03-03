@@ -12,12 +12,14 @@ static size_t classes_length;
 static xcb_get_property_reply_t* (*get_class)(xcb_window_t, size_t);
 window_list_t *windows_minimized;
 window_t *windows;
+pthread_rwlock_t window_lock = PTHREAD_RWLOCK_INITIALIZER;
 
 //TODO: ref counting on global storage
 static void window_set_name(window_t *window) {
   xcb_get_property_reply_t *reply = NULL;
   size_t length[2];
   char *class;
+  pthread_rwlock_wrlock(&window_lock);
   window->name = calloc(WINDOW_NAME_MAX_LENGTH, sizeof(char));
   reply = get_class(window->id, WINDOW_NAME_MAX_LENGTH);
   class = xcb_get_property_value(reply);
@@ -40,40 +42,61 @@ static void window_set_name(window_t *window) {
   if(window->name[0] == 0)
     memcpy(window->name, "?", sizeof("?"));
 window_set_name_cleanup:
+  pthread_rwlock_unlock(&window_lock);
   free(reply);
 }
 
 window_t* window_find(xcb_window_t w) {
   window_t *win = windows;
+  pthread_rwlock_rdlock(&window_lock);
   while(win != NULL) {
     if(win->id == w) {
+      pthread_rwlock_unlock(&window_lock);
       return win;
     }
     win = win->next;
   }
+  pthread_rwlock_unlock(&window_lock);
   return NULL;
 }
 
 window_t *window_minimized_nth(size_t n) {
   window_list_t *min = windows_minimized;
   if(min == NULL) return NULL;
+  pthread_rwlock_rdlock(&window_lock);
   if(min->next == NULL || n == 0) {
+    pthread_rwlock_unlock(&window_lock);
     return (min == NULL) ? NULL : min->window;
   }
   for(size_t i=0; i<n; i++) {
-    if(min->next == NULL)
+    if(min->next == NULL) {
+      pthread_rwlock_unlock(&window_lock);
       return min->window;
+    }
     min = min->next;
   }
+  pthread_rwlock_unlock(&window_lock);
   return min->window;
 }
 
+
+bool window_set_urgency(window_t *window, bool state) {
+  pthread_rwlock_wrlock(&window_lock);
+  if(window->urgent != state) {
+    window->urgent = state;
+    pthread_rwlock_unlock(&window_lock);
+    return true;
+  }
+  pthread_rwlock_unlock(&window_lock);
+  return false;
+}
 
 void window_show(const window_t *window) {
   window_list_t *next;
   window_list_t *list = windows_minimized;
   if(list == NULL) return;
 
+  pthread_rwlock_wrlock(&window_lock);
   if(list->window == window) {
     next = list->next;
     free(windows_minimized);
@@ -81,21 +104,27 @@ void window_show(const window_t *window) {
   } else if(list->next != NULL) {
     while(list->next != NULL &&
           list->next->window != window) list = list->next;
-    if(list->next == NULL) return;
+    if(list->next == NULL) {
+      pthread_rwlock_unlock(&window_lock);
+      return;
+    }
     next = list->next->next;
     free(list->next);
     list->next = next;
   }
+  pthread_rwlock_unlock(&window_lock);
 }
 
 //unmapping done before this function call
 void window_minimize(window_t *window) {
   window_list_t *min;
+  pthread_rwlock_wrlock(&window_lock);
   window->state = WINDOW_ICONIC;
   min = malloc(sizeof(window_list_t));
   min->next = windows_minimized;
   windows_minimized = min;
   min->window = window;
+  pthread_rwlock_unlock(&window_lock);
   if(window->name == NULL)
     window_set_name(window);
 }
@@ -121,6 +150,7 @@ void window_init(xcb_connection_t *c, const char *const(*names)[2],
 
 void window_deinit(void) {
   window_t *window = windows;
+  pthread_rwlock_wrlock(&window_lock);
   window_t *t;
   while(window != NULL) {
     t = window;
@@ -139,6 +169,7 @@ void window_deinit(void) {
     free(temp);
   }
   windows_minimized = NULL;
+  pthread_rwlock_unlock(&window_lock);
 }
 
 
@@ -148,6 +179,7 @@ int window_event_destroy(xcb_window_t window, window_t **wp) {
   window_list_t *t;
   int state;
   if(w == NULL) return -3;
+  pthread_rwlock_wrlock(&window_lock);
   if(w->prev != NULL) {
     w->prev->next = w->next;
   } else {
@@ -175,10 +207,12 @@ int window_event_destroy(xcb_window_t window, window_t **wp) {
 
   *wp = w;
   free(w);
+  pthread_rwlock_unlock(&window_lock);
   return state;
 }
 
 void window_event_create(xcb_window_t window) {
+  pthread_rwlock_wrlock(&window_lock);
   window_t *w = malloc(sizeof(window_t));
   if(windows != NULL)
     windows->prev = w;
@@ -186,6 +220,8 @@ void window_event_create(xcb_window_t window) {
   w->name = NULL;
   w->state = WINDOW_WITHDRAWN;
   w->next = windows;
+  w->urgent = false;
   w->prev = NULL;
   windows = w;
+  pthread_rwlock_unlock(&window_lock);
 }

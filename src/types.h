@@ -14,12 +14,12 @@ typedef enum WINDOW_STATE {
 } WINDOW_STATE;
 
 typedef struct list_t {
-  struct list *next;
+  struct list_t *next;
 } list_t;
 
 typedef struct double_list_t {
-  struct list *next;
-  struct list *prev;
+  struct double_list_t *next;
+  struct double_list_t *prev;
 } double_list_t;
 
 typedef struct plist_t {

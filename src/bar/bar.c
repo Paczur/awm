@@ -24,7 +24,6 @@ static xcb_connection_t *conn;
 static const xcb_screen_t *screen;
 
 static size_t (*focused_workspace)(void);
-static bool (*workspace_empty)(size_t);
 static const plist_t* (*minimized_list)(void);
 static size_t minimized_name_offset;
 
@@ -117,8 +116,7 @@ bool bar_launcher_window(xcb_window_t window) {
 
 void bar_update_minimized(void) {
   if(bar_visible) {
-    block_minimized_update(minimized_list(), minimized_name_offset,
-                           block_next_x(block_workspace_geometry+MAX_WORKSPACE_BLOCKS-1),
+    block_minimized_update(block_next_x(block_workspace_geometry+MAX_WORKSPACE_BLOCKS-1),
                            block_info_offset_right);
   }
 }
@@ -127,7 +125,7 @@ void bar_update_workspace(size_t n) {
   if(bar_visible) {
     size_t pos = block_next_x(block_workspace_geometry+(MAX_WORKSPACE_BLOCKS-1));
     bool update = (pos == block_minimized_geometry[0].x);
-    block_workspace_update(focused_workspace(), workspace_empty,
+    block_workspace_update(focused_workspace(),
                            block_next_x(&block_mode_geometry), n);
     if(update)
       bar_update_minimized();
@@ -190,7 +188,6 @@ void bar_init(const bar_init_t *init) {
   screen = init->screen;
   PangoFontDescription *font;
   bar_containers_t containers;
-  workspace_empty = init->workspace_empty;
   focused_workspace = init->focused_workspace;
   minimized_list = init->minimized_list;
   minimized_name_offset = init->minimized_name_offset;

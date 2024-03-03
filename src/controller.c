@@ -24,6 +24,21 @@ static MODE next_mode = MODE_INVALID;
 #define COMMON_INIT(x, n, h) \
 { x ## _MIN_WIDTH, SETTINGS_INIT(x ## _ ## n), SETTINGS_INIT(x ## _ ## h) }
 
+#define COMMON_URGENT_INIT(x, n, h) \
+{ x ## _MIN_WIDTH, SETTINGS_INIT(x ## _ ## n), SETTINGS_INIT(x ## _ ## h), \
+  SETTINGS_INIT(x ## _URGENT)}
+
+void c_set_urgency(window_t *window, bool state) {
+  if(layout_window_set_urgency(window, state)) {
+    if(window->state >= 0 && window->state < MAX_WORKSPACES &&
+       (size_t)window->state != layout_get_focused_workspace()) {
+      bar_update_workspace(window->state);
+    } else if(window->state == WINDOW_ICONIC) {
+      bar_update_minimized();
+    }
+  }
+}
+
 static void c_bar_update_minimized(void) {
   bar_update_minimized();
 }
@@ -66,8 +81,7 @@ void c_window_focus_up(void) { c_window_focus(layout_above()); }
 void c_window_focus_left(void) { c_window_focus(layout_to_left()); }
 void c_window_focus_right(void) { c_window_focus(layout_to_right()); }
 void c_window_focused_swap_down(void) { c_window_focused_swap(layout_below()); }
-void c_window_focused_swap_up(void) { c_window_focused_swap(layout_above()); }
-void c_window_focused_swap_left(void) { c_window_focused_swap(layout_to_left()); }
+void c_window_focused_swap_up(void) { c_window_focused_swap(layout_above()); } void c_window_focused_swap_left(void) { c_window_focused_swap(layout_to_left()); }
 void c_window_focused_swap_right(void) { c_window_focused_swap(layout_to_right()); }
 void c_window_focused_resize_w(int n) { layout_resize_w_focused(n); }
 void c_window_focused_resize_h(int n) { layout_resize_h_focused(n); }
@@ -210,17 +224,27 @@ static void c_init_bar(rect_t *t_rect, const rect_t *monitors,
   bar_init_t binit = (bar_init_t){
     conn, screen, visual_type, .bar_containers = t_rect,
       .bar_container_count = monitor_count, layout_get_focused_workspace,
-      layout_workspace_empty, (const plist_t*(*)(void))layout_get_minimized,
+      (const plist_t*(*)(void))layout_get_minimized,
       offsetof(window_t, name), CONFIG_BAR_COMPONENT_PADDING,
       CONFIG_BAR_COMPONENT_SEPARATOR, CONFIG_BAR_BACKGROUND, CONFIG_BAR_FONT,
       COMMON_INIT(CONFIG_BAR_MODE, INSERT, NORMAL),
-      COMMON_INIT(CONFIG_BAR_WORKSPACE, UNFOCUSED, FOCUSED),
+      { CONFIG_BAR_WORKSPACE_MIN_WIDTH,
+        SETTINGS_INIT(CONFIG_BAR_WORKSPACE_UNFOCUSED),
+        SETTINGS_INIT(CONFIG_BAR_WORKSPACE_FOCUSED),
+        SETTINGS_INIT(CONFIG_BAR_WORKSPACE_URGENT),
+        layout_workspace_empty, layout_workspace_urgent },
       { CONFIG_BAR_INFO_MIN_WIDTH,
         SETTINGS_INIT(CONFIG_BAR_INFO_NORMAL),
         SETTINGS_INIT(CONFIG_BAR_INFO_HIGHLIGHTED),
+        SETTINGS_INIT(CONFIG_BAR_INFO_URGENT),
         (block_info_data_t[])CONFIG_BAR_INFO_BLOCKS,
         LENGTH((block_info_data_t[])CONFIG_BAR_INFO_BLOCKS), system_sh_out },
-      COMMON_INIT(CONFIG_BAR_MINIMIZED, EVEN, ODD),
+      { CONFIG_BAR_MINIMIZED_MIN_WIDTH,
+        SETTINGS_INIT(CONFIG_BAR_MINIMIZED_EVEN),
+        SETTINGS_INIT(CONFIG_BAR_MINIMIZED_ODD),
+        SETTINGS_INIT(CONFIG_BAR_MINIMIZED_URGENT),
+        (const plist_t *const*)layout_get_minimizedp(), offsetof(window_t, name),
+        offsetof(window_t, urgent) },
       { CONFIG_BAR_LAUNCHER_PROMPT_MIN_WIDTH,
         SETTINGS_INIT(CONFIG_BAR_LAUNCHER_PROMPT) },
       COMMON_INIT(CONFIG_BAR_LAUNCHER_HINT, NORMAL, SELECTED)
@@ -274,7 +298,10 @@ void c_init(void) {
 
   system_init();
 
-  hint_init(conn, screen);
+  hint_init(&(hint_init_t){conn, screen,
+            (list_t *const *)layout_get_windowsp(), layout_get_window_lock(),
+            offsetof(window_t, state), offsetof(window_t, id),
+            (void (*)(list_t*, bool))c_set_urgency});
   c_init_shortcut();
   system_monitors(&monitors, &monitor_count);
   t_rect = malloc(monitor_count*sizeof(rect_t));

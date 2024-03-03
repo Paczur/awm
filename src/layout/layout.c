@@ -4,6 +4,7 @@
 #include "workspace.h"
 #include "workarea.h"
 #include <stdlib.h>
+#include <stdio.h>
 
 #define LENGTH(x) (sizeof(x)/sizeof((x)[0]))
 
@@ -80,12 +81,20 @@ void layout_focus_restore(void) {
 }
 
 const window_list_t *layout_get_minimized(void) { return windows_minimized; }
+window_list_t *const *layout_get_minimizedp(void) { return &windows_minimized; }
+pthread_rwlock_t *layout_get_window_lock(void) { return &window_lock; }
 const workspace_t *layout_get_workspaces(void) { return workspaces; }
+const window_t *layout_get_windows(void) { return windows; }
+window_t *const *layout_get_windowsp(void) { return &windows; }
 size_t layout_get_focused_workspace(void) { return workspace_focused; }
 bool layout_workspace_empty(size_t i) { return workspace_empty(i); }
+bool layout_workspace_urgent(size_t i) { return workspace_urgent(i); }
 bool layout_workspace_fullscreen(size_t n) { return workspaces[n].fullscreen; }
 void layout_switch_workspace(size_t n) { workspace_switch(n); }
 
+bool layout_window_set_urgency(window_t *window, bool state) {
+  return window_set_urgency(window, state);
+}
 void layout_focus(size_t n) { grid_focus(n); }
 void layout_focus_by_spawn(size_t n) { grid_focus(grid_ord2pos(n)); }
 size_t layout_above(void) { return grid_above(); }
@@ -205,6 +214,7 @@ int layout_event_destroy(xcb_window_t window) {
 
 void layout_event_unmap(xcb_window_t window) {
   grid_event_unmap(window);
-  state_changed(window, WINDOW_WITHDRAWN);
+  if(window_find(window)->state != WINDOW_ICONIC)
+    state_changed(window, WINDOW_WITHDRAWN);
   layout_focus_restore();
 }

@@ -4,10 +4,13 @@ typedef struct block_workspace_t {
   block_t *blocks;
   block_settings_t focused;
   block_settings_t unfocused;
+  block_settings_t urgent;
   uint16_t min_width;
 } block_workspace_t;
 
 static block_workspace_t block_workspace;
+static bool(*workspace_empty)(size_t);
+static bool(*workspace_urgent)(size_t);
 block_geometry_t block_workspace_geometry[MAX_WORKSPACE_BLOCKS];
 
 void block_workspace_redraw(size_t bar) {
@@ -18,11 +21,10 @@ bool block_workspace_find_redraw(xcb_window_t window) {
   return block_find_redraw(block_workspace.blocks, MAX_WORKSPACE_BLOCKS, window);
 }
 
-void block_workspace_update(size_t focused, bool(*empty)(size_t),
-                            size_t offset_left, size_t start) {
+void block_workspace_update(size_t focused, size_t offset_left, size_t start) {
   char text[2] = "1";
   bool t;
-  block_settings_t *settings;
+  block_settings_t *settings = NULL;
   size_t prev_workspace = 0;
   if(start == 0) {
     block_workspace_geometry[0].x = offset_left;
@@ -45,11 +47,14 @@ void block_workspace_update(size_t focused, bool(*empty)(size_t),
         block_show_all(block_workspace.blocks+i);
       }
     } else {
-      settings = &block_workspace.unfocused;
-      t = empty(i);
-      if(!block_workspace.blocks[i].state[0] && !t) {
+      t = workspace_empty(i);
+      if(!t) {
+        settings = (workspace_urgent(i)) ? &block_workspace.urgent :
+          &block_workspace.unfocused;
+      }
+      if(!t && !block_workspace.blocks[i].state[0]) {
         block_show_all(block_workspace.blocks+i);
-      } else if(block_workspace.blocks[i].state[0] && t) {
+      } else if(t && block_workspace.blocks[i].state[0]) {
         block_hide_all(block_workspace.blocks+i);
       }
     }
@@ -74,6 +79,9 @@ void block_workspace_init(const PangoFontDescription *font,
                           const bar_block_workspace_init_t *init) {
   block_settings(&block_workspace.focused, &init->focused);
   block_settings(&block_workspace.unfocused, &init->unfocused);
+  block_settings(&block_workspace.urgent, &init->urgent);
+  workspace_empty = init->workspace_empty;
+  workspace_urgent = init->workspace_urgent;
   block_workspace.min_width = init->min_width;
   block_workspace.blocks = malloc(MAX_WORKSPACE_BLOCKS*sizeof(block_t));
   for(size_t i=0; i<MAX_WORKSPACE_BLOCKS; i++) {

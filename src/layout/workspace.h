@@ -12,6 +12,7 @@ extern size_t workspace_focused;
 bool workspace_fullscreen(size_t);
 workspace_t *workspace_focusedw(void);
 bool workspace_empty(size_t);
+bool workspace_urgent(size_t);
 void workspace_update(size_t);
 
 void workspace_switch(size_t);

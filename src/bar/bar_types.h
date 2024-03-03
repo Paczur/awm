@@ -49,12 +49,17 @@ typedef struct bar_block_minimized_init_t {
   uint16_t min_width;
   const block_settings_init_t even;
   const block_settings_init_t odd;
+  const block_settings_init_t urgent;
+  const plist_t *const *windows;
+  size_t name_offset;
+  size_t urgent_offset;
 } bar_block_minimized_init_t;
 
 typedef struct bar_block_info_init_t {
   uint16_t min_width;
   const block_settings_init_t normal;
   const block_settings_init_t highlighted;
+  const block_settings_init_t urgent;
   block_info_data_t *data;
   size_t data_length;
   int(*get_output)(const char*, char*, size_t);
@@ -70,6 +75,9 @@ typedef struct bar_block_workspace_init_t {
   uint16_t min_width;
   const block_settings_init_t unfocused;
   const block_settings_init_t focused;
+  const block_settings_init_t urgent;
+  bool(*workspace_empty)(size_t);
+  bool(*workspace_urgent)(size_t);
 } bar_block_workspace_init_t;
 
 typedef struct bar_init_t {
@@ -79,7 +87,6 @@ typedef struct bar_init_t {
   const rect_t* bar_containers;
   size_t bar_container_count;
   size_t (*focused_workspace)(void);
-  bool (*workspace_empty)(size_t);
   const plist_t* (*minimized_list)(void);
   size_t minimized_name_offset;
 

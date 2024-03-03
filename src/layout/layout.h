@@ -6,13 +6,19 @@
 void layout_focus_pick(void);
 void layout_focus_restore(void);
 const window_list_t *layout_get_minimized(void);
+window_list_t *const *layout_get_minimizedp(void);
+pthread_rwlock_t *layout_get_window_lock(void);
 const workspace_t *layout_get_workspaces(void);
+const window_t *layout_get_windows(void);
+window_t *const *layout_get_windowsp(void);
 size_t layout_get_focused_workspace(void);
 bool layout_workspace_empty(size_t);
+bool layout_workspace_urgent(size_t);
 bool layout_workspace_fullscreen(size_t);
 void layout_switch_workspace(size_t);
 bool layout_fullscreen(size_t);
 
+bool layout_window_set_urgency(window_t*, bool);
 void layout_focus(size_t);
 void layout_focus_by_spawn(size_t);
 size_t layout_above(void);

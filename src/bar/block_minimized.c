@@ -4,24 +4,30 @@ typedef struct block_minimized_t {
  block_t *blocks;
  block_settings_t odd;
  block_settings_t even;
+ block_settings_t urgent;
  uint16_t min_width;
 } block_minimized_t;
 
 block_geometry_t block_minimized_geometry[MAX_MINIMIZED_BLOCKS];
 static block_minimized_t block_minimized;
+static const plist_t *const *windows;
+static size_t name_offset;
+static size_t urgent_offset;
 
 //counted from 1 instead of zero
-static const block_settings_t* block_minimized_get_settings(size_t i) {
-  return (i%2) ? &block_minimized.even : &block_minimized.odd;
+static const block_settings_t* block_minimized_get_settings(size_t n) {
+  const plist_t *curr = *windows;
+  for(size_t i=0; curr != NULL && i<n; i++) { curr = curr->next; }
+  if(*(bool*)(curr->p+urgent_offset))
+    return &block_minimized.urgent;
+  return (n%2) ? &block_minimized.even : &block_minimized.odd;
 }
 
-void block_minimized_update(const plist_t *names, size_t offset,
-                            size_t offset_left,
-                            size_t offset_right) {
-  const plist_t *curr = names;
+void block_minimized_update(size_t offset_left, size_t offset_right) {
+  const plist_t *curr = *windows;
   size_t count = 0;
   while(curr != NULL && count < MAX_MINIMIZED_BLOCKS) {
-    block_set_text(block_minimized.blocks+count, *(char**)((curr->p)+offset));
+    block_set_text(block_minimized.blocks+count, *(char**)((curr->p)+name_offset));
     count++;
     curr = curr->next;
   }
@@ -46,6 +52,10 @@ void block_minimized_init(const PangoFontDescription *font,
                           const bar_block_minimized_init_t *init) {
   block_settings(&block_minimized.even, &init->even);
   block_settings(&block_minimized.odd, &init->odd);
+  block_settings(&block_minimized.urgent, &init->urgent);
+  windows = init->windows;
+  name_offset = init->name_offset;
+  urgent_offset = init->urgent_offset;
   block_minimized.min_width = init->min_width;
   block_minimized.blocks = malloc(MAX_MINIMIZED_BLOCKS* sizeof(block_t));
   for(size_t i=0; i<MAX_MINIMIZED_BLOCKS; i++) {

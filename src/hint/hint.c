@@ -34,17 +34,66 @@ static xcb_connection_t *conn;
 static const xcb_screen_t *screen;
 static char hostname[MAX_HOSTNAME_LENGTH];
 static size_t hostname_length;
-static plist_t **window_list;
+static list_t *const *window_list;
+static pthread_rwlock_t *window_lock;
+
 static size_t window_state_offset;
 static size_t window_id_offset;
+static void (*set_urgency)(list_t*, bool);
+
 static bool thread_run = true;
 static pthread_t thread;
 
 static void* hint_periodic(void*) {
+  typedef struct cookie_list_t {
+    struct cookie_list_t *next;
+    list_t *window;
+    bool end;
+    xcb_get_property_cookie_t cookie;
+  } cookie_list_t;
+  list_t *curr;
+  cookie_list_t cookie_head;
+  cookie_list_t *cookie_cleanup;
+  cookie_list_t *cookie_p;
+  xcb_icccm_wm_hints_t hints;
   struct timespec ts =
     (struct timespec) { .tv_nsec = 1000000000/HINT_CHECKS_PER_SECOND };
+  thread_run = true;
   while(thread_run) {
-    nanosleep(&ts, &ts);
+    pthread_rwlock_rdlock(window_lock);
+    curr = *window_list;
+    cookie_p = &cookie_head;
+    while(curr != NULL) {
+      if(*((WINDOW_STATE*)((char*)curr+window_state_offset)) != WINDOW_WITHDRAWN) {
+        cookie_p->window = curr;
+        cookie_p->end = false;
+        cookie_p->cookie =
+          xcb_icccm_get_wm_hints(conn, *((xcb_window_t*)((char*)curr+window_id_offset)));
+        if(cookie_p->next == NULL) {
+          cookie_p->next = malloc(sizeof(cookie_list_t));
+          cookie_p->next->next = NULL;
+        }
+        cookie_p = cookie_p->next;
+      }
+      curr = curr->next;
+    }
+    cookie_p->end = true;
+    cookie_p = &cookie_head;
+    pthread_rwlock_unlock(window_lock);
+    if(thread_run) {
+      while(cookie_p != NULL && !cookie_p->end) {
+        xcb_icccm_get_wm_hints_reply(conn, cookie_p->cookie, &hints, NULL);
+        set_urgency(cookie_p->window, xcb_icccm_wm_hints_get_urgency(&hints));
+        cookie_p = cookie_p->next;
+      }
+      nanosleep(&ts, &ts);
+    }
+  }
+  cookie_p = cookie_head.next;
+  while(cookie_p != NULL) {
+    cookie_cleanup = cookie_p->next;
+    free(cookie_p);
+    cookie_p = cookie_cleanup;
   }
   return NULL;
 }
@@ -125,9 +174,14 @@ void hint_set_window_hints(xcb_window_t window) {
                       XCB_ATOM_STRING, 8, hostname_length, hostname);
 }
 
-void hint_init(xcb_connection_t *c, const xcb_screen_t *s) {
-  conn = c;
-  screen = s;
+void hint_init(const hint_init_t *init) {
+  conn = init->conn;
+  screen = init->screen;
+  window_lock = init->window_lock;
+  window_list = init->window_list;
+  window_state_offset = init->window_state_offset;
+  window_id_offset = init->window_id_offset;
+  set_urgency = init->set_urgency;
   gethostname(hostname, MAX_HOSTNAME_LENGTH);
   hostname_length = strlen(hostname);
   hint_intern_atoms();
@@ -135,4 +189,6 @@ void hint_init(xcb_connection_t *c, const xcb_screen_t *s) {
   pthread_create(&thread, NULL, hint_periodic, NULL);
 }
 
-void hint_deinit(void) {}
+void hint_deinit(void) {
+  thread_run = false;
+}

@@ -22,6 +22,15 @@ bool workspace_empty(size_t n) {
   return true;
 }
 
+bool workspace_urgent(size_t n) {
+  for(size_t i=0; i<CELLS_PER_WORKAREA*workarea_count; i++) {
+    if(workspaces[n].grid[i].window != NULL &&
+       workspaces[n].grid[i].window->urgent)
+      return true;
+  }
+  return false;
+}
+
 bool workspace_fullscreen(size_t n) {
   workspaces[n].fullscreen ^= 1;
   return workspaces[n].fullscreen;

@@ -16,10 +16,14 @@ typedef struct block_info_t {
   block_t *blocks;
   block_settings_t normal;
   block_settings_t highlighted;
+  block_settings_t urgent;
   size_t min_width;
   block_info_data_t data[MAX_INFO_BLOCKS];
   block_info_state_t state[MAX_INFO_BLOCKS];
 } block_info_t;
+
+//TODO: DON'T INITIALIZE EVERYTHING
+//TODO: FIX BUGGY RENDERING ON SECOND MONITOR
 
 uint16_t block_info_offset_right;
 static block_info_t block_info;
@@ -32,8 +36,15 @@ static block_geometry_t block_info_geometry[MAX_INFO_BLOCKS];
 static xcb_connection_t *conn;
 
 static const block_settings_t *block_info_get_settings(size_t n)  {
-  return (block_info.state[n].status == 1 || block_info.state[n].status == 33) ?
-    &block_info.highlighted : &block_info.normal;
+  switch(block_info.state[n].status) {
+  case 1:
+  case 33:
+    return &block_info.highlighted;
+  case 2:
+    return &block_info.urgent;
+  default:
+    return &block_info.normal;
+  }
 }
 
 static void *block_info_update_periodic(void*) {
@@ -123,6 +134,7 @@ void block_info_init(const PangoFontDescription *font,
                      xcb_connection_t *c) {
   block_settings(&block_info.normal, &init->normal);
   block_settings(&block_info.highlighted, &init->highlighted);
+  block_settings(&block_info.urgent, &init->urgent);
   block_info.min_width = init->min_width;
   callback = cb;
   conn = c;

@@ -18,7 +18,8 @@ typedef struct window_t {
   struct window_t *next;
   struct window_t *prev;
   xcb_window_t id;
-  int state; //-2 withdrawn, -1 iconic, 0+ workspace
+  WINDOW_STATE state; //-2 withdrawn, -1 iconic, 0+ workspace
+  bool urgent;
   char *name;
 } window_t;
 
