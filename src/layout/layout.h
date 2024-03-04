@@ -28,6 +28,7 @@ size_t layout_to_left(void);
 size_t layout_focused(void);
 xcb_window_t layout_focused_xwin(void);
 void layout_swap_focused(size_t);
+void layout_swap_focused_by_spawn(size_t);
 void layout_reset_sizes_focused(void);
 void layout_resize_w_focused(int);
 void layout_resize_h_focused(int);

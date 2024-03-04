@@ -51,6 +51,7 @@ typedef struct bar_block_minimized_init_t {
   const block_settings_init_t odd;
   const block_settings_init_t urgent;
   const plist_t *const *windows;
+  pthread_rwlock_t *window_lock;
   size_t name_offset;
   size_t urgent_offset;
 } bar_block_minimized_init_t;
@@ -87,8 +88,6 @@ typedef struct bar_init_t {
   const rect_t* bar_containers;
   size_t bar_container_count;
   size_t (*focused_workspace)(void);
-  const plist_t* (*minimized_list)(void);
-  size_t minimized_name_offset;
 
   size_t block_padding;
   size_t block_separator;

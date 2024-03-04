@@ -57,7 +57,9 @@ static void* hint_periodic(void*) {
   cookie_list_t *cookie_p;
   xcb_icccm_wm_hints_t hints;
   struct timespec ts =
-    (struct timespec) { .tv_nsec = 1000000000/HINT_CHECKS_PER_SECOND };
+    (struct timespec) { .tv_nsec = (HINT_CHECKS_PER_SECOND == 1) ?
+      999999999 :
+      1000000000/HINT_CHECKS_PER_SECOND };
   thread_run = true;
   while(thread_run) {
     pthread_rwlock_rdlock(window_lock);

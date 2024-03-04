@@ -103,6 +103,8 @@ size_t layout_to_right(void) { return grid_to_right(); }
 size_t layout_to_left(void) { return grid_to_left(); }
 size_t layout_focused(void) { return grid_focused(); }
 void layout_swap_focused(size_t n) { grid_swap(layout_focused(), n); }
+void layout_swap_focused_by_spawn(size_t n) { grid_swap(layout_focused(),
+                                                        grid_ord2pos(n)); }
 void layout_reset_sizes_focused(void) {
   grid_reset_sizes(grid_pos2mon(grid_focused()));
 }

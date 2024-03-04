@@ -24,8 +24,6 @@ static xcb_connection_t *conn;
 static const xcb_screen_t *screen;
 
 static size_t (*focused_workspace)(void);
-static const plist_t* (*minimized_list)(void);
-static size_t minimized_name_offset;
 
 static void bar_launcher_hint_refresh(void) {
   launcher_hint_regen(launcher_prompt_search, launcher_prompt_search_length);
@@ -189,8 +187,6 @@ void bar_init(const bar_init_t *init) {
   PangoFontDescription *font;
   bar_containers_t containers;
   focused_workspace = init->focused_workspace;
-  minimized_list = init->minimized_list;
-  minimized_name_offset = init->minimized_name_offset;
   containers.x = malloc(init->bar_container_count*sizeof(uint16_t));
   containers.y = malloc(init->bar_container_count*sizeof(uint16_t));
   containers.w = malloc(init->bar_container_count*sizeof(uint16_t));

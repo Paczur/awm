@@ -11,10 +11,11 @@ typedef struct block_minimized_t {
 block_geometry_t block_minimized_geometry[MAX_MINIMIZED_BLOCKS];
 static block_minimized_t block_minimized;
 static const plist_t *const *windows;
+static pthread_rwlock_t *window_lock;
 static size_t name_offset;
 static size_t urgent_offset;
 
-//counted from 1 instead of zero
+//counted from 1 instead of zero, locked in _update
 static const block_settings_t* block_minimized_get_settings(size_t n) {
   const plist_t *curr = *windows;
   for(size_t i=0; curr != NULL && i<n; i++) { curr = curr->next; }
@@ -24,6 +25,7 @@ static const block_settings_t* block_minimized_get_settings(size_t n) {
 }
 
 void block_minimized_update(size_t offset_left, size_t offset_right) {
+  pthread_rwlock_rdlock(window_lock);
   const plist_t *curr = *windows;
   size_t count = 0;
   while(curr != NULL && count < MAX_MINIMIZED_BLOCKS) {
@@ -38,6 +40,7 @@ void block_minimized_update(size_t offset_left, size_t offset_right) {
                                count,
                                block_minimized_get_settings, offset_left,
                                block_minimized.min_width, offset_right);
+  pthread_rwlock_unlock(window_lock);
 }
 
 void block_minimized_redraw(size_t bar) {
@@ -54,6 +57,7 @@ void block_minimized_init(const PangoFontDescription *font,
   block_settings(&block_minimized.odd, &init->odd);
   block_settings(&block_minimized.urgent, &init->urgent);
   windows = init->windows;
+  window_lock = init->window_lock;
   name_offset = init->name_offset;
   urgent_offset = init->urgent_offset;
   block_minimized.min_width = init->min_width;

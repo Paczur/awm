@@ -47,8 +47,8 @@ window_set_name_cleanup:
 }
 
 window_t* window_find(xcb_window_t w) {
-  window_t *win = windows;
   pthread_rwlock_rdlock(&window_lock);
+  window_t *win = windows;
   while(win != NULL) {
     if(win->id == w) {
       pthread_rwlock_unlock(&window_lock);
@@ -61,9 +61,12 @@ window_t* window_find(xcb_window_t w) {
 }
 
 window_t *window_minimized_nth(size_t n) {
-  window_list_t *min = windows_minimized;
-  if(min == NULL) return NULL;
   pthread_rwlock_rdlock(&window_lock);
+  window_list_t *min = windows_minimized;
+  if(min == NULL) {
+    pthread_rwlock_unlock(&window_lock);
+    return NULL;
+  }
   if(min->next == NULL || n == 0) {
     pthread_rwlock_unlock(&window_lock);
     return (min == NULL) ? NULL : min->window;
@@ -93,10 +96,13 @@ bool window_set_urgency(window_t *window, bool state) {
 
 void window_show(const window_t *window) {
   window_list_t *next;
-  window_list_t *list = windows_minimized;
-  if(list == NULL) return;
-
   pthread_rwlock_wrlock(&window_lock);
+  window_list_t *list = windows_minimized;
+  if(list == NULL) {
+    pthread_rwlock_unlock(&window_lock);
+    return;
+  }
+
   if(list->window == window) {
     next = list->next;
     free(windows_minimized);
@@ -175,11 +181,14 @@ void window_deinit(void) {
 
 int window_event_destroy(xcb_window_t window, window_t **wp) {
   window_t *w = window_find(window);
-  window_list_t *wlist = windows_minimized;
   window_list_t *t;
   int state;
-  if(w == NULL) return -3;
   pthread_rwlock_wrlock(&window_lock);
+  window_list_t *wlist = windows_minimized;
+  if(w == NULL) {
+    pthread_rwlock_unlock(&window_lock);
+    return -3;
+  }
   if(w->prev != NULL) {
     w->prev->next = w->next;
   } else {
