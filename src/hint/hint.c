@@ -1,35 +1,14 @@
 #include "hint.h"
+#include "atom.h"
 #include <stdlib.h>
 #include <xcb/xcb_icccm.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
 
-#define INTERN_COOKIE(_prefix) \
-  xcb_intern_atom_cookie_t _prefix ## _cookie; \
-  do { \
-    _prefix ## _cookie = xcb_intern_atom(conn, 0, sizeof(_prefix ## _str)-1, \
-                                         _prefix ## _str); \
-  } while(0)
-#define INTERN_REPLY(_prefix, _atom) \
-  xcb_intern_atom_reply_t *_prefix ## _reply; \
-  do { \
-    _prefix ## _reply = xcb_intern_atom_reply(conn, _prefix ## _cookie, NULL);\
-    if(_prefix ## _reply) { \
-      _atom = _prefix ## _reply->atom; \
-      free(_prefix ## _reply); \
-    } \
-  } while(0)
-
 #define MAX_HOSTNAME_LENGTH 50
 #define HINT_CHECKS_PER_SECOND 1
 
-static xcb_atom_t wm_protocols;
-static xcb_atom_t wm_delete_window;
-static xcb_atom_t wm_class;
-static xcb_atom_t wm_state;
-static xcb_atom_t wm_change_state;
-static xcb_atom_t wm_client_machine;
 static xcb_connection_t *conn;
 static const xcb_screen_t *screen;
 static char hostname[MAX_HOSTNAME_LENGTH];
@@ -100,46 +79,24 @@ static void* hint_periodic(void*) {
   return NULL;
 }
 
-static void hint_intern_atoms(void) {
-  char prot_str[] = "WM_PROTOCOLS";
-  char del_win_str[] = "WM_DELETE_WINDOW";
-  char class_str[] = "WM_CLASS";
-  char state_str[] = "WM_STATE";
-  char ch_state_str[] = "WM_CHANGE_STATE";
-  char client_str[] = "WM_CLIENT_MACHINE";
-  INTERN_COOKIE(prot);
-  INTERN_COOKIE(del_win);
-  INTERN_COOKIE(class);
-  INTERN_COOKIE(state);
-  INTERN_COOKIE(ch_state);
-  INTERN_COOKIE(client);
-
-  INTERN_REPLY(prot, wm_protocols);
-  INTERN_REPLY(del_win, wm_delete_window);
-  INTERN_REPLY(class, wm_class);
-  INTERN_REPLY(state, wm_state);
-  INTERN_REPLY(ch_state, wm_change_state);
-  INTERN_REPLY(client, wm_client_machine);
-}
-
 static void hint_set_protocols(void) {
-  xcb_icccm_set_wm_protocols(conn, screen->root, wm_protocols,
-                             1, &wm_delete_window);
+  xcb_icccm_set_wm_protocols(conn, screen->root, WM_PROTOCOLS,
+                             1, &WM_DELETE_WINDOW);
 }
 
 bool hint_delete_window(xcb_window_t window) {
   size_t count;
   xcb_icccm_get_wm_protocols_reply_t protocols;
   xcb_client_message_event_t message = { //sequence???
-    XCB_CLIENT_MESSAGE, 32, .window = window, wm_protocols,
-    { .data32[0] = wm_delete_window, .data32[1] = XCB_CURRENT_TIME }
+    XCB_CLIENT_MESSAGE, 32, .window = window, WM_PROTOCOLS,
+    { .data32[0] = WM_DELETE_WINDOW, .data32[1] = XCB_CURRENT_TIME }
   };
   xcb_get_property_cookie_t cookie =
-    xcb_icccm_get_wm_protocols(conn, window, wm_protocols);
+    xcb_icccm_get_wm_protocols(conn, window, WM_PROTOCOLS);
   if(xcb_icccm_get_wm_protocols_reply(conn, cookie, &protocols, NULL)) {
     count = protocols.atoms_len;
     for(size_t i=0; i<count; i++) {
-      if(protocols.atoms[i] == wm_delete_window) {
+      if(protocols.atoms[i] == WM_DELETE_WINDOW) {
         xcb_send_event(conn, 0, window, 0, (char*)&message);
         xcb_icccm_get_wm_protocols_reply_wipe(&protocols);
         return true;
@@ -150,29 +107,31 @@ bool hint_delete_window(xcb_window_t window) {
   return false;
 }
 
+bool hint_is_initial_state_normal(xcb_window_t window) {
+  xcb_icccm_wm_hints_t hints;
+  xcb_get_property_cookie_t cookie = xcb_icccm_get_wm_hints(conn, window);
+  xcb_icccm_get_wm_hints_reply(conn, cookie, &hints, NULL);
+  return !(hints.flags&XCB_ICCCM_WM_HINT_STATE) || hints.initial_state == 1;
+}
+
 xcb_get_property_reply_t *hint_window_class(xcb_window_t window, size_t max_length) {
   xcb_get_property_cookie_t cookie =
-    xcb_get_property(conn, 0, window, wm_class, XCB_ATOM_STRING, 0, max_length);
+    xcb_get_property(conn, 0, window, WM_CLASS, XCB_ATOM_STRING, 0, max_length);
   return xcb_get_property_reply(conn, cookie, NULL);
 }
 
-bool hint_is_wm_change_state(xcb_atom_t atom) {
-  return atom == wm_change_state;
-}
-
-bool hint_is_iconic_state(uint32_t state) {
-  return state == 3;
-}
+bool hint_is_wm_change_state(xcb_atom_t atom) { return atom == WM_CHANGE_STATE; }
+bool hint_is_iconic_state(uint32_t state) { return state == 3; }
 
 void hint_update_state(xcb_window_t window, WINDOW_STATE state) {
   uint32_t st[] = { (state == WINDOW_WITHDRAWN) ? 0 :
                     (state == WINDOW_ICONIC) ? 3 : 1, XCB_NONE };
-  xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window, wm_state,
-                      wm_state, 32, 2, &st);
+  xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window, WM_STATE,
+                      WM_STATE, 32, 2, &st);
 }
 
 void hint_set_window_hints(xcb_window_t window) {
-  xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window, wm_client_machine,
+  xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window, WM_CLIENT_MACHINE,
                       XCB_ATOM_STRING, 8, hostname_length, hostname);
 }
 
@@ -186,7 +145,7 @@ void hint_init(const hint_init_t *init) {
   set_urgency = init->set_urgency;
   gethostname(hostname, MAX_HOSTNAME_LENGTH);
   hostname_length = strlen(hostname);
-  hint_intern_atoms();
+  atom_init(conn);
   hint_set_protocols();
   pthread_create(&thread, NULL, hint_periodic, NULL);
 }

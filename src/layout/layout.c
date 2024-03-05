@@ -52,14 +52,12 @@ static void layout_adopt(void) {
       }
       free(greply);
       greply = NULL;
-      if(found) {
-        if(areply->map_state == XCB_MAP_STATE_UNMAPPED) {
-          state_changed(children[i], WINDOW_ICONIC);
-          window_minimize(window_find(children[i]));
-        } else {
-          state_changed(children[i], 0);
-          layout_event_map(children[i]);
-        }
+      if(areply->map_state == XCB_MAP_STATE_UNMAPPED) {
+        state_changed(children[i], WINDOW_ICONIC);
+        window_minimize(window_find(children[i]));
+      } else {
+        state_changed(children[i], 0);
+        layout_event_map(children[i], false);
       }
     }
     free(areply);
@@ -183,14 +181,14 @@ void layout_deinit(void) {
   workarea_deinit();
 }
 
-bool layout_event_map(xcb_window_t window) {
+bool layout_event_map(xcb_window_t window, bool iconic) {
   window_t *win = window_find(window);
   if(win == NULL) {
     window_event_create(window);
     win = window_find(window);
   }
 
-  if(!grid_event_map(win)) {
+  if(iconic || !grid_event_map(win)) {
     window_minimize(win);
     return false;
   }
@@ -214,6 +212,7 @@ int layout_event_destroy(xcb_window_t window) {
   return pos;
 }
 
+//TODO: Unmapping from iconic should result in withdrawn
 void layout_event_unmap(xcb_window_t window) {
   grid_event_unmap(window);
   if(window_find(window)->state != WINDOW_ICONIC)

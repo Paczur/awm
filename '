@@ -1,0 +1,49 @@
+#include "atom.h"
+
+#define INTERN_COOKIE(_prefix) \
+  xcb_intern_atom_cookie_t _prefix ## _cookie; \
+  do { \
+    _prefix ## _cookie = xcb_intern_atom(conn, 0, sizeof(_prefix ## _str)-1, \
+                                         _prefix ## _str); \
+  } while(0)
+#define INTERN_REPLY(_prefix, _atom) \
+  xcb_intern_atom_reply_t *_prefix ## _reply; \
+  do { \
+    _prefix ## _reply = xcb_intern_atom_reply(conn, _prefix ## _cookie, NULL);\
+    if(_prefix ## _reply) { \
+      _atom = _prefix ## _reply->atom; \
+      free(_prefix ## _reply); \
+    } \
+  } while(0)
+
+xcb_atom_t wm_protocols;
+xcb_atom_t wm_delete_window;
+xcb_atom_t wm_class;
+xcb_atom_t wm_state;
+xcb_atom_t wm_change_state;
+xcb_atom_t wm_client_machine;
+
+void atom_init(void) {
+  char prot_str[] = "WM_PROTOCOLS";
+  char del_win_str[] = "WM_DELETE_WINDOW";
+  char class_str[] = "WM_CLASS";
+  char state_str[] = "WM_STATE";
+  char ch_state_str[] = "WM_CHANGE_STATE";
+  char client_str[] = "WM_CLIENT_MACHINE";
+  char selection_str[] = "WM_S0";
+  INTERN_COOKIE(prot);
+  INTERN_COOKIE(del_win);
+  INTERN_COOKIE(class);
+  INTERN_COOKIE(state);
+  INTERN_COOKIE(ch_state);
+  INTERN_COOKIE(client);
+
+  INTERN_REPLY(prot, wm_protocols);
+  INTERN_REPLY(del_win, wm_delete_window);
+  INTERN_REPLY(class, wm_class);
+  INTERN_REPLY(state, wm_state);
+  INTERN_REPLY(ch_state, wm_change_state);
+  INTERN_REPLY(client, wm_client_machine);
+}
+
+void atom_deinit(void) {}

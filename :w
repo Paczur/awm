@@ -1,0 +1,6 @@
+#include "atoms.h>
+
+void atoms_init(void) {
+}
+
+void atoms_deinit(void) {}

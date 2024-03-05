@@ -134,8 +134,10 @@ void c_event_message(const xcb_generic_event_t *e) {
 }
 void c_event_map(const xcb_generic_event_t *e) {
   const xcb_map_request_event_t *event = (const xcb_map_request_event_t*)e;
-  if(!layout_event_map(event->window))
+  if(!layout_event_map(event->window,
+                       !hint_is_initial_state_normal(event->window))) {
     c_bar_update_minimized();
+  }
 }
 void c_event_map_notify(const xcb_generic_event_t *e) {
   const xcb_map_notify_event_t *event = (const xcb_map_notify_event_t*)e;
