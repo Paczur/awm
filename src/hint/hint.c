@@ -8,6 +8,7 @@
 
 #define MAX_HOSTNAME_LENGTH 50
 #define HINT_CHECKS_PER_SECOND 1
+#define CLIENT_LIST_STARTING_CAPACITY 10
 
 static xcb_connection_t *conn;
 static const xcb_screen_t *screen;
@@ -19,6 +20,10 @@ static pthread_rwlock_t *window_lock;
 static size_t window_state_offset;
 static size_t window_id_offset;
 static void (*set_urgency)(list_t*, bool);
+
+static xcb_window_t *client_list;
+static size_t client_list_length;
+static size_t client_list_capacity;
 
 static bool thread_run = true;
 static pthread_t thread;
@@ -79,9 +84,12 @@ static void* hint_periodic(void*) {
   return NULL;
 }
 
-static void hint_set_protocols(void) {
+static void hint_set_root(void) {
   xcb_icccm_set_wm_protocols(conn, screen->root, WM_PROTOCOLS,
                              1, &WM_DELETE_WINDOW);
+  xcb_delete_property(conn, screen->root, _NET_CLIENT_LIST);
+  xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, _NET_SUPPORTED,
+                      XCB_ATOM_ATOM, 32, 1, &(xcb_atom_t[]){_NET_CLIENT_LIST});
 }
 
 bool hint_delete_window(xcb_window_t window) {
@@ -123,11 +131,34 @@ xcb_get_property_reply_t *hint_window_class(xcb_window_t window, size_t max_leng
 bool hint_is_wm_change_state(xcb_atom_t atom) { return atom == WM_CHANGE_STATE; }
 bool hint_is_iconic_state(uint32_t state) { return state == 3; }
 
-void hint_update_state(xcb_window_t window, WINDOW_STATE state) {
-  uint32_t st[] = { (state == WINDOW_WITHDRAWN) ? 0 :
-                    (state == WINDOW_ICONIC) ? 3 : 1, XCB_NONE };
+void hint_update_state(xcb_window_t window, size_t focused,
+                       WINDOW_STATE prev, WINDOW_STATE state) {
+  uint32_t st[] = { (state == WINDOW_ICONIC) ? 3 :
+    ((size_t)state != focused) ? 0 : 1, XCB_NONE };
+  if(prev == state && focused == (size_t)state) return;
   xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window, WM_STATE,
                       WM_STATE, 32, 2, &st);
+  if(prev == WINDOW_WITHDRAWN) {
+    if(client_list_length == client_list_capacity) {
+      client_list_capacity += CLIENT_LIST_STARTING_CAPACITY;
+      client_list = realloc(client_list, client_list_capacity*sizeof(xcb_window_t));
+    }
+    client_list[client_list_length++] = window;
+    xcb_change_property(conn, XCB_PROP_MODE_APPEND, screen->root,
+                        _NET_CLIENT_LIST, XCB_ATOM_WINDOW, 32, 1, &window);
+  } else if(state == WINDOW_WITHDRAWN && client_list_length > 0) {
+    size_t i;
+    for(i=0; i<client_list_length; i++) {
+      if(client_list[i] == window) {
+        break;
+      }
+    }
+    for(; i<client_list_length-1; i++) client_list[i] = client_list[i+1];
+    client_list_length--;
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root,
+                        _NET_CLIENT_LIST, XCB_ATOM_WINDOW, 32,
+                        client_list_length, client_list);
+  }
 }
 
 void hint_set_window_hints(xcb_window_t window) {
@@ -146,7 +177,10 @@ void hint_init(const hint_init_t *init) {
   gethostname(hostname, MAX_HOSTNAME_LENGTH);
   hostname_length = strlen(hostname);
   atom_init(conn);
-  hint_set_protocols();
+  hint_set_root();
+  client_list_length = 0;
+  client_list_capacity = CLIENT_LIST_STARTING_CAPACITY;
+  client_list = malloc(CLIENT_LIST_STARTING_CAPACITY*sizeof(xcb_window_t));
   pthread_create(&thread, NULL, hint_periodic, NULL);
 }
 

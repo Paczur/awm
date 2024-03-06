@@ -19,8 +19,9 @@ typedef struct window_t {
   struct window_t *prev;
   xcb_window_t id;
   WINDOW_STATE state; //-2 withdrawn, -1 iconic, 0+ workspace
-  bool urgent;
   char *name;
+  bool urgent;
+  bool minimize;
 } window_t;
 
 typedef struct window_list_t {
@@ -52,7 +53,7 @@ typedef struct layout_init_t {
   xcb_connection_t *conn;
   const xcb_screen_t *screen;
   xcb_get_property_reply_t*(*get_class)(xcb_window_t, size_t);
-  void (*state_changed)(xcb_window_t, WINDOW_STATE);
+  void (*state_changed)(xcb_window_t, size_t, WINDOW_STATE, WINDOW_STATE);
   const rect_t *workareas;
   const rect_t *workareas_fullscreen;
   size_t workarea_count;

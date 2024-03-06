@@ -543,8 +543,12 @@ void grid_event_unmap(xcb_window_t window) {
   size_t pos = grid_xwin2pos(window);
   if(grid_pos_invalid(pos)) return;
   pos = grid_pos2origin(pos);
-  if(grid_pos2win(pos)->state != WINDOW_ICONIC)
+  if(grid_pos2win(pos)->minimize) {
+    grid_pos2win(pos)->state = WINDOW_ICONIC;
+    grid_pos2win(pos)->minimize = false;
+  } else {
     grid_pos2win(pos)->state = WINDOW_WITHDRAWN;
+  }
   grid_pos2cell(pos)->window = NULL;
   grid_pos2cell(pos)->origin = -1;
   grid_update(grid_pos2mon(pos));

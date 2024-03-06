@@ -126,6 +126,7 @@ void window_minimize(window_t *window) {
   window_list_t *min;
   pthread_rwlock_wrlock(&window_lock);
   window->state = WINDOW_ICONIC;
+  window->minimize = true;
   min = malloc(sizeof(window_list_t));
   min->next = windows_minimized;
   windows_minimized = min;
@@ -179,10 +180,10 @@ void window_deinit(void) {
 }
 
 
-int window_event_destroy(xcb_window_t window, window_t **wp) {
+WINDOW_STATE window_event_destroy(xcb_window_t window, window_t **wp) {
   window_t *w = window_find(window);
   window_list_t *t;
-  int state;
+  WINDOW_STATE state;
   pthread_rwlock_wrlock(&window_lock);
   window_list_t *wlist = windows_minimized;
   if(w == NULL) {
