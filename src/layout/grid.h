@@ -28,7 +28,7 @@ void grid_focus(size_t);
 void grid_reset_sizes(size_t);
 void grid_resize_h(size_t, int);
 void grid_resize_w(size_t, int);
-void grid_minimize(size_t);
+bool grid_minimize(size_t);
 bool grid_show(window_t*);
 void grid_destroy(size_t);
 size_t grid_below(void);

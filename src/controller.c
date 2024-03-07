@@ -103,7 +103,7 @@ void c_window_focused_destroy(bool force) {
     layout_destroy(layout_focused());
 }
 void c_window_focused_minimize(void) {
-  layout_focused_minimize();
+  if(!layout_focused_minimize()) return;
   c_bar_update_minimized();
 }
 void c_launcher_show(void) { bar_launcher_show(); }

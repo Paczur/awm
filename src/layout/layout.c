@@ -82,17 +82,16 @@ void layout_minimize(xcb_window_t window) {
   window_t *win = window_find(window);
   if(win->state < 0) return;
   pos = grid_xwin2pos(window);
-  grid_minimize(pos);
-  window_minimize(win);
+  if(grid_minimize(pos)) window_minimize(win);
 }
 
-void layout_focused_minimize(void) {
-  if(grid_focusedw() != NULL) {
-    grid_minimize(grid_focused());
-    window_state_changed(grid_focusedw()->id, grid_focusedw()->state,
-                         WINDOW_ICONIC);
-    window_minimize(grid_focusedw());
-  }
+bool layout_focused_minimize(void) {
+  if(grid_focusedw() == NULL) return false;
+  if(!grid_minimize(grid_focused())) return false;
+  window_state_changed(grid_focusedw()->id, grid_focusedw()->state,
+                       WINDOW_ICONIC);
+  window_minimize(grid_focusedw());
+  return true;
 }
 
 void layout_destroy(size_t n) {

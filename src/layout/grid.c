@@ -457,10 +457,11 @@ bool grid_show(window_t *window) {
   return true;
 }
 
-void grid_minimize(size_t n) {
+bool grid_minimize(size_t n) {
   grid_cell_t *cell = grid_pos2cell(n);
-  if(cell == NULL || cell->window == NULL) return;
-  xcb_unmap_window(conn,cell->window->id);
+  if(cell == NULL || cell->window == NULL) return false;
+  xcb_unmap_window(conn, cell->window->id);
+  return true;
 }
 
 void grid_destroy(size_t n) {

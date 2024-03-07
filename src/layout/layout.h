@@ -33,7 +33,7 @@ void layout_reset_sizes_focused(void);
 void layout_resize_w_focused(int);
 void layout_resize_h_focused(int);
 void layout_show(size_t);
-void layout_focused_minimize(void);
+bool layout_focused_minimize(void);
 void layout_minimize(xcb_window_t);
 void layout_destroy(size_t);
 void layout_restore_window(xcb_window_t, size_t);
