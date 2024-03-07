@@ -87,7 +87,6 @@ static void* hint_periodic(void*) {
 static void hint_set_root(void) {
   xcb_icccm_set_wm_protocols(conn, screen->root, WM_PROTOCOLS,
                              1, &WM_DELETE_WINDOW);
-  xcb_delete_property(conn, screen->root, _NET_CLIENT_LIST);
   xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, _NET_SUPPORTED,
                       XCB_ATOM_ATOM, 32, 1, &(xcb_atom_t[]){_NET_CLIENT_LIST});
 }
@@ -131,8 +130,23 @@ xcb_get_property_reply_t *hint_window_class(xcb_window_t window, size_t max_leng
 bool hint_is_wm_change_state(xcb_atom_t atom) { return atom == WM_CHANGE_STATE; }
 bool hint_is_iconic_state(uint32_t state) { return state == 3; }
 
+size_t hint_get_saved_client_list(xcb_window_t **windows) {
+  size_t len;
+  xcb_get_property_cookie_t cookie =
+    xcb_get_property(conn, 0, screen->root, _NET_CLIENT_LIST, XCB_ATOM_WINDOW,
+                     0, 50);
+  xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, cookie, NULL);
+  len = xcb_get_property_value_length(reply);
+  *windows = malloc(len * sizeof(xcb_window_t));
+  memcpy(*windows, xcb_get_property_value(reply), len);
+  free(reply);
+  xcb_delete_property(conn, screen->root, _NET_CLIENT_LIST);
+  return len/sizeof(xcb_window_t);
+}
+
 void hint_update_state(xcb_window_t window, size_t focused,
                        WINDOW_STATE prev, WINDOW_STATE state) {
+  bool found;
   uint32_t st[] = { (state == WINDOW_ICONIC) ? 3 :
     ((size_t)state != focused) ? 0 : 1, XCB_NONE };
   if(prev == state && focused == (size_t)state) return;
@@ -148,16 +162,20 @@ void hint_update_state(xcb_window_t window, size_t focused,
                         _NET_CLIENT_LIST, XCB_ATOM_WINDOW, 32, 1, &window);
   } else if(state == WINDOW_WITHDRAWN && client_list_length > 0) {
     size_t i;
+    found = false;
     for(i=0; i<client_list_length; i++) {
       if(client_list[i] == window) {
+        found = true;
         break;
       }
     }
-    for(; i<client_list_length-1; i++) client_list[i] = client_list[i+1];
-    client_list_length--;
-    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root,
-                        _NET_CLIENT_LIST, XCB_ATOM_WINDOW, 32,
-                        client_list_length, client_list);
+    if(found) {
+      for(; i<client_list_length-1; i++) client_list[i] = client_list[i+1];
+      client_list_length--;
+      xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root,
+                          _NET_CLIENT_LIST, XCB_ATOM_WINDOW, 32,
+                          client_list_length, client_list);
+    }
   }
 }
 

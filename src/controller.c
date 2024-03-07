@@ -28,6 +28,27 @@ static MODE next_mode = MODE_INVALID;
 { x ## _MIN_WIDTH, SETTINGS_INIT(x ## _ ## n), SETTINGS_INIT(x ## _ ## h), \
   SETTINGS_INIT(x ## _URGENT)}
 
+static void c_bar_update_minimized(void) {
+  bar_update_minimized();
+}
+static void c_bar_update_workspace(size_t n) {
+  bar_update_workspace(n);
+}
+static void c_bar_update_mode(void) {
+  bar_update_mode(mode);
+}
+static void c_adopt_windows(void) {
+  xcb_window_t *windows;
+  size_t len = hint_get_saved_client_list(&windows);
+  printf("len: %lu\n", len);
+  for(size_t i=0; i<len; i++) {
+    printf("window: %u\n", windows[i]);
+    layout_event_map(windows[i], false);
+  }
+  fflush(stdout);
+  free(windows);
+}
+
 void c_set_urgency(window_t *window, bool state) {
   if(layout_window_set_urgency(window, state)) {
     if(window->state >= 0 && window->state < MAX_WORKSPACES &&
@@ -37,16 +58,6 @@ void c_set_urgency(window_t *window, bool state) {
       bar_update_minimized();
     }
   }
-}
-
-static void c_bar_update_minimized(void) {
-  bar_update_minimized();
-}
-static void c_bar_update_workspace(size_t n) {
-  bar_update_workspace(n);
-}
-static void c_bar_update_mode(void) {
-  bar_update_mode(mode);
 }
 
 void c_shutdown(void) { event_stop(); }
@@ -311,7 +322,6 @@ void c_init(void) {
   rect_t *t_rect;
 
   system_init();
-
   hint_init(&(hint_init_t){conn, screen,
             (list_t *const *)layout_get_windowsp(), layout_get_window_lock(),
             offsetof(window_t, state), offsetof(window_t, id),
@@ -327,6 +337,7 @@ void c_init(void) {
   for(size_t i=0; i<bar_count; i++) {
     hint_set_window_hints(bars->id[i]);
   }
+  c_adopt_windows();
 
   c_mode_set(MODE_NORMAL);
   event_listener_add(XCB_MAP_REQUEST, c_event_map);

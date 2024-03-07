@@ -12,7 +12,7 @@ void hint_set_window_hints(xcb_window_t);
 bool hint_is_initial_state_normal(xcb_window_t);
 bool hint_is_wm_change_state(xcb_atom_t);
 bool hint_is_iconic_state(uint32_t);
-
+size_t hint_get_saved_client_list(xcb_window_t**);
 void hint_init(const hint_init_t*);
 void hint_deinit(void);
 

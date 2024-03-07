@@ -232,6 +232,7 @@ void window_event_create(xcb_window_t window) {
   w->next = windows;
   w->urgent = false;
   w->prev = NULL;
+  w->minimize = false;
   windows = w;
   pthread_rwlock_unlock(&window_lock);
 }

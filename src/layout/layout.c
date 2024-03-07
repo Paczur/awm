@@ -12,61 +12,6 @@ static xcb_connection_t *conn;
 static const xcb_screen_t *screen;
 static void (*state_changed)(xcb_window_t, size_t, WINDOW_STATE, WINDOW_STATE);
 
-static void layout_adopt(void) {
-  xcb_query_tree_cookie_t cookie;
-  xcb_query_tree_reply_t *reply;
-  xcb_get_geometry_cookie_t gcookie;
-  xcb_get_geometry_reply_t *greply = NULL;
-  xcb_get_window_attributes_cookie_t acookie;
-  xcb_get_window_attributes_reply_t *areply;
-  size_t len;
-  bool found;
-  xcb_window_t *children;
-
-  cookie = xcb_query_tree_unchecked(conn, screen->root);
-  reply = xcb_query_tree_reply(conn, cookie, NULL);
-  len = xcb_query_tree_children_length(reply);
-  children = xcb_query_tree_children(reply);
-
-  for(size_t i=0; i<len; i++) {
-    acookie = xcb_get_window_attributes_unchecked(conn, children[i]);
-    gcookie = xcb_get_geometry_unchecked(conn, children[i]);
-    window_event_create(children[i]);
-    areply = xcb_get_window_attributes_reply(conn, acookie, NULL);
-    //TODO: FIND BETTER WAY TO CHECK FOR TOP LEVEL WINDOWS
-    if(!areply->override_redirect && areply->map_state != XCB_MAP_STATE_UNVIEWABLE &&
-       areply->_class != XCB_WINDOW_CLASS_INPUT_ONLY) {
-      greply = xcb_get_geometry_reply(conn, gcookie, NULL);
-      found = false;
-      for(size_t j=0; j<workarea_count; j++) {
-        if(greply->x >= workareas[j].x &&
-           greply->y >= workareas[j].y &&
-           greply->x < workareas[j].x+workareas[j].w &&
-           greply->y < workareas[j].y+workareas[j].h) {
-          found = true;
-          break;
-        }
-      }
-      if(!found) {
-        xcb_destroy_window(conn, children[i]);
-      }
-      free(greply);
-      greply = NULL;
-      if(areply->map_state == XCB_MAP_STATE_UNMAPPED) {
-        state_changed(children[i], workspace_focused, WINDOW_WITHDRAWN,
-                      WINDOW_ICONIC);
-        window_minimize(window_find(children[i]));
-      } else {
-        layout_event_map(children[i], false);
-      }
-    }
-    free(areply);
-    areply = NULL;
-  }
-  free(reply);
-}
-
-
 void layout_focus_pick(void) {
   if(!grid_focus_pick())
     workspace_focusedw()->focus = 0;
@@ -171,7 +116,6 @@ void layout_init(const layout_init_t *init) {
               init->get_class);
   workspace_init(init->conn);
   grid_init(init->conn, init->spawn_order, init->spawn_order_length, init->gaps);
-  layout_adopt();
 }
 
 void layout_deinit(void) {
@@ -214,8 +158,6 @@ WINDOW_STATE layout_event_destroy(xcb_window_t window) {
   if(state >= 0) {
     grid_unmark(p);
   }
-  if(state != WINDOW_WITHDRAWN)
-    state_changed(window, workspace_focused, state, WINDOW_WITHDRAWN);
   return state;
 }
 
