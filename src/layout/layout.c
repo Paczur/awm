@@ -117,6 +117,7 @@ void layout_restore_window(xcb_window_t window, size_t workspace) {
 
   if(workspace > MAX_WORKSPACES || !grid_restore_window(win, workspace)) {
     window_minimize(win);
+    win->minimize = false; //already minimized
     window_state_changed(window, WINDOW_WITHDRAWN, win->state);
     return;
   }
