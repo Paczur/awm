@@ -7,13 +7,17 @@
 
 bool hint_delete_window(xcb_window_t);
 xcb_get_property_reply_t *hint_window_class(xcb_window_t, size_t);
-void hint_update_state(xcb_window_t, size_t, WINDOW_STATE, WINDOW_STATE);
+void hint_update_state(xcb_window_t, WINDOW_STATE, WINDOW_STATE);
 void hint_set_window_hints(xcb_window_t);
+void hint_set_current_workspace(size_t workspace);
+void hint_set_focused_window(xcb_window_t);
 bool hint_is_initial_state_normal(xcb_window_t);
 bool hint_is_wm_change_state(xcb_atom_t);
 bool hint_is_iconic_state(uint32_t);
 size_t hint_get_saved_client_list(xcb_window_t**);
-size_t hint_get_saved_desktop(xcb_window_t);
+size_t hint_get_saved_wm_desktop(xcb_window_t);
+size_t hint_get_saved_current_desktop(void);
+xcb_window_t hint_get_saved_focused_window(void);
 void hint_init(const hint_init_t*);
 void hint_deinit(void);
 

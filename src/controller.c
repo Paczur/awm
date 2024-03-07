@@ -41,7 +41,7 @@ static void c_adopt_windows(void) {
   xcb_window_t *windows;
   size_t len = hint_get_saved_client_list(&windows);
   for(size_t i=0; i<len; i++) {
-    layout_restore_window(windows[i], hint_get_saved_desktop(windows[i]));
+    layout_restore_window(windows[i], hint_get_saved_wm_desktop(windows[i]));
   }
   free(windows);
 }
@@ -61,10 +61,12 @@ void c_shutdown(void) { event_stop(); }
 void c_workspace_switch(size_t n) {
   bool prev;
   bool curr;
+  if(n == layout_get_focused_workspace() || n > MAX_WORKSPACES) return;
   size_t min = MIN(n, layout_get_focused_workspace());
   prev = layout_workspace_fullscreen(layout_get_focused_workspace());
   curr = layout_workspace_fullscreen(n);
   layout_switch_workspace(n);
+  hint_set_current_workspace(n);
   if(curr != prev)
     bar_visibility(!curr);
   c_bar_update_workspace(min);
@@ -207,6 +209,7 @@ void c_event_focus(const xcb_generic_event_t *e) {
   const xcb_focus_in_event_t *event = (const xcb_focus_in_event_t*)e;
   if(event->detail != XCB_NOTIFY_DETAIL_POINTER) {
     layout_event_focus(event->event);
+    hint_set_focused_window(event->event);
   }
 }
 void c_event_expose(const xcb_generic_event_t *e) {
@@ -284,7 +287,7 @@ static void c_init_layout(rect_t *t_rect, const rect_t *monitors,
   }
   layout_init_t linit = (layout_init_t) {
     conn, screen, hint_window_class, .workareas = t_rect,
-    .state_changed = hint_update_state,
+    .window_state_changed = hint_update_state,
     .workareas_fullscreen = monitors, .workarea_count = monitor_count,
       .name_replacements = (const char *const [][2])CONFIG_BAR_MINIMIZED_NAME_REPLACEMENTS,
       .name_replacements_length = LENGTH((char*[][2])CONFIG_BAR_MINIMIZED_NAME_REPLACEMENTS),
@@ -334,7 +337,9 @@ void c_init(void) {
   for(size_t i=0; i<bar_count; i++) {
     hint_set_window_hints(bars->id[i]);
   }
+  c_workspace_switch(hint_get_saved_current_desktop());
   c_adopt_windows();
+  layout_event_focus(hint_get_saved_focused_window());
 
   c_mode_set(MODE_NORMAL);
   event_listener_add(XCB_MAP_REQUEST, c_event_map);

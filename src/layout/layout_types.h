@@ -53,7 +53,7 @@ typedef struct layout_init_t {
   xcb_connection_t *conn;
   const xcb_screen_t *screen;
   xcb_get_property_reply_t*(*get_class)(xcb_window_t, size_t);
-  void (*state_changed)(xcb_window_t, size_t, WINDOW_STATE, WINDOW_STATE);
+  void (*window_state_changed)(xcb_window_t, WINDOW_STATE, WINDOW_STATE);
   const rect_t *workareas;
   const rect_t *workareas_fullscreen;
   size_t workarea_count;

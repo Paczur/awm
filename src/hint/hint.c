@@ -29,6 +29,8 @@ static bool thread_run = true;
 static pthread_t thread;
 static size_t workspace_number;
 
+static size_t workspace_focused;
+
 static void* hint_periodic(void*) {
   typedef struct cookie_list_t {
     struct cookie_list_t *next;
@@ -90,7 +92,10 @@ static void hint_set_root(void) {
   xcb_icccm_set_wm_protocols(conn, screen->root, WM_PROTOCOLS,
                              1, &WM_DELETE_WINDOW);
   xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, _NET_SUPPORTED,
-                      XCB_ATOM_ATOM, 32, 1, &(xcb_atom_t[]){_NET_CLIENT_LIST});
+                      XCB_ATOM_ATOM, 32, 4, &(xcb_atom_t[]) {
+                      _NET_CLIENT_LIST, _NET_NUMBER_OF_DESKTOPS,
+                      _NET_CURRENT_DESKTOP, _NET_WM_DESKTOP
+                      });
   xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root,
                       _NET_NUMBER_OF_DESKTOPS, XCB_ATOM_CARDINAL, 32, 1,
                       &temp);
@@ -149,12 +154,18 @@ size_t hint_get_saved_client_list(xcb_window_t **windows) {
   return len/sizeof(xcb_window_t);
 }
 
-size_t hint_get_saved_desktop(xcb_window_t window) {
+size_t hint_get_saved_wm_desktop(xcb_window_t window) {
   uint32_t ret;
   xcb_get_property_cookie_t cookie =
-    xcb_get_property(conn, 0, window, _NET_CURRENT_DESKTOP, XCB_ATOM_CARDINAL,
+    xcb_get_property(conn, 0, window, _NET_WM_DESKTOP, XCB_ATOM_CARDINAL,
                      0, 1);
   xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, cookie, NULL);
+  while(reply == NULL) {
+    cookie =
+    xcb_get_property(conn, 0, window, _NET_WM_DESKTOP, XCB_ATOM_CARDINAL,
+                     0, 1);
+    reply = xcb_get_property_reply(conn, cookie, NULL);
+  }
   if(xcb_get_property_value_length(reply) > 0) {
     ret = *(uint32_t*)xcb_get_property_value(reply);
   } else {
@@ -164,21 +175,76 @@ size_t hint_get_saved_desktop(xcb_window_t window) {
   return ret;
 }
 
-void hint_update_state(xcb_window_t window, size_t focused,
-                       WINDOW_STATE prev, WINDOW_STATE state) {
+size_t hint_get_saved_current_desktop(void) {
+  uint32_t ret;
+  xcb_get_property_cookie_t cookie =
+    xcb_get_property(conn, 0, screen->root, _NET_CURRENT_DESKTOP,
+                     XCB_ATOM_CARDINAL, 0, 1);
+  xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, cookie, NULL);
+  while(reply == NULL) {
+    cookie =
+    xcb_get_property(conn, 0, screen->root, _NET_CURRENT_DESKTOP, XCB_ATOM_CARDINAL,
+                     0, 1);
+    reply = xcb_get_property_reply(conn, cookie, NULL);
+  }
+  if(xcb_get_property_value_length(reply) > 0) {
+    ret = *(uint32_t*)xcb_get_property_value(reply);
+  } else {
+    ret = -1;
+  }
+  free(reply);
+  return ret;
+}
+
+xcb_window_t hint_get_saved_focused_window(void) {
+  xcb_window_t ret;
+  xcb_get_property_cookie_t cookie =
+    xcb_get_property(conn, 0, screen->root, _NET_ACTIVE_WINDOW,
+                     XCB_ATOM_WINDOW, 0, 1);
+  xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, cookie, NULL);
+  while(reply == NULL) {
+    cookie =
+    xcb_get_property(conn, 0, screen->root, _NET_ACTIVE_WINDOW, XCB_ATOM_WINDOW,
+                     0, 1);
+    reply = xcb_get_property_reply(conn, cookie, NULL);
+  }
+  if(xcb_get_property_value_length(reply) > 0) {
+    ret = *(uint32_t*)xcb_get_property_value(reply);
+  } else {
+    ret = -1;
+  }
+  free(reply);
+  return ret;
+}
+
+
+void hint_set_focused_window(xcb_window_t window) {
+  xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root,
+                      _NET_ACTIVE_WINDOW, XCB_ATOM_WINDOW,
+                      32, 1, &window);
+}
+
+void hint_set_current_workspace(size_t workspace) {
+  workspace_focused = workspace;
+  xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root,
+                      _NET_CURRENT_DESKTOP, XCB_ATOM_CARDINAL,
+                      32, 1, &workspace_focused);
+}
+
+void hint_update_state(xcb_window_t window, WINDOW_STATE prev, WINDOW_STATE state) {
   bool found;
   uint32_t st[] = { (state == WINDOW_ICONIC) ? 3 :
-    ((size_t)state != focused) ? 0 : 1, XCB_NONE };
-  if(prev == state && focused == (size_t)state) return;
+    ((size_t)state != workspace_focused) ? 0 : 1, XCB_NONE };
+  if(prev == state && workspace_focused == (size_t)state) return;
   xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window, WM_STATE,
                       WM_STATE, 32, 2, &st);
   if(prev != state) {
     if(state >= 0) {
       xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window,
-                          _NET_CURRENT_DESKTOP, XCB_ATOM_CARDINAL,
+                          _NET_WM_DESKTOP, XCB_ATOM_CARDINAL,
                           32, 1, &state);
     } else if(prev >= 0) {
-      xcb_delete_property(conn, window, _NET_CURRENT_DESKTOP);
+      xcb_delete_property(conn, window, _NET_WM_DESKTOP);
     }
   }
   if(prev == WINDOW_WITHDRAWN) {

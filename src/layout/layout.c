@@ -10,7 +10,7 @@
 
 static xcb_connection_t *conn;
 static const xcb_screen_t *screen;
-static void (*state_changed)(xcb_window_t, size_t, WINDOW_STATE, WINDOW_STATE);
+static void (*window_state_changed)(xcb_window_t, WINDOW_STATE, WINDOW_STATE);
 
 void layout_focus_pick(void) {
   if(!grid_focus_pick())
@@ -89,8 +89,8 @@ void layout_minimize(xcb_window_t window) {
 void layout_focused_minimize(void) {
   if(grid_focusedw() != NULL) {
     grid_minimize(grid_focused());
-    state_changed(grid_focusedw()->id, workspace_focused,
-                  grid_focusedw()->state, WINDOW_ICONIC);
+    window_state_changed(grid_focusedw()->id, grid_focusedw()->state,
+                         WINDOW_ICONIC);
     window_minimize(grid_focusedw());
   }
 }
@@ -106,7 +106,7 @@ void layout_show(size_t n) {
   if(!grid_show(w)) {
     window_minimize(w);
   } else {
-    state_changed(w->id, workspace_focused, WINDOW_ICONIC, workspace_focused);
+    window_state_changed(w->id, WINDOW_ICONIC, workspace_focused);
   }
 }
 
@@ -117,16 +117,16 @@ void layout_restore_window(xcb_window_t window, size_t workspace) {
 
   if(workspace > MAX_WORKSPACES || !grid_restore_window(win, workspace)) {
     window_minimize(win);
-    state_changed(window, workspace_focused, WINDOW_WITHDRAWN, win->state);
+    window_state_changed(window, WINDOW_WITHDRAWN, win->state);
     return;
   }
-  state_changed(window, workspace_focused, WINDOW_WITHDRAWN, win->state);
+  window_state_changed(window, WINDOW_WITHDRAWN, win->state);
 }
 
 void layout_init(const layout_init_t *init) {
   conn = init->conn;
   screen = init->screen;
-  state_changed = init->state_changed;
+  window_state_changed = init->window_state_changed;
   workarea_init((workarea_t*)init->workareas,
                 (workarea_t*)init->workareas_fullscreen, init->workarea_count);
   window_init(init->conn, init->name_replacements, init->name_replacements_length,
@@ -153,16 +153,17 @@ bool layout_event_map(xcb_window_t window, bool iconic) {
 
   if(iconic || !grid_event_map(win)) {
     window_minimize(win);
-    state_changed(window, workspace_focused, old, win->state);
+    window_state_changed(window, old, win->state);
     return false;
   }
-  state_changed(window, workspace_focused, old, win->state);
+  window_state_changed(window, old, win->state);
   return true;
 }
 
 void layout_event_map_notify(xcb_window_t window) {
   window_t *win = window_find(window);
-  state_changed(window, workspace_focused, win->state, workspace_focused);
+  if(win == NULL) return;
+  window_state_changed(window, win->state, workspace_focused);
 }
 
 void layout_event_create(xcb_window_t window) { window_event_create(window); }
@@ -181,8 +182,9 @@ WINDOW_STATE layout_event_destroy(xcb_window_t window) {
 //TODO: Unmapping from iconic should result in withdrawn
 void layout_event_unmap(xcb_window_t window) {
   window_t* win = window_find(window);
+  if(win == NULL) return;
   WINDOW_STATE state = win->state;
   grid_event_unmap(window);
-  state_changed(window, workspace_focused, state, win->state);
+  window_state_changed(window, state, win->state);
   layout_focus_restore();
 }

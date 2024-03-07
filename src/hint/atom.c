@@ -27,7 +27,9 @@
   X(_NET_SUPPORTED); \
   X(_NET_CLIENT_LIST); \
   X(_NET_NUMBER_OF_DESKTOPS); \
-  X(_NET_CURRENT_DESKTOP);
+  X(_NET_CURRENT_DESKTOP); \
+  X(_NET_WM_DESKTOP); \
+  X(_NET_ACTIVE_WINDOW);
 
 #define X(_atom) xcb_atom_t _atom
 atoms;

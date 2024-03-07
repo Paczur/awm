@@ -357,7 +357,7 @@ void grid_place_windowwo(window_t *window, size_t grid_i, bool assume_map,
   int mask = XCB_EVENT_MASK_FOCUS_CHANGE | XCB_EVENT_MASK_ENTER_WINDOW;
   grid_pos2cellwo(grid_i, wo)->window = window;
   grid_pos2cellwo(grid_i, wo)->origin = grid_i;
-  window->state = workspace_focused;
+  window->state = wo;
   if(wo == workspace_focused && !assume_map) {
     xcb_map_window(conn, window->id);
     grid_update(m);
