@@ -26,7 +26,11 @@ void layout_focus_restore(void) {
 const window_list_t *layout_get_minimized(void) { return windows_minimized; }
 window_list_t *const *layout_get_minimizedp(void) { return &windows_minimized; }
 pthread_rwlock_t *layout_get_window_lock(void) { return &window_lock; }
-const workspace_t *layout_get_workspaces(void) { return workspaces; }
+size_t layout_get_workspaces(const workspace_t **work) {
+  if(work != NULL) *work = workspaces;
+  return MAX_WORKSPACES;
+}
+
 const window_t *layout_get_windows(void) { return windows; }
 window_t *const *layout_get_windowsp(void) { return &windows; }
 size_t layout_get_focused_workspace(void) { return workspace_focused; }
@@ -104,6 +108,19 @@ void layout_show(size_t n) {
   } else {
     state_changed(w->id, workspace_focused, WINDOW_ICONIC, workspace_focused);
   }
+}
+
+void layout_restore_window(xcb_window_t window, size_t workspace) {
+  window_t *win;
+  window_event_create(window);
+  win = window_find(window);
+
+  if(workspace > MAX_WORKSPACES || !grid_restore_window(win, workspace)) {
+    window_minimize(win);
+    state_changed(window, workspace_focused, WINDOW_WITHDRAWN, win->state);
+    return;
+  }
+  state_changed(window, workspace_focused, WINDOW_WITHDRAWN, win->state);
 }
 
 void layout_init(const layout_init_t *init) {

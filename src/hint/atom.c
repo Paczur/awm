@@ -25,7 +25,9 @@
   X(WM_CHANGE_STATE); \
   X(WM_CLIENT_MACHINE); \
   X(_NET_SUPPORTED); \
-  X(_NET_CLIENT_LIST);
+  X(_NET_CLIENT_LIST); \
+  X(_NET_NUMBER_OF_DESKTOPS); \
+  X(_NET_CURRENT_DESKTOP);
 
 #define X(_atom) xcb_atom_t _atom
 atoms;

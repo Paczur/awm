@@ -40,12 +40,9 @@ static void c_bar_update_mode(void) {
 static void c_adopt_windows(void) {
   xcb_window_t *windows;
   size_t len = hint_get_saved_client_list(&windows);
-  printf("len: %lu\n", len);
   for(size_t i=0; i<len; i++) {
-    printf("window: %u\n", windows[i]);
-    layout_event_map(windows[i], false);
+    layout_restore_window(windows[i], hint_get_saved_desktop(windows[i]));
   }
-  fflush(stdout);
   free(windows);
 }
 
@@ -322,7 +319,7 @@ void c_init(void) {
   rect_t *t_rect;
 
   system_init();
-  hint_init(&(hint_init_t){conn, screen,
+  hint_init(&(hint_init_t){conn, screen, layout_get_workspaces(NULL),
             (list_t *const *)layout_get_windowsp(), layout_get_window_lock(),
             offsetof(window_t, state), offsetof(window_t, id),
             (void (*)(list_t*, bool))c_set_urgency});

@@ -27,6 +27,7 @@ static size_t client_list_capacity;
 
 static bool thread_run = true;
 static pthread_t thread;
+static size_t workspace_number;
 
 static void* hint_periodic(void*) {
   typedef struct cookie_list_t {
@@ -85,10 +86,14 @@ static void* hint_periodic(void*) {
 }
 
 static void hint_set_root(void) {
+  size_t temp = workspace_number+1;
   xcb_icccm_set_wm_protocols(conn, screen->root, WM_PROTOCOLS,
                              1, &WM_DELETE_WINDOW);
   xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, _NET_SUPPORTED,
                       XCB_ATOM_ATOM, 32, 1, &(xcb_atom_t[]){_NET_CLIENT_LIST});
+  xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root,
+                      _NET_NUMBER_OF_DESKTOPS, XCB_ATOM_CARDINAL, 32, 1,
+                      &temp);
 }
 
 bool hint_delete_window(xcb_window_t window) {
@@ -144,6 +149,21 @@ size_t hint_get_saved_client_list(xcb_window_t **windows) {
   return len/sizeof(xcb_window_t);
 }
 
+size_t hint_get_saved_desktop(xcb_window_t window) {
+  uint32_t ret;
+  xcb_get_property_cookie_t cookie =
+    xcb_get_property(conn, 0, window, _NET_CURRENT_DESKTOP, XCB_ATOM_CARDINAL,
+                     0, 1);
+  xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, cookie, NULL);
+  if(xcb_get_property_value_length(reply) > 0) {
+    ret = *(uint32_t*)xcb_get_property_value(reply);
+  } else {
+    ret = -1;
+  }
+  free(reply);
+  return ret;
+}
+
 void hint_update_state(xcb_window_t window, size_t focused,
                        WINDOW_STATE prev, WINDOW_STATE state) {
   bool found;
@@ -152,6 +172,15 @@ void hint_update_state(xcb_window_t window, size_t focused,
   if(prev == state && focused == (size_t)state) return;
   xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window, WM_STATE,
                       WM_STATE, 32, 2, &st);
+  if(prev != state) {
+    if(state >= 0) {
+      xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window,
+                          _NET_CURRENT_DESKTOP, XCB_ATOM_CARDINAL,
+                          32, 1, &state);
+    } else if(prev >= 0) {
+      xcb_delete_property(conn, window, _NET_CURRENT_DESKTOP);
+    }
+  }
   if(prev == WINDOW_WITHDRAWN) {
     if(client_list_length == client_list_capacity) {
       client_list_capacity += CLIENT_LIST_STARTING_CAPACITY;
@@ -189,6 +218,7 @@ void hint_init(const hint_init_t *init) {
   screen = init->screen;
   window_lock = init->window_lock;
   window_list = init->window_list;
+  workspace_number = init->workspace_number;
   window_state_offset = init->window_state_offset;
   window_id_offset = init->window_id_offset;
   set_urgency = init->set_urgency;

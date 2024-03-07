@@ -11,6 +11,8 @@ extern xcb_atom_t WM_CHANGE_STATE;
 extern xcb_atom_t WM_CLIENT_MACHINE;
 extern xcb_atom_t _NET_SUPPORTED;
 extern xcb_atom_t _NET_CLIENT_LIST;
+extern xcb_atom_t _NET_NUMBER_OF_DESKTOPS;
+extern xcb_atom_t _NET_CURRENT_DESKTOP;
 
 void atom_init(xcb_connection_t*);
 void atom_deinit(void);

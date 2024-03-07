@@ -8,6 +8,7 @@
 typedef struct hint_init_t {
   xcb_connection_t *conn;
   const xcb_screen_t* screen;
+  size_t workspace_number;
   list_t *const *window_list;
   pthread_rwlock_t *window_lock;
   size_t window_state_offset;

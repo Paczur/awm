@@ -8,7 +8,7 @@ void layout_focus_restore(void);
 const window_list_t *layout_get_minimized(void);
 window_list_t *const *layout_get_minimizedp(void);
 pthread_rwlock_t *layout_get_window_lock(void);
-const workspace_t *layout_get_workspaces(void);
+size_t layout_get_workspaces(const workspace_t **);
 const window_t *layout_get_windows(void);
 window_t *const *layout_get_windowsp(void);
 size_t layout_get_focused_workspace(void);
@@ -36,6 +36,7 @@ void layout_show(size_t);
 void layout_focused_minimize(void);
 void layout_minimize(xcb_window_t);
 void layout_destroy(size_t);
+void layout_restore_window(xcb_window_t, size_t);
 
 void layout_init(const layout_init_t*);
 void layout_deinit(void);

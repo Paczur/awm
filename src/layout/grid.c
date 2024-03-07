@@ -19,12 +19,24 @@ static xcb_connection_t *conn;
 bool grid_pos_invalid(size_t n) { return n >= workarea_count*CELLS_PER_WORKAREA; }
 size_t grid_mon2pos(size_t m) { return m*CELLS_PER_WORKAREA; }
 
+static grid_cell_t *grid_pos2cellwo(size_t n, size_t wo) {
+  return grid_pos_invalid(n) ? NULL : workspaces[wo].grid+n;
+}
+
 static grid_cell_t *grid_pos2cell(size_t n) {
   return grid_pos_invalid(n) ? NULL : workspace_focusedw()->grid+n;
 }
 
 static window_t *grid_pos2win(size_t n) {
   return grid_pos_invalid(n) ? NULL : workspace_focusedw()->grid[n].window;
+}
+
+static size_t grid_pos2originwo(size_t n, size_t wo) {
+  const workspace_t *workspace = workspaces+wo;
+  if(grid_pos_invalid(n) ||
+     grid_pos_invalid(workspace->grid[n].origin))
+    return -1;
+  return workspace->grid[n].origin;
 }
 
 static size_t grid_pos2origin(size_t n) {
@@ -182,6 +194,16 @@ size_t grid_pos2mon(size_t n) {
   return grid_pos_invalid(n) ?  SIZE_MAX : n/CELLS_PER_WORKAREA;
 }
 
+size_t grid_next_poswo(size_t wo) {
+  for(size_t i=0; i<spawn_order_len; i++) {
+    if(!grid_pos_invalid(spawn_order[i]) &&
+       grid_pos2originwo(spawn_order[i], wo) != spawn_order[i]) {
+      return spawn_order[i];
+    }
+  }
+  return SIZE_MAX;
+}
+
 size_t grid_next_pos(void) {
   for(size_t i=0; i<spawn_order_len; i++) {
     if(!grid_pos_invalid(spawn_order[i]) &&
@@ -329,6 +351,22 @@ bool grid_focus_restore(void) {
   return grid_focus_pick();
 }
 
+void grid_place_windowwo(window_t *window, size_t grid_i, bool assume_map,
+                         size_t wo) {
+  size_t m = grid_pos2mon(grid_i);
+  int mask = XCB_EVENT_MASK_FOCUS_CHANGE | XCB_EVENT_MASK_ENTER_WINDOW;
+  grid_pos2cellwo(grid_i, wo)->window = window;
+  grid_pos2cellwo(grid_i, wo)->origin = grid_i;
+  window->state = workspace_focused;
+  if(wo == workspace_focused && !assume_map) {
+    xcb_map_window(conn, window->id);
+    grid_update(m);
+  } else {
+    workspaces[wo].update[m] = true;
+  }
+  xcb_change_window_attributes(conn, window->id, XCB_CW_EVENT_MASK, &mask);
+}
+
 void grid_place_window(window_t *window, size_t grid_i, bool assume_map) {
   size_t m = grid_pos2mon(grid_i);
   int mask = XCB_EVENT_MASK_FOCUS_CHANGE | XCB_EVENT_MASK_ENTER_WINDOW;
@@ -472,6 +510,17 @@ size_t grid_to_left(void) {
     i++;
   }
   return t;
+}
+
+bool grid_restore_window(window_t *win, size_t wo) {
+  if(win->state >= WINDOW_WORKSPACE_START) return true;
+  size_t next = grid_next_poswo(wo);
+
+  if(grid_pos_invalid(next))
+    return false;
+
+  grid_place_windowwo(win, next, false, wo);
+  return true;
 }
 
 
