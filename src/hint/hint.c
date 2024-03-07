@@ -94,7 +94,7 @@ static void hint_set_root(void) {
   xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, _NET_SUPPORTED,
                       XCB_ATOM_ATOM, 32, 4, &(xcb_atom_t[]) {
                       _NET_CLIENT_LIST, _NET_NUMBER_OF_DESKTOPS,
-                      _NET_CURRENT_DESKTOP, _NET_WM_DESKTOP
+                      _NET_CURRENT_DESKTOP, _NET_WM_DESKTOP, _NET_ACTIVE_WINDOW
                       });
   xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root,
                       _NET_NUMBER_OF_DESKTOPS, XCB_ATOM_CARDINAL, 32, 1,
