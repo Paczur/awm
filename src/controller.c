@@ -140,8 +140,19 @@ void c_event_map(const xcb_generic_event_t *e) {
   }
 }
 void c_event_map_notify(const xcb_generic_event_t *e) {
+  bool bar = false;
+  const bar_containers_t *bar_containers;
+  size_t bar_container_count;
   const xcb_map_notify_event_t *event = (const xcb_map_notify_event_t*)e;
-  layout_event_map_notify(event->window);
+  bar_container_count = bar_get_containers(&bar_containers);
+  for(size_t i=0; i<bar_container_count; i++) {
+    if(bar_containers->id[i] == event->window) {
+      bar = true;
+      break;
+    }
+  }
+  if(!bar)
+    layout_event_map_notify(event->window);
 }
 void c_event_key_press(const xcb_generic_event_t *e) {
   char buff[10];
