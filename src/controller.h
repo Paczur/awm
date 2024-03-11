@@ -10,6 +10,7 @@ void c_shutdown(void);
 void c_workspace_switch(size_t);
 void c_workspace_fullscreen(size_t);
 void c_workspace_focused_fullscreen(void);
+void c_window_destroy(xcb_window_t, bool);
 void c_window_show(size_t);
 void c_window_focus(size_t);
 void c_window_focused_swap(size_t);

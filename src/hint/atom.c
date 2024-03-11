@@ -18,6 +18,8 @@
   } while(0)
 
 #define atoms \
+  X(UTF8_STRING); \
+  X(WM_NAME); \
   X(WM_PROTOCOLS); \
   X(WM_DELETE_WINDOW); \
   X(WM_CLASS); \
@@ -29,7 +31,11 @@
   X(_NET_NUMBER_OF_DESKTOPS); \
   X(_NET_CURRENT_DESKTOP); \
   X(_NET_WM_DESKTOP); \
-  X(_NET_ACTIVE_WINDOW);
+  X(_NET_ACTIVE_WINDOW); \
+  X(_NET_DESKTOP_NAMES); \
+  X(_NET_SUPPORTING_WM_CHECK); \
+  X(_NET_WM_NAME); \
+  X(_NET_CLOSE_WINDOW);
 
 #define X(_atom) xcb_atom_t _atom
 atoms;

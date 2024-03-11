@@ -457,6 +457,8 @@ bool grid_show(window_t *window) {
   return true;
 }
 
+void grid_minimizew(const window_t *win) { xcb_unmap_window(conn, win->id); }
+
 bool grid_minimize(size_t n) {
   grid_cell_t *cell = grid_pos2cell(n);
   if(cell == NULL || cell->window == NULL) return false;

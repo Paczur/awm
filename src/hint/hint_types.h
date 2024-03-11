@@ -5,10 +5,15 @@
 #include <xcb/xcb.h>
 #include <stdbool.h>
 
+typedef struct hint_init_root_t {
+  size_t workspace_number;
+  char *workspace_names;
+} hint_init_root_t;
+
 typedef struct hint_init_t {
   xcb_connection_t *conn;
   const xcb_screen_t* screen;
-  size_t workspace_number;
+  hint_init_root_t root;
   list_t *const *window_list;
   pthread_rwlock_t *window_lock;
   size_t window_state_offset;

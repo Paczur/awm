@@ -3,6 +3,8 @@
 
 #include <xcb/xcb.h>
 
+extern xcb_atom_t UTF8_STRING;
+extern xcb_atom_t WM_NAME;
 extern xcb_atom_t WM_PROTOCOLS;
 extern xcb_atom_t WM_DELETE_WINDOW;
 extern xcb_atom_t WM_CLASS;
@@ -15,6 +17,10 @@ extern xcb_atom_t _NET_NUMBER_OF_DESKTOPS;
 extern xcb_atom_t _NET_CURRENT_DESKTOP;
 extern xcb_atom_t _NET_WM_DESKTOP;
 extern xcb_atom_t _NET_ACTIVE_WINDOW;
+extern xcb_atom_t _NET_DESKTOP_NAMES;
+extern xcb_atom_t _NET_SUPPORTING_WM_CHECK;
+extern xcb_atom_t _NET_WM_NAME;
+extern xcb_atom_t _NET_CLOSE_WINDOW;
 
 void atom_init(xcb_connection_t*);
 void atom_deinit(void);

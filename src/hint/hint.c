@@ -22,12 +22,14 @@ static size_t window_id_offset;
 static void (*set_urgency)(list_t*, bool);
 
 static xcb_window_t *client_list;
-static size_t client_list_length;
+static size_t client_list_length = 0;
 static size_t client_list_capacity;
 
 static bool thread_run = true;
 static pthread_t thread;
 static size_t workspace_number;
+
+static xcb_window_t supporting_wm_window;
 
 static size_t workspace_focused;
 
@@ -87,18 +89,34 @@ static void* hint_periodic(void*) {
   return NULL;
 }
 
-static void hint_set_root(void) {
+static void hint_set_root(const hint_init_root_t *init) {
   size_t temp = workspace_number+1;
+  supporting_wm_window = xcb_generate_id(conn);
   xcb_icccm_set_wm_protocols(conn, screen->root, WM_PROTOCOLS,
                              1, &WM_DELETE_WINDOW);
   xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, _NET_SUPPORTED,
                       XCB_ATOM_ATOM, 32, 4, &(xcb_atom_t[]) {
                       _NET_CLIENT_LIST, _NET_NUMBER_OF_DESKTOPS,
-                      _NET_CURRENT_DESKTOP, _NET_WM_DESKTOP, _NET_ACTIVE_WINDOW
+                      _NET_CURRENT_DESKTOP, _NET_WM_DESKTOP, _NET_ACTIVE_WINDOW,
+                      _NET_DESKTOP_NAMES, _NET_SUPPORTING_WM_CHECK
                       });
   xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root,
                       _NET_NUMBER_OF_DESKTOPS, XCB_ATOM_CARDINAL, 32, 1,
                       &temp);
+  xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root,
+                      _NET_DESKTOP_NAMES, UTF8_STRING, 8,
+                      init->workspace_number*2, init->workspace_names);
+  xcb_create_window(conn, screen->root_depth, supporting_wm_window, screen->root,
+                    0, 0, 1, 1, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT,
+                    screen->root_visual, 0, NULL);
+  xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root,
+                      _NET_SUPPORTING_WM_CHECK, XCB_ATOM_WINDOW, 32, 1,
+                      &supporting_wm_window);
+  xcb_change_property(conn, XCB_PROP_MODE_REPLACE, supporting_wm_window,
+                      _NET_SUPPORTING_WM_CHECK, XCB_ATOM_WINDOW, 32, 1,
+                      &supporting_wm_window);
+  hint_set_window_hints(supporting_wm_window);
+  free(init->workspace_names);
 }
 
 bool hint_delete_window(xcb_window_t window) {
@@ -137,8 +155,9 @@ xcb_get_property_reply_t *hint_window_class(xcb_window_t window, size_t max_leng
   return xcb_get_property_reply(conn, cookie, NULL);
 }
 
-bool hint_is_wm_change_state(xcb_atom_t atom) { return atom == WM_CHANGE_STATE; }
+xcb_atom_t hint_wm_change_state_atom(void) { return WM_CHANGE_STATE; }
 bool hint_is_iconic_state(uint32_t state) { return state == 3; }
+xcb_atom_t hint_close_window_atom(void) { return _NET_CLOSE_WINDOW; }
 
 size_t hint_get_saved_client_list(xcb_window_t **windows) {
   size_t len;
@@ -275,8 +294,16 @@ void hint_update_state(xcb_window_t window, WINDOW_STATE prev, WINDOW_STATE stat
 }
 
 void hint_set_window_hints(xcb_window_t window) {
+  const char wm_name[] = "IdkWM";
+  const char wm_class[] =  "idkwm\0IdkWM";
   xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window, WM_CLIENT_MACHINE,
                       XCB_ATOM_STRING, 8, hostname_length, hostname);
+  xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window, WM_NAME,
+                      XCB_ATOM_STRING, 8, sizeof(wm_name)-1, wm_name);
+  xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window, WM_CLASS,
+                      XCB_ATOM_STRING, 8, sizeof(wm_class), wm_class);
+  xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window, _NET_WM_NAME,
+                      UTF8_STRING, 8, sizeof(wm_name), wm_name);
 }
 
 void hint_init(const hint_init_t *init) {
@@ -284,20 +311,20 @@ void hint_init(const hint_init_t *init) {
   screen = init->screen;
   window_lock = init->window_lock;
   window_list = init->window_list;
-  workspace_number = init->workspace_number;
+  workspace_number = init->root.workspace_number;
   window_state_offset = init->window_state_offset;
   window_id_offset = init->window_id_offset;
   set_urgency = init->set_urgency;
   gethostname(hostname, MAX_HOSTNAME_LENGTH);
   hostname_length = strlen(hostname);
   atom_init(conn);
-  hint_set_root();
-  client_list_length = 0;
+  hint_set_root(&init->root);
   client_list_capacity = CLIENT_LIST_STARTING_CAPACITY;
   client_list = malloc(CLIENT_LIST_STARTING_CAPACITY*sizeof(xcb_window_t));
   pthread_create(&thread, NULL, hint_periodic, NULL);
 }
 
 void hint_deinit(void) {
+  xcb_destroy_window(conn, supporting_wm_window);
   thread_run = false;
 }

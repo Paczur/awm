@@ -38,6 +38,14 @@ bool layout_workspace_empty(size_t i) { return workspace_empty(i); }
 bool layout_workspace_urgent(size_t i) { return workspace_urgent(i); }
 bool layout_workspace_fullscreen(size_t n) { return workspaces[n].fullscreen; }
 void layout_switch_workspace(size_t n) { workspace_switch(n); }
+char *layout_workspace_names(void) {
+  char *workspace_names = malloc(2*MAX_WORKSPACES*sizeof(char*));
+  for(size_t i=0; i<MAX_WORKSPACES; i++) {
+    workspace_names[i*2] = (i+1)%10 + '0';
+    workspace_names[i*2+1] = 0;
+  }
+  return workspace_names;
+}
 
 bool layout_window_set_urgency(window_t *window, bool state) {
   return window_set_urgency(window, state);
@@ -77,12 +85,18 @@ bool layout_fullscreen(size_t n) {
   return ret;
 }
 
-void layout_minimize(xcb_window_t window) {
-  size_t pos;
+int layout_minimize(xcb_window_t window) {
+  WINDOW_STATE state;
   window_t *win = window_find(window);
-  if(win->state < 0) return;
-  pos = grid_xwin2pos(window);
-  if(grid_minimize(pos)) window_minimize(win);
+  if(win == NULL || win->state < 0) return -1;
+  state = win->state;
+  if((size_t)state == workspace_focused) {
+    grid_minimizew(win);
+  } else {
+    grid_unmark(win);
+  }
+  window_minimize(win);
+  return state;
 }
 
 bool layout_focused_minimize(void) {
@@ -94,9 +108,7 @@ bool layout_focused_minimize(void) {
   return true;
 }
 
-void layout_destroy(size_t n) {
-  grid_destroy(n);
-}
+void layout_destroy(xcb_window_t window) { grid_destroy(grid_xwin2pos(window)); }
 
 void layout_show(size_t n) {
   window_t *w = window_minimized_nth(n);
@@ -179,7 +191,7 @@ WINDOW_STATE layout_event_destroy(xcb_window_t window) {
   return state;
 }
 
-//TODO: Unmapping from iconic should result in withdrawn
+//TODO: Fix bug that clones firefox when it tries to move to diff workspace
 void layout_event_unmap(xcb_window_t window) {
   window_t* win = window_find(window);
   if(win == NULL) return;

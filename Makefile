@@ -2,6 +2,7 @@ BIN=bin
 BUILD=build
 DIRS=$(BIN) $(BUILD)
 SRC=src
+TOOLS=tools
 
 WARN=-Wall -Wextra
 VALGRIND=-D DEBUG -Og -ggdb3
@@ -27,30 +28,30 @@ $(shell mkdir -p $(dir $(DEPENDS)))
 .PHONY: all release debug test test_clean clean
 $(VERBOSE).SILENT:
 
+test_clean:
+	rm -rf $(BIN)/out
 test: test_clean debug
 
 release: CFLAGS += $(RELEASE)
-release: $(BIN)/idkwm rename
+release: binaries
 
 debug: CFLAGS += $(DEBUG)
-debug: $(BIN)/idkwm-debug
-
-rename:
-	mv $(BIN)/idkwm $(BIN)/idkwm-debug
+debug: binaries
 
 clean:
 	rm -rf $(BIN) $(BUILD)
 
-test_clean:
-	rm -rf $(BIN)/out
+binaries: $(BIN)/idkwm tools
 
 $(BIN):
 	mkdir -p $(BIN)
 
-$(BIN)/idkwm: $(SOURCES) | $(BIN)
+tools: $(BIN)/idkmsg
+
+$(BIN)/idkmsg: $(TOOLS)/idkmsg.c | $(BIN)
 	$(CC) $(CFLAGS) -o $@ $^
 
-$(BIN)/idkwm-debug: $(OBJECTS) | $(BIN)
+$(BIN)/idkwm: $(SOURCES) | $(BIN)
 	$(CC) $(CFLAGS) -o $@ $^
 
 $(BUILD):

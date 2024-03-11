@@ -84,6 +84,17 @@ void c_window_show(size_t n) {
   layout_show(n);
   c_bar_update_minimized();
 }
+void c_window_minimize(xcb_window_t window) {
+  WINDOW_STATE state = layout_minimize(window);
+  if(state == -1) return;
+  if((size_t)state != layout_get_focused_workspace())
+    c_bar_update_workspace(state);
+  c_bar_update_minimized();
+}
+void c_window_destroy(xcb_window_t window, bool force) {
+  if(force || !hint_delete_window(window))
+    layout_destroy(window);
+}
 void c_window_focus(size_t n) { layout_focus_by_spawn(n); }
 void c_window_focused_swap(size_t n) { layout_swap_focused_by_spawn(n); }
 void c_window_focus_down(void) { layout_focus(layout_below()); }
@@ -99,8 +110,7 @@ void c_window_focused_resize_h(int n) { layout_resize_h_focused(n); }
 void c_window_focused_reset_size(void) { layout_reset_sizes_focused(); }
 void c_run(const char* cmd) { system_sh(cmd); }
 void c_window_focused_destroy(bool force) {
-  if(force || !hint_delete_window(layout_focused_xwin()))
-    layout_destroy(layout_focused());
+  c_window_destroy(layout_focused_xwin(), force);
 }
 void c_window_focused_minimize(void) {
   if(!layout_focused_minimize()) return;
@@ -136,10 +146,11 @@ void c_bar_block_update_highlight(size_t n, int delay) {
 }
 void c_event_message(const xcb_generic_event_t *e) {
   const xcb_client_message_event_t *event = (const xcb_client_message_event_t*)e;
-  if(hint_is_wm_change_state(event->type) &&
-     event->format == 32 &&
+  if(event->type == hint_wm_change_state_atom() &&
      hint_is_iconic_state(event->data.data8[0])) {
-    layout_minimize(event->window);
+    c_window_minimize(event->window);
+  } else if(event->type == hint_close_window_atom()) {
+    c_window_destroy(event->window, false);
   }
 }
 void c_event_map(const xcb_generic_event_t *e) {
@@ -322,7 +333,8 @@ void c_init(void) {
   rect_t *t_rect;
 
   system_init();
-  hint_init(&(hint_init_t){conn, screen, layout_get_workspaces(NULL),
+  hint_init(&(hint_init_t){conn, screen,
+            {layout_get_workspaces(NULL), layout_workspace_names()},
             (list_t *const *)layout_get_windowsp(), layout_get_window_lock(),
             offsetof(window_t, state), offsetof(window_t, id),
             (void (*)(list_t*, bool))c_set_urgency});

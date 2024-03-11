@@ -24,12 +24,14 @@ void event_listener_add(uint8_t type, void(*f)(const xcb_generic_event_t*)) {
 
 void event_run(xcb_connection_t *conn) {
   xcb_generic_event_t* event;
+  uint8_t type;
   run = true;
   while(run) {
     event = xcb_wait_for_event(conn);
-    if(event->response_type < event_dispatch_length &&
-       event_dispatch[event->response_type] != NULL) {
-      event_dispatch[event->response_type](event);
+    type = event->response_type&0x7F; //Mask highbit - synthetic
+    if(type < event_dispatch_length &&
+       event_dispatch[type] != NULL) {
+      event_dispatch[type](event);
       xcb_flush(conn);
       fflush(stdout);
     }

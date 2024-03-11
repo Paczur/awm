@@ -17,6 +17,7 @@ bool layout_workspace_urgent(size_t);
 bool layout_workspace_fullscreen(size_t);
 void layout_switch_workspace(size_t);
 bool layout_fullscreen(size_t);
+char *layout_workspace_names(void);
 
 bool layout_window_set_urgency(window_t*, bool);
 void layout_focus(size_t);
@@ -34,8 +35,8 @@ void layout_resize_w_focused(int);
 void layout_resize_h_focused(int);
 void layout_show(size_t);
 bool layout_focused_minimize(void);
-void layout_minimize(xcb_window_t);
-void layout_destroy(size_t);
+int layout_minimize(xcb_window_t);
+void layout_destroy(xcb_window_t);
 void layout_restore_window(xcb_window_t, size_t);
 
 void layout_init(const layout_init_t*);
