@@ -97,7 +97,6 @@ static void hint_set_root(const hint_init_root_t *init) {
     _NET_WM_ALLOWED_ACTIONS, _NET_WM_ACTION_MINIMIZE, _NET_WM_ACTION_CLOSE,
     _NET_FRAME_EXTENTS, _NET_REQUEST_FRAME_EXTENTS
   };
-  size_t temp = workspace_number+1;
   supporting_wm_window = xcb_generate_id(conn);
   xcb_icccm_set_wm_protocols(conn, screen->root, WM_PROTOCOLS,
                              1, &WM_DELETE_WINDOW);
@@ -105,7 +104,7 @@ static void hint_set_root(const hint_init_root_t *init) {
                       XCB_ATOM_ATOM, 32, LENGTH(supported), supported);
   xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root,
                       _NET_NUMBER_OF_DESKTOPS, XCB_ATOM_CARDINAL, 32, 1,
-                      &temp);
+                      &workspace_number);
   xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root,
                       _NET_DESKTOP_NAMES, UTF8_STRING, 8,
                       init->workspace_number*2, init->workspace_names);
