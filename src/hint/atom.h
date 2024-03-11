@@ -21,6 +21,11 @@ extern xcb_atom_t _NET_DESKTOP_NAMES;
 extern xcb_atom_t _NET_SUPPORTING_WM_CHECK;
 extern xcb_atom_t _NET_WM_NAME;
 extern xcb_atom_t _NET_CLOSE_WINDOW;
+extern xcb_atom_t _NET_WM_ALLOWED_ACTIONS;
+extern xcb_atom_t _NET_WM_ACTION_MINIMIZE;
+extern xcb_atom_t _NET_WM_ACTION_CLOSE;
+extern xcb_atom_t _NET_FRAME_EXTENTS;
+extern xcb_atom_t _NET_REQUEST_FRAME_EXTENTS;
 
 void atom_init(xcb_connection_t*);
 void atom_deinit(void);

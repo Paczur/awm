@@ -151,6 +151,8 @@ void c_event_message(const xcb_generic_event_t *e) {
     c_window_minimize(event->window);
   } else if(event->type == hint_close_window_atom()) {
     c_window_destroy(event->window, false);
+  } else if(event->type == hint_frame_extents_atom()) {
+    hint_set_frame_extents(event->window);
   }
 }
 void c_event_map(const xcb_generic_event_t *e) {

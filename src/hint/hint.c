@@ -90,16 +90,19 @@ static void* hint_periodic(void*) {
 }
 
 static void hint_set_root(const hint_init_root_t *init) {
+  xcb_atom_t supported[] = {
+    _NET_CLIENT_LIST, _NET_NUMBER_OF_DESKTOPS, _NET_CURRENT_DESKTOP,
+    _NET_WM_DESKTOP, _NET_ACTIVE_WINDOW, _NET_DESKTOP_NAMES,
+    _NET_SUPPORTING_WM_CHECK, _NET_WM_NAME, _NET_CLOSE_WINDOW,
+    _NET_WM_ALLOWED_ACTIONS, _NET_WM_ACTION_MINIMIZE, _NET_WM_ACTION_CLOSE,
+    _NET_FRAME_EXTENTS, _NET_REQUEST_FRAME_EXTENTS
+  };
   size_t temp = workspace_number+1;
   supporting_wm_window = xcb_generate_id(conn);
   xcb_icccm_set_wm_protocols(conn, screen->root, WM_PROTOCOLS,
                              1, &WM_DELETE_WINDOW);
   xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, _NET_SUPPORTED,
-                      XCB_ATOM_ATOM, 32, 4, &(xcb_atom_t[]) {
-                      _NET_CLIENT_LIST, _NET_NUMBER_OF_DESKTOPS,
-                      _NET_CURRENT_DESKTOP, _NET_WM_DESKTOP, _NET_ACTIVE_WINDOW,
-                      _NET_DESKTOP_NAMES, _NET_SUPPORTING_WM_CHECK
-                      });
+                      XCB_ATOM_ATOM, 32, LENGTH(supported), supported);
   xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root,
                       _NET_NUMBER_OF_DESKTOPS, XCB_ATOM_CARDINAL, 32, 1,
                       &temp);
@@ -158,6 +161,7 @@ xcb_get_property_reply_t *hint_window_class(xcb_window_t window, size_t max_leng
 xcb_atom_t hint_wm_change_state_atom(void) { return WM_CHANGE_STATE; }
 bool hint_is_iconic_state(uint32_t state) { return state == 3; }
 xcb_atom_t hint_close_window_atom(void) { return _NET_CLOSE_WINDOW; }
+xcb_atom_t hint_frame_extents_atom(void) { return _NET_REQUEST_FRAME_EXTENTS; }
 
 size_t hint_get_saved_client_list(xcb_window_t **windows) {
   size_t len;
@@ -237,6 +241,13 @@ xcb_window_t hint_get_saved_focused_window(void) {
 }
 
 
+void hint_set_frame_extents(xcb_window_t window) {
+  uint32_t extents[4] = {0};
+  xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window,
+                      _NET_FRAME_EXTENTS, XCB_ATOM_CARDINAL,
+                      32, 4, extents);
+}
+
 void hint_set_focused_window(xcb_window_t window) {
   xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root,
                       _NET_ACTIVE_WINDOW, XCB_ATOM_WINDOW,
@@ -252,6 +263,7 @@ void hint_set_current_workspace(size_t workspace) {
 
 void hint_update_state(xcb_window_t window, WINDOW_STATE prev, WINDOW_STATE state) {
   bool found;
+  xcb_atom_t actions[2] = { _NET_WM_ACTION_CLOSE };
   uint32_t st[] = { (state == WINDOW_ICONIC) ? 3 :
     ((size_t)state != workspace_focused) ? 0 : 1, XCB_NONE };
   if(prev == state && workspace_focused == (size_t)state) return;
@@ -264,6 +276,16 @@ void hint_update_state(xcb_window_t window, WINDOW_STATE prev, WINDOW_STATE stat
                           32, 1, &state);
     } else if(prev >= 0) {
       xcb_delete_property(conn, window, _NET_WM_DESKTOP);
+    }
+    if(prev >= 0 && state < 0) {
+      xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window,
+                          _NET_WM_ALLOWED_ACTIONS, XCB_ATOM_ATOM, 32, 1,
+                          actions);
+    } else if(prev < 0 && state >= 0) {
+      actions[1] = _NET_WM_ACTION_MINIMIZE;
+      xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window,
+                          _NET_WM_ALLOWED_ACTIONS, XCB_ATOM_ATOM, 32, 2,
+                          actions);
     }
   }
   if(prev == WINDOW_WITHDRAWN) {

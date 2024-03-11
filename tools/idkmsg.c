@@ -11,17 +11,14 @@ typedef unsigned int uint;
 enum ATOMS {
   ATOM_WM_CHANGE_STATE,
   ATOM_NET_CLOSE_WINDOW,
-  ATOM_NET_MOVERESIZE_WINDOW,
-  ATOM_NETRESTACK_WINDOW,
   ATOM_NET_REQUEST_FRAME_EXTENTS
 };
 
 char *atom_names[] = {
   "WM_CHANGE_STATE",
   "_NET_CLOSE_WINDOW",
-  "_NET_MOVERESIZE_WINDOW",
-  "_NETRESTACK_WINDOW",
-  "_NET_REQUEST_FRAME_EXTENTS"};
+  "_NET_REQUEST_FRAME_EXTENTS"
+};
 
 enum CHOICE {
   CHOICE_DEST = 1,
@@ -32,8 +29,6 @@ uint8_t atom_fields[LEN(atom_names)] = {
   CHOICE_WINDOW,
   CHOICE_WINDOW,
   CHOICE_WINDOW,
-  CHOICE_WINDOW,
-  CHOICE_WINDOW
 };
 
 xcb_connection_t *conn;
@@ -152,6 +147,9 @@ int main(int argc, const char* argv[]) {
   case ATOM_NET_CLOSE_WINDOW:
     data[0] = XCB_CURRENT_TIME;
     data[1] = 2;
+    send_event();
+  break;
+  case ATOM_NET_REQUEST_FRAME_EXTENTS:
     send_event();
   break;
   }
