@@ -26,6 +26,8 @@ extern xcb_atom_t _NET_WM_ACTION_MINIMIZE;
 extern xcb_atom_t _NET_WM_ACTION_CLOSE;
 extern xcb_atom_t _NET_FRAME_EXTENTS;
 extern xcb_atom_t _NET_REQUEST_FRAME_EXTENTS;
+extern xcb_atom_t _NET_WM_WINDOW_TYPE;
+extern xcb_atom_t _NET_WM_WINDOW_TYPE_SPLASH;
 
 void atom_init(xcb_connection_t*);
 void atom_deinit(void);

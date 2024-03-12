@@ -157,6 +157,15 @@ void c_event_message(const xcb_generic_event_t *e) {
 }
 void c_event_map(const xcb_generic_event_t *e) {
   const xcb_map_request_event_t *event = (const xcb_map_request_event_t*)e;
+  xcb_atom_t *atoms;
+  xcb_atom_t splash = hint_window_type_splash();
+  size_t atom_length = hint_window_type(&atoms, event->window);
+  for(size_t i=0; i<atom_length; i++) {
+    if(atoms[i] == splash) {
+      xcb_map_window(conn, event->window);
+      return;
+    }
+  }
   if(!layout_event_map(event->window,
                        !hint_is_initial_state_normal(event->window))) {
     c_bar_update_minimized();

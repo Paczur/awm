@@ -16,6 +16,8 @@ bool hint_is_initial_state_normal(xcb_window_t);
 xcb_atom_t hint_wm_change_state_atom();
 xcb_atom_t hint_close_window_atom();
 xcb_atom_t hint_frame_extents_atom();
+xcb_atom_t hint_window_type_splash(void);
+size_t hint_window_type(xcb_atom_t**, xcb_window_t);
 bool hint_is_iconic_state(uint32_t);
 size_t hint_get_saved_client_list(xcb_window_t**);
 size_t hint_get_saved_wm_desktop(xcb_window_t);
