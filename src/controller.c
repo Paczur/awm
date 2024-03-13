@@ -238,9 +238,8 @@ void c_event_xkb(const xcb_generic_event_t *e) {
 void c_event_property(const xcb_generic_event_t *e) {
   window_t *win;
   const xcb_property_notify_event_t *event = (const xcb_property_notify_event_t*)e;
-  if(event->atom != hint_hints_atom()) return;
   win = layout_window_find(event->window);
-  if(layout_window_set_urgency(win, hint_urgent_state(event->window))) {
+  if(layout_window_set_urgency(win, hint_urgent_state(event->window, event->atom))) {
     if(win->state == WINDOW_ICONIC) {
       c_bar_update_minimized();
     } else if(win->state != (int)layout_get_focused_workspace()) {

@@ -29,6 +29,9 @@ extern xcb_atom_t _NET_FRAME_EXTENTS;
 extern xcb_atom_t _NET_REQUEST_FRAME_EXTENTS;
 extern xcb_atom_t _NET_WM_WINDOW_TYPE;
 extern xcb_atom_t _NET_WM_WINDOW_TYPE_SPLASH;
+extern xcb_atom_t _NET_WM_STATE;
+extern xcb_atom_t _NET_WM_STATE_DEMANDS_ATTENTION;
+extern xcb_atom_t _NET_WM_STATE_HIDDEN;
 
 void atom_init(xcb_connection_t*);
 void atom_deinit(void);

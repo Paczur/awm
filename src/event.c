@@ -28,6 +28,7 @@ void event_run(xcb_connection_t *conn) {
   run = true;
   while(run) {
     event = xcb_wait_for_event(conn);
+    if(event == NULL) continue;
     type = event->response_type&0x7F; //Mask highbit - synthetic
     if(type < event_dispatch_length &&
        event_dispatch[type] != NULL) {

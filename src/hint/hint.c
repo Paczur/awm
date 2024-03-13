@@ -10,6 +10,7 @@
 #define HINT_CHECKS_PER_SECOND 1
 #define CLIENT_LIST_STARTING_CAPACITY 20
 #define MAX_RESTORE_CLIENT_LIST 50
+#define MAX_WINDOW_STATE_ATOMS 50
 #define MAX_WINDOW_TYPE_ATOMS 50
 
 static xcb_connection_t *conn;
@@ -35,7 +36,8 @@ static void hint_set_root(const hint_init_root_t *init) {
     _NET_SUPPORTING_WM_CHECK, _NET_WM_NAME, _NET_CLOSE_WINDOW,
     _NET_WM_ALLOWED_ACTIONS, _NET_WM_ACTION_MINIMIZE, _NET_WM_ACTION_CLOSE,
     _NET_FRAME_EXTENTS, _NET_REQUEST_FRAME_EXTENTS, _NET_WM_WINDOW_TYPE,
-    _NET_WM_WINDOW_TYPE_SPLASH
+    _NET_WM_WINDOW_TYPE_SPLASH, _NET_WM_STATE, _NET_WM_STATE_HIDDEN,
+    _NET_WM_STATE_DEMANDS_ATTENTION
   };
   supporting_wm_window = xcb_generate_id(conn);
   xcb_icccm_set_wm_protocols(conn, screen->root, WM_PROTOCOLS,
@@ -101,7 +103,9 @@ xcb_atom_t hint_wm_change_state_atom(void) { return WM_CHANGE_STATE; }
 bool hint_is_iconic_state(uint32_t state) { return state == 3; }
 xcb_atom_t hint_close_window_atom(void) { return _NET_CLOSE_WINDOW; }
 xcb_atom_t hint_frame_extents_atom(void) { return _NET_REQUEST_FRAME_EXTENTS; }
-xcb_atom_t hint_hints_atom(void) { return WM_HINTS; }
+bool hint_urgent_atom(xcb_atom_t atom) {
+  return atom == WM_HINTS || atom == _NET_WM_STATE;
+}
 size_t hint_window_type(xcb_atom_t **atoms, xcb_window_t window) {
   size_t ret;
   xcb_get_property_cookie_t cookie =
@@ -116,14 +120,29 @@ size_t hint_window_type(xcb_atom_t **atoms, xcb_window_t window) {
   return ret/sizeof(xcb_atom_t);
 }
 xcb_atom_t hint_window_type_splash(void) { return _NET_WM_WINDOW_TYPE_SPLASH; }
-bool hint_urgent_state(xcb_window_t win) {
-  bool ret;
-  xcb_get_property_cookie_t cookie =
-    xcb_get_property(conn, 0, win, WM_HINTS, WM_HINTS, 0, 1);
-  xcb_get_property_reply_t *reply =
-    xcb_get_property_reply(conn, cookie, NULL);
-  ret = 256 & *(uint32_t*)xcb_get_property_value(reply);
-  free(reply);
+bool hint_urgent_state(xcb_window_t win, xcb_atom_t atom) {
+  bool ret = false;
+  xcb_get_property_cookie_t cookie;
+  xcb_get_property_reply_t *reply;
+  if(atom == WM_HINTS) {
+    cookie = xcb_get_property(conn, 0, win, WM_HINTS, WM_HINTS, 0, 1);
+    reply = xcb_get_property_reply(conn, cookie, NULL);
+    ret = 256 & *(uint32_t*)xcb_get_property_value(reply);
+    free(reply);
+  } else if(atom == _NET_WM_STATE) {
+    cookie = xcb_get_property(conn, 0, win, _NET_WM_STATE, XCB_ATOM_ATOM,
+                              0, MAX_WINDOW_STATE_ATOMS);
+    reply = xcb_get_property_reply(conn, cookie, NULL);
+    size_t size = xcb_get_property_value_length(reply)/sizeof(xcb_atom_t);
+    const xcb_atom_t *arr = xcb_get_property_value(reply);
+    for(size_t i=0; i<size; i++) {
+      if(arr[i] == _NET_WM_STATE_DEMANDS_ATTENTION) {
+        ret = true;
+        break;
+      }
+    }
+    free(reply);
+  }
   return ret;
 }
 
@@ -149,8 +168,8 @@ size_t hint_get_saved_wm_desktop(xcb_window_t window) {
   xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, cookie, NULL);
   while(reply == NULL) {
     cookie =
-    xcb_get_property(conn, 0, window, _NET_WM_DESKTOP, XCB_ATOM_CARDINAL,
-                     0, 1);
+      xcb_get_property(conn, 0, window, _NET_WM_DESKTOP, XCB_ATOM_CARDINAL,
+                       0, 1);
     reply = xcb_get_property_reply(conn, cookie, NULL);
   }
   if(xcb_get_property_value_length(reply) > 0) {
@@ -170,8 +189,8 @@ size_t hint_get_saved_current_desktop(void) {
   xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, cookie, NULL);
   while(reply == NULL) {
     cookie =
-    xcb_get_property(conn, 0, screen->root, _NET_CURRENT_DESKTOP, XCB_ATOM_CARDINAL,
-                     0, 1);
+      xcb_get_property(conn, 0, screen->root, _NET_CURRENT_DESKTOP, XCB_ATOM_CARDINAL,
+                       0, 1);
     reply = xcb_get_property_reply(conn, cookie, NULL);
   }
   if(xcb_get_property_value_length(reply) > 0) {
@@ -191,8 +210,8 @@ xcb_window_t hint_get_saved_focused_window(void) {
   xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, cookie, NULL);
   while(reply == NULL) {
     cookie =
-    xcb_get_property(conn, 0, screen->root, _NET_ACTIVE_WINDOW, XCB_ATOM_WINDOW,
-                     0, 1);
+      xcb_get_property(conn, 0, screen->root, _NET_ACTIVE_WINDOW, XCB_ATOM_WINDOW,
+                       0, 1);
     reply = xcb_get_property_reply(conn, cookie, NULL);
   }
   if(xcb_get_property_value_length(reply) > 0) {
@@ -226,7 +245,6 @@ void hint_set_current_workspace(size_t workspace) {
 }
 
 void hint_update_state(xcb_window_t window, WINDOW_STATE prev, WINDOW_STATE state) {
-  bool found;
   xcb_atom_t actions[2] = { _NET_WM_ACTION_CLOSE };
   uint32_t st[] = { (state == WINDOW_ICONIC) ? 3 :
     ((size_t)state != workspace_focused) ? 0 : 1, XCB_NONE };
@@ -240,6 +258,32 @@ void hint_update_state(xcb_window_t window, WINDOW_STATE prev, WINDOW_STATE stat
                           32, 1, &state);
     } else if(prev >= 0) {
       xcb_delete_property(conn, window, _NET_WM_DESKTOP);
+    }
+    if(state == WINDOW_ICONIC) {
+      xcb_change_property(conn, XCB_PROP_MODE_APPEND, window,
+                          _NET_WM_STATE, XCB_ATOM_ATOM,
+                          32, 1, &(xcb_atom_t[]){_NET_WM_STATE_HIDDEN});
+    } else if(prev == WINDOW_ICONIC) {
+      xcb_get_property_cookie_t cookie =
+        xcb_get_property(conn, 0, window, _NET_WM_STATE, XCB_ATOM_ATOM,
+                         0, MAX_WINDOW_STATE_ATOMS);
+      xcb_get_property_reply_t *reply =
+        xcb_get_property_reply(conn, cookie, NULL);
+      xcb_atom_t *atoms = xcb_get_property_value(reply);
+      size_t size = xcb_get_property_value_length(reply)/sizeof(xcb_window_t);
+      for(size_t i=0; i<size; i++) {
+        if(atoms[i] == _NET_WM_STATE_HIDDEN) {
+          memmove(atoms+i, atoms+i+1, (size-i-1)*sizeof(xcb_atom_t));
+          if(size-1 == 0) {
+            xcb_delete_property(conn, window, _NET_WM_STATE);
+          } else {
+            xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window,
+                                _NET_WM_STATE, XCB_ATOM_ATOM, 32,
+                                size-1, atoms);
+          }
+          break;
+        }
+      }
     }
     if(prev >= 0 && state < 0) {
       xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window,
@@ -261,20 +305,20 @@ void hint_update_state(xcb_window_t window, WINDOW_STATE prev, WINDOW_STATE stat
     xcb_change_property(conn, XCB_PROP_MODE_APPEND, screen->root,
                         _NET_CLIENT_LIST, XCB_ATOM_WINDOW, 32, 1, &window);
   } else if(state == WINDOW_WITHDRAWN && client_list_length > 0) {
-    size_t i;
-    found = false;
-    for(i=0; i<client_list_length; i++) {
+    for(size_t i=0; i<client_list_length; i++) {
       if(client_list[i] == window) {
-        found = true;
+        memmove(client_list+i, client_list+i+1,
+                (client_list_length-i-1)*sizeof(xcb_window_t));
+        client_list_length--;
+        if(client_list_length == 0) {
+          xcb_delete_property(conn, screen->root, _NET_CLIENT_LIST);
+        } else {
+          xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root,
+                              _NET_CLIENT_LIST, XCB_ATOM_WINDOW, 32,
+                              client_list_length, client_list);
+        }
         break;
       }
-    }
-    if(found) {
-      for(; i<client_list_length-1; i++) client_list[i] = client_list[i+1];
-      client_list_length--;
-      xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root,
-                          _NET_CLIENT_LIST, XCB_ATOM_WINDOW, 32,
-                          client_list_length, client_list);
     }
   }
 }
