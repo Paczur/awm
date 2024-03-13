@@ -21,6 +21,7 @@ typedef struct window_t {
   WINDOW_STATE state; //-2 withdrawn, -1 iconic, 0+ workspace
   char *name;
   bool urgent;
+  bool input;
   bool minimize;
 } window_t;
 

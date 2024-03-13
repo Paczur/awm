@@ -106,6 +106,7 @@ xcb_atom_t hint_frame_extents_atom(void) { return _NET_REQUEST_FRAME_EXTENTS; }
 bool hint_urgent_atom(xcb_atom_t atom) {
   return atom == WM_HINTS || atom == _NET_WM_STATE;
 }
+bool hint_input_atom(xcb_atom_t atom) { return atom == WM_HINTS; }
 size_t hint_window_type(xcb_atom_t **atoms, xcb_window_t window) {
   size_t ret;
   xcb_get_property_cookie_t cookie =
@@ -143,6 +144,18 @@ bool hint_urgent_state(xcb_window_t win, xcb_atom_t atom) {
     }
     free(reply);
   }
+  return ret;
+}
+bool hint_input_state(xcb_window_t win) {
+  uint32_t *arr;
+  bool ret = false;
+  xcb_get_property_cookie_t cookie;
+  xcb_get_property_reply_t *reply;
+  cookie = xcb_get_property(conn, 0, win, WM_HINTS, WM_HINTS, 0, 2);
+  reply = xcb_get_property_reply(conn, cookie, NULL);
+  arr = xcb_get_property_value(reply);
+  ret = !(1 & arr[0] && !arr[1]);
+  free(reply);
   return ret;
 }
 

@@ -331,8 +331,10 @@ void grid_adjust_pos(void) {
 
 bool grid_focus_pick(void) {
   workspace_t *workspace = workspace_focusedw();
+  window_t *win;
   for(size_t i=0; i<workarea_count; i++) {
-    if(workspace->grid[i*4].window != NULL) {
+    win = workspace->grid[i*4].window;
+    if(win != NULL && win->input) {
       grid_focus(i*4);
       return true;
     }
@@ -342,7 +344,7 @@ bool grid_focus_pick(void) {
 
 bool grid_focus_restore(void) {
   grid_cell_t *cell = grid_focusedc();
-  if(cell != NULL && cell->window != NULL) {
+  if(cell != NULL && cell->window != NULL && cell->window->input) {
     workspace_focusedw()->focus = cell->origin;
     xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT,
                         cell->window->id, XCB_CURRENT_TIME);
@@ -407,7 +409,7 @@ void grid_swap(size_t n1, size_t n2) {
 void grid_focus(size_t n) {
   grid_cell_t *target = grid_pos2cell(n);
   grid_cell_t *curr = grid_focusedc();
-  if(target == NULL || target->window == NULL ||
+  if(target == NULL || target->window == NULL || !target->window->input ||
      (curr != NULL && curr->window != NULL && curr->window == target->window))
     return;
   xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT,
@@ -490,6 +492,8 @@ size_t grid_to_right(void) {
     next = grid_pos2cell(t)->window;
     i++;
   }
+  if(i == workarea_count*HOR_CELLS_PER_WORKAREA)
+    return grid_focused();
   return t;
 }
 
@@ -508,6 +512,62 @@ size_t grid_to_left(void) {
     next = grid_pos2win(t);
     i++;
   }
+  if(i == workarea_count*HOR_CELLS_PER_WORKAREA)
+    return grid_focused();
+  return t;
+}
+
+size_t grid_focusable_below(void) {
+  size_t t = grid_focused();
+  size_t pos = grid_pos2mon(t)*CELLS_PER_WORKAREA+COMB(X(t), !Y(t));
+  const window_t *win =
+    grid_pos2win(pos);
+  if(win == NULL || !win->input)
+    return t;
+  return pos;
+}
+
+size_t grid_focusable_above(void) { return grid_focusable_below(); }
+
+size_t grid_focusable_to_right(void) {
+  window_t *next = grid_focusedc()->window;
+  size_t t = grid_focused();
+  size_t i = 0;
+  while(grid_focusedc()->window == next &&
+        next != NULL && !next->input &&
+        i < workarea_count*HOR_CELLS_PER_WORKAREA) {
+    if(t == workarea_count*CELLS_PER_WORKAREA-1 ||
+       t == workarea_count*CELLS_PER_WORKAREA-HOR_CELLS_PER_WORKAREA-1) {
+      t = COMB(0, Y(t));
+    } else {
+      t += (X(t) == HOR_CELLS_PER_WORKAREA-1) ? (CELLS_PER_WORKAREA-1) : 1;
+    }
+    next = grid_pos2cell(t)->window;
+    i++;
+  }
+  if(i == workarea_count*HOR_CELLS_PER_WORKAREA)
+    return grid_focused();
+  return t;
+}
+
+size_t grid_focusable_to_left(void) {
+  workspace_t *workspace = workspace_focusedw();
+  window_t *next = grid_focusedc()->window;
+  size_t t = workspace->focus;
+  size_t i = 0;
+  while(grid_focusedc()->window == next &&
+        next != NULL && !next->input &&
+        i < workarea_count*HOR_CELLS_PER_WORKAREA) {
+    if(t == 0 || t == HOR_CELLS_PER_WORKAREA) {
+      t = COMB(1, Y(t)) + (workarea_count-1)*CELLS_PER_WORKAREA;
+    } else {
+      t -= X(t) == 0 ? CELLS_PER_WORKAREA-1 : HOR_CELLS_PER_WORKAREA-1;
+    }
+    next = grid_pos2win(t);
+    i++;
+  }
+  if(i == workarea_count*HOR_CELLS_PER_WORKAREA)
+    return grid_focused();
   return t;
 }
 

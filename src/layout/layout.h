@@ -21,6 +21,7 @@ char *layout_workspace_names(void);
 
 window_t *layout_window_find(xcb_window_t);
 bool layout_window_set_urgency(window_t*, bool);
+bool layout_window_set_input(window_t*, bool);
 void layout_focus(size_t);
 void layout_focus_by_spawn(size_t);
 size_t layout_above(void);

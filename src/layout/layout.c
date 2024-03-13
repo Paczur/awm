@@ -51,6 +51,12 @@ char *layout_workspace_names(void) {
 bool layout_window_set_urgency(window_t *win, bool state) {
   return window_set_urgency(win, state);
 }
+bool layout_window_set_input(window_t *win, bool state) {
+  bool ret = window_set_input(win, state);
+  if(ret && state == false && win->state == (int)workspace_focused)
+    layout_focus_restore();
+  return ret;
+}
 void layout_focus(size_t n) { grid_focus(n); }
 void layout_focus_by_spawn(size_t n) { grid_focus(grid_ord2pos(n)); }
 size_t layout_above(void) { return grid_above(); }

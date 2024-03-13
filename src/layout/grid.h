@@ -36,6 +36,10 @@ size_t grid_below(void);
 size_t grid_above(void);
 size_t grid_to_right(void);
 size_t grid_to_left(void);
+size_t grid_focusable_below(void);
+size_t grid_focusable_above(void);
+size_t grid_focusable_to_right(void);
+size_t grid_focusable_to_left(void);
 bool grid_restore_window(window_t*, size_t);
 
 void grid_init(xcb_connection_t*, const size_t*, size_t, size_t);

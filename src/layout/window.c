@@ -94,6 +94,17 @@ bool window_set_urgency(window_t *window, bool state) {
   return false;
 }
 
+bool window_set_input(window_t *window, bool state) {
+  pthread_rwlock_wrlock(&window_lock);
+  if(window->input != state) {
+    window->input = state;
+    pthread_rwlock_unlock(&window_lock);
+    return true;
+  }
+  pthread_rwlock_unlock(&window_lock);
+  return false;
+}
+
 void window_show(const window_t *window) {
   window_list_t *next;
   pthread_rwlock_wrlock(&window_lock);
@@ -233,6 +244,7 @@ void window_event_create(xcb_window_t window) {
   w->urgent = false;
   w->prev = NULL;
   w->minimize = false;
+  w->input = false;
   windows = w;
   pthread_rwlock_unlock(&window_lock);
 }

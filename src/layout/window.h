@@ -14,6 +14,7 @@ extern pthread_rwlock_t window_lock;
 window_t *window_find(xcb_window_t);
 window_t *window_minimized_nth(size_t n);
 bool window_set_urgency(window_t*, bool);
+bool window_set_input(window_t*, bool);
 void window_show(const window_t *window);
 void window_minimize(window_t*);
 void window_init(xcb_connection_t*, const char *const(*)[2], size_t,

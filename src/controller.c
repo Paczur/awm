@@ -236,15 +236,23 @@ void c_event_xkb(const xcb_generic_event_t *e) {
   shortcut_event_state((xcb_xkb_state_notify_event_t*)e);
 }
 void c_event_property(const xcb_generic_event_t *e) {
-  window_t *win;
+  window_t *win = NULL;
   const xcb_property_notify_event_t *event = (const xcb_property_notify_event_t*)e;
-  win = layout_window_find(event->window);
-  if(layout_window_set_urgency(win, hint_urgent_state(event->window, event->atom))) {
-    if(win->state == WINDOW_ICONIC) {
-      c_bar_update_minimized();
-    } else if(win->state != (int)layout_get_focused_workspace()) {
-      c_bar_update_workspace(win->state);
-    }
+  if(hint_urgent_atom(event->atom)) {
+    win = layout_window_find(event->window);
+    bool state = hint_urgent_state(event->window, event->atom);
+    if(layout_window_set_urgency(win, state)) {
+      if(win->state == WINDOW_ICONIC) {
+        c_bar_update_minimized();
+      } else if(win->state != (int)layout_get_focused_workspace()) {
+        c_bar_update_workspace(win->state);
+      }
+     }
+  }
+  if(hint_input_atom(event->atom)) {
+    if(win == NULL)
+      win = layout_window_find(event->window);
+    layout_window_set_input(win, hint_input_state(event->window));
   }
 }
 
