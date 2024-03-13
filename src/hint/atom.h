@@ -6,6 +6,7 @@
 extern xcb_atom_t UTF8_STRING;
 extern xcb_atom_t WM_NAME;
 extern xcb_atom_t WM_PROTOCOLS;
+extern xcb_atom_t WM_HINTS;
 extern xcb_atom_t WM_DELETE_WINDOW;
 extern xcb_atom_t WM_CLASS;
 extern xcb_atom_t WM_STATE;

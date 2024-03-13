@@ -21,6 +21,7 @@
   X(UTF8_STRING); \
   X(WM_NAME); \
   X(WM_PROTOCOLS); \
+  X(WM_HINTS); \
   X(WM_DELETE_WINDOW); \
   X(WM_CLASS); \
   X(WM_STATE); \

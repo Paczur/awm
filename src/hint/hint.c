@@ -16,80 +16,17 @@ static xcb_connection_t *conn;
 static const xcb_screen_t *screen;
 static char hostname[MAX_HOSTNAME_LENGTH];
 static size_t hostname_length;
-static list_t *const *window_list;
-static pthread_rwlock_t *window_lock;
-
-static size_t window_state_offset;
-static size_t window_id_offset;
-static void (*set_urgency)(list_t*, bool);
 
 static xcb_window_t *client_list;
 static size_t client_list_length = 0;
 static size_t client_list_capacity;
 
 static bool thread_run = true;
-static pthread_t thread;
-static size_t workspace_number;
 
 static xcb_window_t supporting_wm_window;
 
 static size_t workspace_focused;
-
-static void* hint_periodic(void*) {
-  typedef struct cookie_list_t {
-    struct cookie_list_t *next;
-    list_t *window;
-    bool end;
-    xcb_get_property_cookie_t cookie;
-  } cookie_list_t;
-  list_t *curr;
-  cookie_list_t cookie_head;
-  cookie_list_t *cookie_cleanup;
-  cookie_list_t *cookie_p;
-  xcb_icccm_wm_hints_t hints;
-  struct timespec ts =
-    (struct timespec) { .tv_nsec = (HINT_CHECKS_PER_SECOND == 1) ?
-      999999999 :
-      1000000000/HINT_CHECKS_PER_SECOND };
-  thread_run = true;
-  while(thread_run) {
-    pthread_rwlock_rdlock(window_lock);
-    curr = *window_list;
-    cookie_p = &cookie_head;
-    while(curr != NULL) {
-      if(*((WINDOW_STATE*)((char*)curr+window_state_offset)) != WINDOW_WITHDRAWN) {
-        cookie_p->window = curr;
-        cookie_p->end = false;
-        cookie_p->cookie =
-          xcb_icccm_get_wm_hints(conn, *((xcb_window_t*)((char*)curr+window_id_offset)));
-        if(cookie_p->next == NULL) {
-          cookie_p->next = malloc(sizeof(cookie_list_t));
-          cookie_p->next->next = NULL;
-        }
-        cookie_p = cookie_p->next;
-      }
-      curr = curr->next;
-    }
-    cookie_p->end = true;
-    cookie_p = &cookie_head;
-    pthread_rwlock_unlock(window_lock);
-    if(thread_run) {
-      while(cookie_p != NULL && !cookie_p->end) {
-        xcb_icccm_get_wm_hints_reply(conn, cookie_p->cookie, &hints, NULL);
-        set_urgency(cookie_p->window, xcb_icccm_wm_hints_get_urgency(&hints));
-        cookie_p = cookie_p->next;
-      }
-      nanosleep(&ts, &ts);
-    }
-  }
-  cookie_p = cookie_head.next;
-  while(cookie_p != NULL) {
-    cookie_cleanup = cookie_p->next;
-    free(cookie_p);
-    cookie_p = cookie_cleanup;
-  }
-  return NULL;
-}
+static size_t workspace_number;
 
 static void hint_set_root(const hint_init_root_t *init) {
   xcb_atom_t supported[] = {
@@ -164,6 +101,7 @@ xcb_atom_t hint_wm_change_state_atom(void) { return WM_CHANGE_STATE; }
 bool hint_is_iconic_state(uint32_t state) { return state == 3; }
 xcb_atom_t hint_close_window_atom(void) { return _NET_CLOSE_WINDOW; }
 xcb_atom_t hint_frame_extents_atom(void) { return _NET_REQUEST_FRAME_EXTENTS; }
+xcb_atom_t hint_hints_atom(void) { return WM_HINTS; }
 size_t hint_window_type(xcb_atom_t **atoms, xcb_window_t window) {
   size_t ret;
   xcb_get_property_cookie_t cookie =
@@ -178,6 +116,16 @@ size_t hint_window_type(xcb_atom_t **atoms, xcb_window_t window) {
   return ret/sizeof(xcb_atom_t);
 }
 xcb_atom_t hint_window_type_splash(void) { return _NET_WM_WINDOW_TYPE_SPLASH; }
+bool hint_urgent_state(xcb_window_t win) {
+  bool ret;
+  xcb_get_property_cookie_t cookie =
+    xcb_get_property(conn, 0, win, WM_HINTS, WM_HINTS, 0, 1);
+  xcb_get_property_reply_t *reply =
+    xcb_get_property_reply(conn, cookie, NULL);
+  ret = 256 & *(uint32_t*)xcb_get_property_value(reply);
+  free(reply);
+  return ret;
+}
 
 size_t hint_get_saved_client_list(xcb_window_t **windows) {
   size_t len;
@@ -347,19 +295,13 @@ void hint_set_window_hints(xcb_window_t window) {
 void hint_init(const hint_init_t *init) {
   conn = init->conn;
   screen = init->screen;
-  window_lock = init->window_lock;
-  window_list = init->window_list;
   workspace_number = init->root.workspace_number;
-  window_state_offset = init->window_state_offset;
-  window_id_offset = init->window_id_offset;
-  set_urgency = init->set_urgency;
   gethostname(hostname, MAX_HOSTNAME_LENGTH);
   hostname_length = strlen(hostname);
   atom_init(conn);
   hint_set_root(&init->root);
   client_list_capacity = CLIENT_LIST_STARTING_CAPACITY;
   client_list = malloc(CLIENT_LIST_STARTING_CAPACITY*sizeof(xcb_window_t));
-  pthread_create(&thread, NULL, hint_periodic, NULL);
 }
 
 void hint_deinit(void) {

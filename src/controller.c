@@ -46,17 +46,6 @@ static void c_adopt_windows(void) {
   free(windows);
 }
 
-void c_set_urgency(window_t *window, bool state) {
-  if(layout_window_set_urgency(window, state)) {
-    if(window->state >= 0 && window->state < MAX_WORKSPACES &&
-       (size_t)window->state != layout_get_focused_workspace()) {
-      bar_update_workspace(window->state);
-    } else if(window->state == WINDOW_ICONIC) {
-      bar_update_minimized();
-    }
-  }
-}
-
 void c_shutdown(void) { event_stop(); }
 void c_workspace_switch(size_t n) {
   bool prev;
@@ -163,6 +152,7 @@ void c_event_map(const xcb_generic_event_t *e) {
   for(size_t i=0; i<atom_length; i++) {
     if(atoms[i] == splash) {
       xcb_map_window(conn, event->window);
+      free(atoms);
       return;
     }
   }
@@ -170,8 +160,11 @@ void c_event_map(const xcb_generic_event_t *e) {
                        !hint_is_initial_state_normal(event->window))) {
     c_bar_update_minimized();
   }
+  free(atoms);
 }
 void c_event_map_notify(const xcb_generic_event_t *e) {
+  int mask = XCB_EVENT_MASK_FOCUS_CHANGE | XCB_EVENT_MASK_ENTER_WINDOW |
+    XCB_EVENT_MASK_PROPERTY_CHANGE;
   bool bar = false;
   const bar_containers_t *bar_containers;
   size_t bar_container_count;
@@ -185,6 +178,7 @@ void c_event_map_notify(const xcb_generic_event_t *e) {
   }
   if(!bar)
     layout_event_map_notify(event->window);
+  xcb_change_window_attributes(conn, event->window, XCB_CW_EVENT_MASK, &mask);
 }
 void c_event_key_press(const xcb_generic_event_t *e) {
   char buff[10];
@@ -240,6 +234,19 @@ void c_event_expose(const xcb_generic_event_t *e) {
 }
 void c_event_xkb(const xcb_generic_event_t *e) {
   shortcut_event_state((xcb_xkb_state_notify_event_t*)e);
+}
+void c_event_property(const xcb_generic_event_t *e) {
+  window_t *win;
+  const xcb_property_notify_event_t *event = (const xcb_property_notify_event_t*)e;
+  if(event->atom != hint_hints_atom()) return;
+  win = layout_window_find(event->window);
+  if(layout_window_set_urgency(win, hint_urgent_state(event->window))) {
+    if(win->state == WINDOW_ICONIC) {
+      c_bar_update_minimized();
+    } else if(win->state != (int)layout_get_focused_workspace()) {
+      c_bar_update_workspace(win->state);
+    }
+  }
 }
 
 static void convert_shortcuts(SHORTCUT_TYPE type,
@@ -345,10 +352,7 @@ void c_init(void) {
 
   system_init();
   hint_init(&(hint_init_t){conn, screen,
-            {layout_get_workspaces(NULL), layout_workspace_names()},
-            (list_t *const *)layout_get_windowsp(), layout_get_window_lock(),
-            offsetof(window_t, state), offsetof(window_t, id),
-            (void (*)(list_t*, bool))c_set_urgency});
+            {layout_get_workspaces(NULL), layout_workspace_names()}});
   c_init_shortcut();
   system_monitors(&monitors, &monitor_count);
   t_rect = malloc(monitor_count*sizeof(rect_t));
@@ -375,6 +379,7 @@ void c_init(void) {
   event_listener_add(XCB_FOCUS_IN, c_event_focus);
   event_listener_add(XCB_EXPOSE, c_event_expose);
   event_listener_add(XCB_CLIENT_MESSAGE, c_event_message);
+  event_listener_add(XCB_PROPERTY_NOTIFY, c_event_property);
   event_listener_add(system_xkb(), c_event_xkb);
   xcb_flush(conn);
 }

@@ -354,7 +354,6 @@ bool grid_focus_restore(void) {
 void grid_place_windowwo(window_t *window, size_t grid_i, bool assume_map,
                          size_t wo) {
   size_t m = grid_pos2mon(grid_i);
-  int mask = XCB_EVENT_MASK_FOCUS_CHANGE | XCB_EVENT_MASK_ENTER_WINDOW;
   grid_pos2cellwo(grid_i, wo)->window = window;
   grid_pos2cellwo(grid_i, wo)->origin = grid_i;
   window->state = wo;
@@ -364,19 +363,16 @@ void grid_place_windowwo(window_t *window, size_t grid_i, bool assume_map,
   } else {
     workspaces[wo].update[m] = true;
   }
-  xcb_change_window_attributes(conn, window->id, XCB_CW_EVENT_MASK, &mask);
 }
 
 void grid_place_window(window_t *window, size_t grid_i, bool assume_map) {
   size_t m = grid_pos2mon(grid_i);
-  int mask = XCB_EVENT_MASK_FOCUS_CHANGE | XCB_EVENT_MASK_ENTER_WINDOW;
   grid_pos2cell(grid_i)->window = window;
   grid_pos2cell(grid_i)->origin = grid_i;
   window->state = workspace_focused;
   if(!assume_map)
     xcb_map_window(conn, window->id);
   grid_update(m);
-  xcb_change_window_attributes(conn, window->id, XCB_CW_EVENT_MASK, &mask);
   xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT,
                       window->id, XCB_CURRENT_TIME);
 }

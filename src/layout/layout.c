@@ -38,6 +38,7 @@ bool layout_workspace_empty(size_t i) { return workspace_empty(i); }
 bool layout_workspace_urgent(size_t i) { return workspace_urgent(i); }
 bool layout_workspace_fullscreen(size_t n) { return workspaces[n].fullscreen; }
 void layout_switch_workspace(size_t n) { workspace_switch(n); }
+window_t *layout_window_find(xcb_window_t win) { return window_find(win); }
 char *layout_workspace_names(void) {
   char *workspace_names = malloc(2*MAX_WORKSPACES*sizeof(char*));
   for(size_t i=0; i<MAX_WORKSPACES; i++) {
@@ -47,8 +48,8 @@ char *layout_workspace_names(void) {
   return workspace_names;
 }
 
-bool layout_window_set_urgency(window_t *window, bool state) {
-  return window_set_urgency(window, state);
+bool layout_window_set_urgency(window_t *win, bool state) {
+  return window_set_urgency(win, state);
 }
 void layout_focus(size_t n) { grid_focus(n); }
 void layout_focus_by_spawn(size_t n) { grid_focus(grid_ord2pos(n)); }
