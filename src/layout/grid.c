@@ -533,8 +533,7 @@ size_t grid_focusable_to_right(void) {
   window_t *next = grid_focusedc()->window;
   size_t t = grid_focused();
   size_t i = 0;
-  while(grid_focusedc()->window == next &&
-        next != NULL && !next->input &&
+  while((grid_focusedc()->window == next || next == NULL || next->input) &&
         i < workarea_count*HOR_CELLS_PER_WORKAREA) {
     if(t == workarea_count*CELLS_PER_WORKAREA-1 ||
        t == workarea_count*CELLS_PER_WORKAREA-HOR_CELLS_PER_WORKAREA-1) {
@@ -555,8 +554,7 @@ size_t grid_focusable_to_left(void) {
   window_t *next = grid_focusedc()->window;
   size_t t = workspace->focus;
   size_t i = 0;
-  while(grid_focusedc()->window == next &&
-        next != NULL && !next->input &&
+  while((grid_focusedc()->window == next || next == NULL || next->input) &&
         i < workarea_count*HOR_CELLS_PER_WORKAREA) {
     if(t == 0 || t == HOR_CELLS_PER_WORKAREA) {
       t = COMB(1, Y(t)) + (workarea_count-1)*CELLS_PER_WORKAREA;

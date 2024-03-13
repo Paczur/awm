@@ -154,7 +154,7 @@ bool hint_input_state(xcb_window_t win) {
   cookie = xcb_get_property(conn, 0, win, WM_HINTS, WM_HINTS, 0, 2);
   reply = xcb_get_property_reply(conn, cookie, NULL);
   arr = xcb_get_property_value(reply);
-  ret = !(1 & arr[0] && !arr[1]);
+  ret = !(xcb_get_property_value_length(reply) >= 64 &&1 & arr[0] && !arr[1]);
   free(reply);
   return ret;
 }

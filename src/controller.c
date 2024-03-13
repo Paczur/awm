@@ -167,6 +167,7 @@ void c_event_map_notify(const xcb_generic_event_t *e) {
     XCB_EVENT_MASK_PROPERTY_CHANGE;
   bool bar = false;
   const bar_containers_t *bar_containers;
+  window_t *win;
   size_t bar_container_count;
   const xcb_map_notify_event_t *event = (const xcb_map_notify_event_t*)e;
   bar_container_count = bar_get_containers(&bar_containers);
@@ -179,6 +180,9 @@ void c_event_map_notify(const xcb_generic_event_t *e) {
   if(!bar)
     layout_event_map_notify(event->window);
   xcb_change_window_attributes(conn, event->window, XCB_CW_EVENT_MASK, &mask);
+  win = layout_window_find(event->window);
+  if(win != NULL)
+    layout_window_set_input(win, hint_input_state(event->window));
 }
 void c_event_key_press(const xcb_generic_event_t *e) {
   char buff[10];
