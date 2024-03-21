@@ -75,8 +75,9 @@ void c_workspace_fullscreen(size_t n) {
   bool old_state = layout_workspace_isfullscreen(n);
   size_t focused_workspace = layout_workspace_focused();
   if(focused_workspace == n) {
-    bar_visibility(!old_state);
+    bar_visibility(old_state);
   }
+  layout_workspace_fullscreen_toggle(n);
 #define PRINT OUT(n); OUT(focused_workspace); OUT(old_state);
   LOGF(TRACE);
 #undef PRINT
