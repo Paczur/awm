@@ -184,36 +184,17 @@ void c_window_focused_reset_size(void) {
   LOGFE(TRACE);
 }
 void c_run(const char* cmd) {
-  system_sh(cmd);
-#define PRINT OUT(cmd);
-  LOGF(TRACE);
-#undef PRINT
-}
-<<<<<<< HEAD
-void c_window_focus(size_t n) { layout_focus_by_spawn(n); }
-void c_window_focused_swap(size_t n) { layout_swap_focused_by_spawn(n); }
-void c_window_focus_down(void) { layout_focus(layout_below()); }
-void c_window_focus_up(void) { layout_focus(layout_above()); }
-void c_window_focus_left(void) { layout_focus(layout_to_left()); }
-void c_window_focus_right(void) { layout_focus(layout_to_right()); }
-void c_window_focused_swap_down(void) { layout_swap_focused(layout_below()); }
-void c_window_focused_swap_up(void) { layout_swap_focused(layout_above()); }
-void c_window_focused_swap_left(void) { layout_swap_focused(layout_to_left()); }
-void c_window_focused_swap_right(void) { layout_swap_focused(layout_to_right()); }
-void c_window_focused_resize_w(int n) { layout_resize_w_focused(n); }
-void c_window_focused_resize_h(int n) { layout_resize_h_focused(n); }
-void c_window_focused_reset_size(void) { layout_reset_sizes_focused(); }
-void c_run(const char* cmd) {
   const char rstr[] = " >/dev/null 2>&1";
   size_t len = strlen(cmd);
   char *rcmd = malloc(len + sizeof(rstr));
   memcpy(rcmd, cmd, len);
   memcpy(rcmd+len, rstr, sizeof(rstr));
   system_sh(rcmd);
+#define PRINT OUT(rcmd);
+  LOGF(TRACE);
+#undef PRINT
   free(rcmd);
 }
-=======
->>>>>>> b24ac15c6c5524c3b6b1b27ea6fa64879fdf7a0c
 void c_window_focused_destroy(bool force) {
   c_window_destroy(layout_win2xwin(layout_focused()), force);
 }
