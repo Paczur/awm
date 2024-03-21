@@ -57,7 +57,8 @@
   WITH_CHANGE(MOD_NONE,  XK_equal,                 equal_sizes),     \
   WITH_CHANGE(MOD_NONE,  XK_Return,                terminal),        \
   WITH_CHANGE(MOD_NONE,  XK_f,                     fullscreen),      \
-  {MOD_NONE,              XK_r,                     launch},         \
+  {MOD_NONE,             XK_r,                     launch},          \
+  WITH_CHANGE(MOD_NONE,  XK_p,                     screenshot),      \
   WITH_CHANGE(MOD_NONE,  XK_b,                     librewolf)        \
 }
 #define CONFIG_SHORTCUTS_NORMAL_MODE_RELEASE { \

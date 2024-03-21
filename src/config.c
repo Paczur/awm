@@ -50,6 +50,11 @@ F_DEF(insert_mode, c_mode_set(MODE_INSERT);)
 F_DEF(normal_mode, c_mode_set(MODE_NORMAL);)
 F_DEF(mode_force, c_mode_force();)
 F_DEF(fullscreen, c_workspace_focused_fullscreen();)
+F_DEF(screenshot,
+      c_run("scrot -s -q 100 -e "
+            "\"xclip -selection clipboard -t image/png -i "
+            "/home/paczur/Multimedia/Pictures/Screenshots/Scrot/%d-%m-%Y_%H-%M-%S_$wx$h.png\" "
+            "/home/paczur/Multimedia/Pictures/Screenshots/Scrot/%d-%m-%Y_%H-%M-%S_$wx$h.png");)
 
 const char *const config_bar_minimized_name_replacements[][2] =
 CONFIG_BAR_MINIMIZED_NAME_REPLACEMENTS;
