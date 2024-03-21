@@ -42,11 +42,16 @@ bool layout_workspace_fullscreen_toggle(size_t w) {
 
 pthread_rwlock_t *layout_window_lock(void) { return &window_lock; }
 window_list_t *const*layout_minimized(void) { return &windows_minimized; }
-xcb_window_t layout_win2xwin(const window_t *win) { return win->id; }
+xcb_window_t layout_win2xwin(const window_t *win) {
+  return (win==NULL)? (xcb_window_t)-1: win->id;
+}
 window_t *layout_xwin2win(xcb_window_t win) { return window_find(win); }
 window_t *layout_spawn2win(size_t s) { return grid_pos2win(grid_ord2pos(s)); }
 window_t *layout_focused(void) { return grid_focusedw(); }
-bool layout_focus(const window_t *win) { return grid_focus(grid_win2pos(win)); }
+bool layout_focus(const window_t *win) {
+  if(win == NULL) return false;
+  return grid_focus(grid_win2pos(win));
+}
 void layout_focus_restore(void) {
   if(!grid_focus_restore()) {
     workspace_focusedw()->focus = 0;

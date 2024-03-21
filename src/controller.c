@@ -85,7 +85,9 @@ void c_workspace_focused_fullscreen(void) {
   size_t focused_workspace = layout_workspace_focused();
   c_workspace_fullscreen(focused_workspace);
 }
-xcb_window_t c_window_focused(void) { return layout_win2xwin(layout_focused()); }
+xcb_window_t c_window_focused(void) {
+  return layout_win2xwin(layout_focused());
+}
 void c_window_show(size_t n) {
   layout_show(n);
   c_bar_update_minimized();
@@ -94,6 +96,7 @@ void c_window_show(size_t n) {
 #undef PRINT
 }
 bool c_window_minimize(xcb_window_t xwin) {
+  if(xwin == (xcb_window_t)-1) return false;
   window_t *window = layout_xwin2win(xwin);
   if(window == NULL) return false;
   WINDOW_STATE state = layout_minimize(window);

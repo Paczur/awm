@@ -114,7 +114,9 @@
   {"mlterm", "󰆍"}, \
   {"librewolf", ""}, \
   {"gimp", ""}, \
-  {"telegram-desktop", ""} \
+  {"telegram-desktop", ""}, \
+  {"mpv", ""}, \
+  {"feh", ""} \
 }
 
 #define CONFIG_BAR_INFO_MIN_WIDTH 0
