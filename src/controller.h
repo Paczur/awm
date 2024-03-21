@@ -6,13 +6,15 @@
 #include <xcb/xcb.h>
 #include <stdbool.h>
 
-void c_shutdown(void);
+void c_wm_shutdown(void);
 void c_workspace_switch(size_t);
 void c_workspace_fullscreen(size_t);
 void c_workspace_focused_fullscreen(void);
 void c_window_destroy(xcb_window_t, bool);
 void c_window_show(size_t);
 void c_window_focus(size_t);
+bool c_window_minimize(xcb_window_t);
+xcb_window_t c_window_focused(void);
 void c_window_focused_swap(size_t);
 void c_window_focus_down(void);
 void c_window_focus_up(void);

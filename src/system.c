@@ -88,9 +88,8 @@ static void setup_wm(void) {
 }
 static void setup_xkb(void) {
   const xcb_query_extension_reply_t *extreply = NULL;
-  while(extreply == NULL)
-    extreply = xcb_get_extension_data(conn, &xcb_xkb_id);
-  if(extreply->present) {
+  extreply = xcb_get_extension_data(conn, &xcb_xkb_id);
+  if(extreply && extreply->present) {
     xcb_xkb_use_extension(conn, XCB_XKB_MAJOR_VERSION, XCB_XKB_MINOR_VERSION);
     xcb_xkb_select_events(conn,
                           XCB_XKB_ID_USE_CORE_KBD,

@@ -188,6 +188,11 @@ void window_deinit(void) {
   }
   windows_minimized = NULL;
   pthread_rwlock_unlock(&window_lock);
+  for(size_t i=0; i<classes_length; i++) {
+    free(classes[i][1]);
+    free(classes[i][0]);
+  }
+  free(classes);
 }
 
 
