@@ -45,9 +45,8 @@ int system_sh_out(const char *cmd, char *out, size_t len) {
 
 void system_sh(const char* cmd) {
   int pid = vfork();
-  if(pid == 0) {
+  if(pid == 0)
     execl("/bin/sh", "sh", "-c", cmd, NULL);
-  }
 }
 
 static void setup_prefetch(void) {

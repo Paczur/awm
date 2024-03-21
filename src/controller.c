@@ -12,6 +12,7 @@
 #define XK_MISCELLANY //modifiers and special
 #include <X11/keysymdef.h>
 #include <X11/XF86keysym.h>
+#include <string.h>
 
 static MODE mode;
 static MODE next_mode = MODE_INVALID;
@@ -97,7 +98,15 @@ void c_window_focused_swap_right(void) { layout_swap_focused(layout_to_right());
 void c_window_focused_resize_w(int n) { layout_resize_w_focused(n); }
 void c_window_focused_resize_h(int n) { layout_resize_h_focused(n); }
 void c_window_focused_reset_size(void) { layout_reset_sizes_focused(); }
-void c_run(const char* cmd) { system_sh(cmd); }
+void c_run(const char* cmd) {
+  const char rstr[] = " >/dev/null 2>&1";
+  size_t len = strlen(cmd);
+  char *rcmd = malloc(len + sizeof(rstr));
+  memcpy(rcmd, cmd, len);
+  memcpy(rcmd+len, rstr, sizeof(rstr));
+  system_sh(rcmd);
+  free(rcmd);
+}
 void c_window_focused_destroy(bool force) {
   c_window_destroy(layout_focused_xwin(), force);
 }
@@ -112,7 +121,7 @@ void c_launcher_cancel(void) {
   c_mode_set(MODE_NORMAL);
 }
 void c_launcher_run(void) {
-  system_sh(bar_launcher_return());
+  c_run(bar_launcher_return());
   layout_focus_restore();
   c_mode_set(MODE_NORMAL);
 }
