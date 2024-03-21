@@ -14,7 +14,7 @@
 TIMES10(n_imp)
 #undef n_imp
 
-F_DEF(shutdown, c_shutdown();)
+F_DEF(shutdown, c_wm_shutdown();)
 F_DEF(focus_window_down, c_window_focus_down();)
 F_DEF(focus_window_up, c_window_focus_up();)
 F_DEF(focus_window_left, c_window_focus_left();)
@@ -31,7 +31,7 @@ F_DEF(equal_sizes, c_window_focused_reset_size();)
 F_DEF(terminal, c_run(CONFIG_TERMINAL_CMD);)
 F_DEF(destroy, c_window_focused_destroy(false);)
 F_DEF(destroy_force, c_window_focused_destroy(true);)
-F_DEF(minimize, c_window_focused_minimize();)
+F_DEF(minimize, c_window_minimize(c_window_focused());)
 F_DEF(librewolf, c_run("lb");)
 F_DEF(launch, c_launcher_show();)
 F_DEF(volume_mute, c_run("volume m"); c_bar_block_update_highlight(1, 1);)

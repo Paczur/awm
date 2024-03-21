@@ -59,11 +59,12 @@ static void hint_set_root(const hint_init_root_t *init) {
   xcb_change_property(conn, XCB_PROP_MODE_REPLACE, supporting_wm_window,
                       _NET_SUPPORTING_WM_CHECK, XCB_ATOM_WINDOW, 32, 1,
                       &supporting_wm_window);
-  hint_set_window_hints(supporting_wm_window);
+  hint_window_hints_set(supporting_wm_window);
   free(init->workspace_names);
 }
 
-bool hint_delete_window(xcb_window_t window) {
+
+bool hint_window_delete(xcb_window_t window) {
   size_t count;
   xcb_icccm_get_wm_protocols_reply_t protocols;
   xcb_client_message_event_t message = { //sequence???
@@ -86,7 +87,7 @@ bool hint_delete_window(xcb_window_t window) {
   return false;
 }
 
-bool hint_is_initial_state_normal(xcb_window_t window) {
+bool hint_initial_state_normal(xcb_window_t window) {
   xcb_icccm_wm_hints_t hints;
   xcb_get_property_cookie_t cookie = xcb_icccm_get_wm_hints(conn, window);
   xcb_icccm_get_wm_hints_reply(conn, cookie, &hints, NULL);
@@ -99,15 +100,25 @@ xcb_get_property_reply_t *hint_window_class(xcb_window_t window, size_t max_leng
   return xcb_get_property_reply(conn, cookie, NULL);
 }
 
-xcb_atom_t hint_wm_change_state_atom(void) { return WM_CHANGE_STATE; }
-bool hint_is_iconic_state(uint32_t state) { return state == 3; }
-xcb_atom_t hint_close_window_atom(void) { return _NET_CLOSE_WINDOW; }
-xcb_atom_t hint_frame_extents_atom(void) { return _NET_REQUEST_FRAME_EXTENTS; }
-bool hint_urgent_atom(xcb_atom_t atom) {
+bool hint_atom_wm_change_state(xcb_atom_t a) { return WM_CHANGE_STATE == a; }
+
+bool hint_state_iconic(uint32_t state) { return state == 3; }
+
+bool hint_atom_close_window(xcb_atom_t a) { return _NET_CLOSE_WINDOW == a; }
+
+bool hint_atom_frame_extents(xcb_atom_t a) { return _NET_REQUEST_FRAME_EXTENTS == a; }
+
+bool hint_atom_window_type_splash(xcb_atom_t a) {
+  return _NET_WM_WINDOW_TYPE_SPLASH == a;
+}
+
+bool hint_atom_urgent(xcb_atom_t atom) {
   return atom == WM_HINTS || atom == _NET_WM_STATE;
 }
-bool hint_input_atom(xcb_atom_t atom) { return atom == WM_HINTS; }
-size_t hint_window_type(xcb_atom_t **atoms, xcb_window_t window) {
+
+bool hint_atom_input(xcb_atom_t atom) { return atom == WM_HINTS; }
+
+size_t hint_atom_window_type(xcb_atom_t **atoms, xcb_window_t window) {
   size_t ret;
   xcb_get_property_cookie_t cookie =
     xcb_get_property(conn, 0, window, _NET_WM_WINDOW_TYPE, XCB_ATOM_ATOM,
@@ -120,8 +131,8 @@ size_t hint_window_type(xcb_atom_t **atoms, xcb_window_t window) {
   free(reply);
   return ret/sizeof(xcb_atom_t);
 }
-xcb_atom_t hint_window_type_splash(void) { return _NET_WM_WINDOW_TYPE_SPLASH; }
-bool hint_urgent_state(xcb_window_t win, xcb_atom_t atom) {
+
+bool hint_window_urgent(xcb_window_t win, xcb_atom_t atom) {
   bool ret = false;
   xcb_get_property_cookie_t cookie;
   xcb_get_property_reply_t *reply;
@@ -146,7 +157,8 @@ bool hint_urgent_state(xcb_window_t win, xcb_atom_t atom) {
   }
   return ret;
 }
-bool hint_input_state(xcb_window_t win) {
+
+bool hint_window_input(xcb_window_t win) {
   uint32_t *arr;
   bool ret = false;
   xcb_get_property_cookie_t cookie;
@@ -159,7 +171,7 @@ bool hint_input_state(xcb_window_t win) {
   return ret;
 }
 
-size_t hint_get_saved_client_list(xcb_window_t **windows) {
+size_t hint_saved_windows(xcb_window_t **windows) {
   size_t len;
   xcb_get_property_cookie_t cookie =
     xcb_get_property(conn, 0, screen->root, _NET_CLIENT_LIST, XCB_ATOM_WINDOW,
@@ -173,7 +185,7 @@ size_t hint_get_saved_client_list(xcb_window_t **windows) {
   return len/sizeof(xcb_window_t);
 }
 
-size_t hint_get_saved_wm_desktop(xcb_window_t window) {
+size_t hint_saved_window_workspace(xcb_window_t window) {
   uint32_t ret;
   xcb_get_property_cookie_t cookie =
     xcb_get_property(conn, 0, window, _NET_WM_DESKTOP, XCB_ATOM_CARDINAL,
@@ -194,7 +206,7 @@ size_t hint_get_saved_wm_desktop(xcb_window_t window) {
   return ret;
 }
 
-size_t hint_get_saved_current_desktop(void) {
+size_t hint_saved_workspace_focused(void) {
   uint32_t ret;
   xcb_get_property_cookie_t cookie =
     xcb_get_property(conn, 0, screen->root, _NET_CURRENT_DESKTOP,
@@ -215,7 +227,7 @@ size_t hint_get_saved_current_desktop(void) {
   return ret;
 }
 
-xcb_window_t hint_get_saved_focused_window(void) {
+xcb_window_t hint_saved_window_focused(void) {
   xcb_window_t ret;
   xcb_get_property_cookie_t cookie =
     xcb_get_property(conn, 0, screen->root, _NET_ACTIVE_WINDOW,
@@ -237,27 +249,28 @@ xcb_window_t hint_get_saved_focused_window(void) {
 }
 
 
-void hint_set_frame_extents(xcb_window_t window) {
+void hint_frame_extents_set(xcb_window_t window) {
   uint32_t extents[4] = {0};
   xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window,
                       _NET_FRAME_EXTENTS, XCB_ATOM_CARDINAL,
                       32, 4, extents);
 }
 
-void hint_set_focused_window(xcb_window_t window) {
+void hint_window_focused_set(xcb_window_t window) {
   xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root,
                       _NET_ACTIVE_WINDOW, XCB_ATOM_WINDOW,
                       32, 1, &window);
 }
 
-void hint_set_current_workspace(size_t workspace) {
+void hint_workspace_focused_set(size_t workspace) {
   workspace_focused = workspace;
   xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root,
                       _NET_CURRENT_DESKTOP, XCB_ATOM_CARDINAL,
                       32, 1, &workspace_focused);
 }
 
-void hint_update_state(xcb_window_t window, WINDOW_STATE prev, WINDOW_STATE state) {
+void hint_window_update_state(xcb_window_t window, WINDOW_STATE prev,
+                              WINDOW_STATE state) {
   xcb_atom_t actions[2] = { _NET_WM_ACTION_CLOSE };
   uint32_t st[] = { (state == WINDOW_ICONIC) ? 3 :
     ((size_t)state != workspace_focused) ? 0 : 1, XCB_NONE };
@@ -297,6 +310,7 @@ void hint_update_state(xcb_window_t window, WINDOW_STATE prev, WINDOW_STATE stat
           break;
         }
       }
+      free(reply);
     }
     if(prev >= 0 && state < 0) {
       xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window,
@@ -336,7 +350,7 @@ void hint_update_state(xcb_window_t window, WINDOW_STATE prev, WINDOW_STATE stat
   }
 }
 
-void hint_set_window_hints(xcb_window_t window) {
+void hint_window_hints_set(xcb_window_t window) {
   const char wm_name[] = "IdkWM";
   const char wm_class[] =  "idkwm\0IdkWM";
   xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window, WM_CLIENT_MACHINE,

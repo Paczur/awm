@@ -12,33 +12,15 @@ static xcb_connection_t *conn;
 static const xcb_screen_t *screen;
 static void (*window_state_changed)(xcb_window_t, WINDOW_STATE, WINDOW_STATE);
 
-void layout_focus_pick(void) {
-  if(!grid_focus_pick())
-    workspace_focusedw()->focus = 0;
-}
-
-void layout_focus_restore(void) {
-  if(!grid_focus_restore()) {
-    workspace_focusedw()->focus = 0;
-  }
-}
-
-const window_list_t *layout_get_minimized(void) { return windows_minimized; }
-window_list_t *const *layout_get_minimizedp(void) { return &windows_minimized; }
-pthread_rwlock_t *layout_get_window_lock(void) { return &window_lock; }
-size_t layout_get_workspaces(const workspace_t **work) {
-  if(work != NULL) *work = workspaces;
+size_t layout_workspaces(const workspace_t **w) {
+  if(w != NULL) *w = workspaces;
   return MAX_WORKSPACES;
 }
-
-const window_t *layout_get_windows(void) { return windows; }
-window_t *const *layout_get_windowsp(void) { return &windows; }
-size_t layout_get_focused_workspace(void) { return workspace_focused; }
-bool layout_workspace_empty(size_t i) { return workspace_empty(i); }
-bool layout_workspace_urgent(size_t i) { return workspace_urgent(i); }
-bool layout_workspace_fullscreen(size_t n) { return workspaces[n].fullscreen; }
-void layout_switch_workspace(size_t n) { workspace_switch(n); }
-window_t *layout_window_find(xcb_window_t win) { return window_find(win); }
+size_t layout_workspace_focused(void) { return workspace_focused; }
+bool layout_workspace_isempty(size_t w) { return workspace_empty(w); }
+bool layout_workspace_isurgent(size_t w) { return workspace_urgent(w); }
+bool layout_workspace_isfullscreen(size_t w) { return workspaces[w].fullscreen; }
+void layout_workspace_switch(size_t w) { workspace_switch(w); }
 char *layout_workspace_names(void) {
   char *workspace_names = malloc(2*MAX_WORKSPACES*sizeof(char*));
   for(size_t i=0; i<MAX_WORKSPACES; i++) {
@@ -47,78 +29,56 @@ char *layout_workspace_names(void) {
   }
   return workspace_names;
 }
+bool layout_workspace_fullscreen_toggle(size_t w) {
+  bool ret = workspace_fullscreen(w);
+  if(w == workspace_focused) {
+    for(size_t i=0; i<workarea_count; i++)
+      grid_update(i);
+  } else {
+    workspace_update(w);
+  }
+  return ret;
+}
 
-bool layout_window_set_urgency(window_t *win, bool state) {
+pthread_rwlock_t *layout_window_lock(void) { return &window_lock; }
+window_list_t *const*layout_minimized(void) { return &windows_minimized; }
+xcb_window_t layout_win2xwin(const window_t *win) { return win->id; }
+window_t *layout_xwin2win(xcb_window_t win) { return window_find(win); }
+window_t *layout_spawn2win(size_t s) { return grid_pos2win(grid_ord2pos(s)); }
+window_t *layout_focused(void) { return grid_focusedw(); }
+bool layout_focus(const window_t *win) { return grid_focus(grid_win2pos(win)); }
+void layout_focus_restore(void) {
+  if(!grid_focus_restore()) {
+    workspace_focusedw()->focus = 0;
+  }
+}
+window_t *layout_above(void) { return grid_pos2win(grid_above()); }
+window_t *layout_below(void) { return grid_pos2win(grid_below()); }
+window_t *layout_to_right(void) { return grid_pos2win(grid_to_right()); }
+window_t *layout_to_left(void) { return grid_pos2win(grid_to_left()); }
+bool layout_urgency_set(window_t *win, bool state) {
   return window_set_urgency(win, state);
 }
-bool layout_window_set_input(window_t *win, bool state) {
+bool layout_input_set(window_t *win, bool state) {
   bool ret = window_set_input(win, state);
   if(ret && state == false && win->state == (int)workspace_focused)
     layout_focus_restore();
   return ret;
 }
-void layout_focus(size_t n) { grid_focus(n); }
-void layout_focus_by_spawn(size_t n) { grid_focus(grid_ord2pos(n)); }
-size_t layout_above(void) { return grid_above(); }
-size_t layout_below(void) { return grid_below(); }
-size_t layout_to_right(void) { return grid_to_right(); }
-size_t layout_to_left(void) { return grid_to_left(); }
-size_t layout_focused(void) { return grid_focused(); }
-void layout_swap_focused(size_t n) { grid_swap(layout_focused(), n); }
-void layout_swap_focused_by_spawn(size_t n) { grid_swap(layout_focused(),
-                                                        grid_ord2pos(n)); }
-void layout_reset_sizes_focused(void) {
-  grid_reset_sizes(grid_pos2mon(grid_focused()));
+bool layout_swap(const window_t *win1, const window_t *win2) {
+  return grid_swap(grid_win2pos(win1), grid_win2pos(win2));
 }
-void layout_resize_w_focused(int n) {
-  grid_resize_w(grid_pos2mon(grid_focused()), n);
+void layout_reset_sizes(const window_t *win) {
+  grid_reset_sizes(grid_pos2mon(grid_win2pos(win)));
 }
-void layout_resize_h_focused(int n) {
-  grid_resize_h(grid_pos2mon(grid_focused()), n);
+void layout_resize_w(const window_t *win, int n) {
+  grid_resize_w(grid_pos2mon(grid_win2pos(win)), n);
 }
-xcb_window_t layout_focused_xwin(void) {
-  const window_t *w = grid_focusedw();
-  return (w == NULL) ? (xcb_window_t)-1 : w->id;
+void layout_resize_h(const window_t *win, int n) {
+  grid_resize_h(grid_pos2mon(grid_win2pos(win)), n);
 }
-
-bool layout_fullscreen(size_t n) {
-  bool ret = workspace_fullscreen(n);
-  if(n == workspace_focused) {
-    for(size_t i=0; i<workarea_count; i++)
-      grid_update(i);
-  } else {
-    workspace_update(n);
-  }
-  return ret;
-}
-
-int layout_minimize(xcb_window_t window) {
-  WINDOW_STATE state;
-  window_t *win = window_find(window);
-  if(win == NULL || win->state < 0) return -1;
-  state = win->state;
-  if((size_t)state == workspace_focused) {
-    grid_minimizew(win);
-  } else {
-    grid_unmark(win);
-  }
-  window_minimize(win);
-  return state;
-}
-
-bool layout_focused_minimize(void) {
-  if(grid_focusedw() == NULL) return false;
-  if(!grid_minimize(grid_focused())) return false;
-  window_state_changed(grid_focusedw()->id, grid_focusedw()->state,
-                       WINDOW_ICONIC);
-  window_minimize(grid_focusedw());
-  return true;
-}
-
-void layout_destroy(xcb_window_t window) { grid_destroy(grid_xwin2pos(window)); }
-
-void layout_show(size_t n) {
-  window_t *w = window_minimized_nth(n);
+void layout_show(size_t p) {
+  window_t *w = window_minimized_nth(p);
   if(w == NULL) return;
   window_show(w);
   if(!grid_show(w)) {
@@ -127,8 +87,21 @@ void layout_show(size_t n) {
     window_state_changed(w->id, WINDOW_ICONIC, workspace_focused);
   }
 }
-
-void layout_restore_window(xcb_window_t window, size_t workspace) {
+int layout_minimize(window_t *win) {
+  WINDOW_STATE state;
+  if(win == NULL || win->state < 0) return WINDOW_INVALID;
+  state = win->state;
+  if((size_t)state == workspace_focused) {
+    grid_minimizew(win);
+  } else {
+    grid_unmark(win);
+  }
+  window_minimize(win);
+  window_state_changed(win->id, state, WINDOW_ICONIC);
+  return state;
+}
+void layout_destroy(xcb_window_t window) { grid_destroy(grid_xwin2pos(window)); }
+void layout_restore(xcb_window_t window, size_t workspace) {
   window_t *win;
   window_event_create(window);
   win = window_find(window);
@@ -153,7 +126,6 @@ void layout_init(const layout_init_t *init) {
   workspace_init(init->conn);
   grid_init(init->conn, init->spawn_order, init->spawn_order_length, init->gaps);
 }
-
 void layout_deinit(void) {
   grid_deinit();
   workspace_deinit();
@@ -178,16 +150,13 @@ bool layout_event_map(xcb_window_t window, bool iconic) {
   window_state_changed(window, old, win->state);
   return true;
 }
-
 void layout_event_map_notify(xcb_window_t window) {
   window_t *win = window_find(window);
   if(win == NULL) return;
   window_state_changed(window, win->state, workspace_focused);
 }
-
 void layout_event_create(xcb_window_t window) { window_event_create(window); }
 void layout_event_focus(xcb_window_t window) { grid_event_focus(window); }
-
 WINDOW_STATE layout_event_destroy(xcb_window_t window) {
   WINDOW_STATE state;
   window_t *p;
@@ -197,7 +166,6 @@ WINDOW_STATE layout_event_destroy(xcb_window_t window) {
   }
   return state;
 }
-
 //TODO: Fix bug that clones firefox when it tries to move to diff workspace
 void layout_event_unmap(xcb_window_t window) {
   window_t* win = window_find(window);

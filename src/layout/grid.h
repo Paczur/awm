@@ -10,7 +10,9 @@ typedef struct window_t window_t;
 
 size_t grid_ord2pos(size_t);
 size_t grid_xwin2pos(xcb_window_t);
-grid_cell_t *grid_focusedc(void);
+size_t grid_win2pos(const window_t *win);
+xcb_window_t grid_pos2xwin(size_t);
+window_t *grid_pos2win(size_t);
 window_t *grid_focusedw(void);
 size_t grid_focused(void);
 size_t grid_pos2mon(size_t);
@@ -23,8 +25,8 @@ bool grid_focus_pick(void);
 bool grid_focus_restore(void);
 void grid_place_window(window_t*, size_t, bool);
 
-void grid_swap(size_t, size_t);
-void grid_focus(size_t);
+bool grid_swap(size_t, size_t);
+bool grid_focus(size_t);
 void grid_reset_sizes(size_t);
 void grid_resize_h(size_t, int);
 void grid_resize_w(size_t, int);

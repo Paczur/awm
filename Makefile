@@ -5,7 +5,6 @@ SRC=src
 TOOLS=tools
 
 WARN=-Wall -Wextra
-VALGRIND=-D DEBUG -Og -ggdb3
 DEBUG=-D DEBUG -Og -ggdb3 -fsanitize=address -fsanitize=pointer-compare \
 -fsanitize=pointer-subtract -fsanitize=undefined \
 -fsanitize-address-use-after-scope -fstack-check \
