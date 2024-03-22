@@ -44,9 +44,15 @@ int system_sh_out(const char *cmd, char *out, size_t len) {
 }
 
 void system_sh(const char* cmd) {
-  int pid = vfork();
-  if(pid == 0)
-    execl("/bin/sh", "sh", "-c", cmd, NULL);
+  int pid = fork();
+  if(pid == 0) {
+    int pid2 = vfork();
+    if(pid2 == 0) {
+      execl("/bin/sh", "sh", "-c", cmd, NULL);
+    } else {
+      exit(0);
+    }
+  }
 }
 
 static void setup_prefetch(void) {
@@ -153,12 +159,6 @@ void system_monitors(rect_t **monitors, size_t *monitor_count) {
 uint8_t system_xkb(void) { return xkb_event; }
 
 void system_init(void) {
-  struct sigaction sa = {
-    .sa_handler = NULL,
-    .sa_flags = SA_NOCLDWAIT | SA_NOCLDSTOP
-  };
-  sigemptyset(&sa.sa_mask);
-  sigaction(SIGCHLD, &sa, NULL);
   setup_wm();
   setup_prefetch();
   setup_visual();
