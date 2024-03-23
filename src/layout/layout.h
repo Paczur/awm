@@ -41,7 +41,7 @@ void layout_deinit(void);
 
 bool layout_event_map(xcb_window_t, bool iconic);
 void layout_event_map_notify(xcb_window_t);
-void layout_event_unmap(xcb_window_t);
+WINDOW_STATE layout_event_unmap(xcb_window_t);
 void layout_event_create(xcb_window_t);
 int layout_event_destroy(xcb_window_t);
 void layout_event_focus(xcb_window_t);

@@ -30,7 +30,7 @@ char *layout_workspace_names(void) {
   return workspace_names;
 }
 bool layout_workspace_fullscreen_toggle(size_t w) {
-  bool ret = workspace_fullscreen(w);
+  bool ret = workspace_fullscreen_toggle(w);
   if(w == workspace_focused) {
     for(size_t i=0; i<workarea_count; i++)
       grid_update(i);
@@ -172,11 +172,15 @@ WINDOW_STATE layout_event_destroy(xcb_window_t window) {
   return state;
 }
 //TODO: Fix bug that clones firefox when it tries to move to diff workspace
-void layout_event_unmap(xcb_window_t window) {
+WINDOW_STATE layout_event_unmap(xcb_window_t window) {
   window_t* win = window_find(window);
-  if(win == NULL) return;
+  if(win == NULL) return WINDOW_INVALID;
   WINDOW_STATE state = win->state;
   grid_event_unmap(window);
   window_state_changed(window, state, win->state);
   layout_focus_restore();
+  if(state >= 0  && workspace_empty(state)) {
+    workspace_fullscreen_set(state, false);
+  }
+  return state;
 }

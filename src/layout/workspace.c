@@ -31,8 +31,20 @@ bool workspace_urgent(size_t n) {
   return false;
 }
 
-bool workspace_fullscreen(size_t n) {
-  workspaces[n].fullscreen ^= 1;
+bool workspace_fullscreen_toggle(size_t n) {
+  bool empty = workspace_empty(n);
+  bool state = workspaces[n].fullscreen ^ 1;
+  if(!empty || (empty && !state)) {
+    workspaces[n].fullscreen = state;
+  }
+  return workspaces[n].fullscreen;
+}
+
+bool workspace_fullscreen_set(size_t n, bool state) {
+  bool empty = workspace_empty(n);
+  if(!empty || (empty && !state)) {
+    workspaces[n].fullscreen = state;
+  }
   return workspaces[n].fullscreen;
 }
 

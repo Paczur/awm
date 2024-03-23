@@ -66,7 +66,8 @@ void c_workspace_switch(size_t n) {
   hint_workspace_focused_set(n);
   if(new_maximized != old_maximized)
     bar_visibility(!new_maximized);
-  c_bar_update_workspace(refresh);
+  if(!new_maximized)
+    c_bar_update_workspace(refresh);
 #define PRINT OUT(n); OUT(refresh); OUT(old_maximized); OUT(new_maximized);
   LOGF(TRACE);
 #undef PRINT
@@ -74,11 +75,12 @@ void c_workspace_switch(size_t n) {
 void c_workspace_fullscreen(size_t n) {
   bool old_state = layout_workspace_isfullscreen(n);
   size_t focused_workspace = layout_workspace_focused();
-  if(focused_workspace == n) {
-    bar_visibility(old_state);
+  bool new_state = layout_workspace_fullscreen_toggle(n);
+  if(focused_workspace == n && new_state != old_state) {
+    bar_visibility(!new_state);
   }
-  layout_workspace_fullscreen_toggle(n);
-#define PRINT OUT(n); OUT(focused_workspace); OUT(old_state);
+
+#define PRINT OUT(n); OUT(focused_workspace); OUT(old_state); OUT(new_state);
   LOGF(TRACE);
 #undef PRINT
 }
@@ -395,7 +397,10 @@ void c_event_destroy(const xcb_generic_event_t *e) {
 }
 void c_event_unmap(const xcb_generic_event_t *e) {
   const xcb_unmap_notify_event_t *event = (const xcb_unmap_notify_event_t*)e;
-  layout_event_unmap(event->window);
+  WINDOW_STATE state = layout_event_unmap(event->window);
+  if(state >= 0 && (size_t)state == layout_workspace_focused()) {
+    bar_visibility(!layout_workspace_isfullscreen(state));
+  }
 #define PRINT OUT(event->window);
   LOG(TRACE, "event: unmap_notify");
 #undef PRINT

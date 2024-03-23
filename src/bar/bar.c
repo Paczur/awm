@@ -168,17 +168,20 @@ void bar_update_info(int n) {
 }
 
 void bar_visibility(bool st) {
+  if(st == bar_visible) return;
+  bar_visible = st;
   if(st) {
     for(size_t i=0; i<bar_container_count; i++) {
       xcb_map_window(conn, bar_containers.id[i]);
     }
+    bar_update_minimized();
+    bar_update_workspace(0);
   } else {
     bar_launcher_hide();
     for(size_t i=0; i<bar_container_count; i++) {
       xcb_unmap_window(conn, bar_containers.id[i]);
     }
   }
-  bar_visible = st;
 }
 
 void bar_init(const bar_init_t *init) {

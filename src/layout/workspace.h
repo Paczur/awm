@@ -9,7 +9,8 @@
 extern workspace_t workspaces[MAX_WORKSPACES];
 extern size_t workspace_focused;
 
-bool workspace_fullscreen(size_t);
+bool workspace_fullscreen_toggle(size_t);
+bool workspace_fullscreen_set(size_t, bool);
 workspace_t *workspace_focusedw(void);
 bool workspace_empty(size_t);
 bool workspace_urgent(size_t);
