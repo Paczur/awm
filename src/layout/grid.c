@@ -373,7 +373,6 @@ void grid_place_windowwo(window_t *window, size_t grid_i, bool assume_map,
   size_t m = grid_pos2mon(grid_i);
   grid_pos2cellwo(grid_i, wo)->window = window;
   grid_pos2cellwo(grid_i, wo)->origin = grid_i;
-  window->state = wo;
   if(wo == workspace_focused && !assume_map) {
     xcb_map_window(conn, window->id);
     grid_update(m);
@@ -386,7 +385,6 @@ void grid_place_window(window_t *window, size_t grid_i, bool assume_map) {
   size_t m = grid_pos2mon(grid_i);
   grid_pos2cell(grid_i)->window = window;
   grid_pos2cell(grid_i)->origin = grid_i;
-  window->state = workspace_focused;
   if(!assume_map)
     xcb_map_window(conn, window->id);
   grid_update(m);
@@ -666,12 +664,6 @@ void grid_event_unmap(xcb_window_t window) {
   size_t pos = grid_xwin2pos(window);
   if(grid_pos_invalid(pos)) return;
   pos = grid_pos2origin(pos);
-  if(grid_pos2win(pos)->minimize) {
-    grid_pos2win(pos)->state = WINDOW_ICONIC;
-    grid_pos2win(pos)->minimize = false;
-  } else {
-    grid_pos2win(pos)->state = WINDOW_WITHDRAWN;
-  }
   grid_pos2cell(pos)->window = NULL;
   grid_pos2cell(pos)->origin = -1;
   grid_update(grid_pos2mon(pos));

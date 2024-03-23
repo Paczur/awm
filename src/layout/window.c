@@ -133,11 +133,21 @@ void window_show(const window_t *window) {
 }
 
 //unmapping done before this function call
+void window_minimize_request(window_t *window) {
+  pthread_rwlock_wrlock(&window_lock);
+  window->minimize = true;
+  pthread_rwlock_unlock(&window_lock);
+}
+
+bool window_minimize_requested(const window_t *window) {
+  return window->minimize;
+}
+
 void window_minimize(window_t *window) {
   window_list_t *min;
   pthread_rwlock_wrlock(&window_lock);
   window->state = WINDOW_ICONIC;
-  window->minimize = true;
+  window->minimize = false;
   min = malloc(sizeof(window_list_t));
   min->next = windows_minimized;
   windows_minimized = min;
@@ -146,7 +156,6 @@ void window_minimize(window_t *window) {
   if(window->name == NULL)
     window_set_name(window);
 }
-
 
 void window_init(xcb_connection_t *c, const char *const(*names)[2],
                  size_t names_length,

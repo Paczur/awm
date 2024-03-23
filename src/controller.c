@@ -103,11 +103,7 @@ bool c_window_minimize(xcb_window_t xwin) {
   window_t *window = layout_xwin2win(xwin);
   if(window == NULL) return false;
   WINDOW_STATE state = layout_minimize(window);
-  if(state < 0) return false;
-  if((size_t)state != layout_workspace_focused())
-    c_bar_update_workspace(state);
-  c_bar_update_minimized();
-#define PRINT OUT(window); OUT(state);
+#define PRINT OUT(window); OUT_WINDOW_STATE(state);
   LOGF(TRACE);
 #undef PRINT
   return true;
@@ -328,20 +324,21 @@ void c_event_map_notify(const xcb_generic_event_t *e) {
       break;
     }
   }
-  if(!bar)
+  if(!bar) {
     layout_event_map_notify(event->window);
-  xcb_change_window_attributes(conn, event->window, XCB_CW_EVENT_MASK, &mask);
-  win = layout_xwin2win(event->window);
-  if(win != NULL) {
-    layout_input_set(win, hint_window_input(event->window));
+    xcb_change_window_attributes(conn, event->window, XCB_CW_EVENT_MASK, &mask);
+    win = layout_xwin2win(event->window);
+    if(win != NULL) {
+      layout_input_set(win, hint_window_input(event->window));
 #define PRINT OUT_WINDOW(win);
-    LOG(TRACE, "event: map_notify");
+      LOG(TRACE, "event: map_notify");
 #undef PRINT
-  } else {
-#define PRINT OUT(event->window)
-    LOG(TRACE, "event: map_notify");
-#undef PRINT
+      return;
+    }
   }
+#define PRINT OUT(event->window)
+  LOG(TRACE, "event: map_notify");
+#undef PRINT
 }
 void c_event_key_press(const xcb_generic_event_t *e) {
   char buff[10];
@@ -397,9 +394,26 @@ void c_event_destroy(const xcb_generic_event_t *e) {
 }
 void c_event_unmap(const xcb_generic_event_t *e) {
   const xcb_unmap_notify_event_t *event = (const xcb_unmap_notify_event_t*)e;
-  WINDOW_STATE state = layout_event_unmap(event->window);
-  if(state >= 0 && (size_t)state == layout_workspace_focused()) {
-    bar_visibility(!layout_workspace_isfullscreen(state));
+  bool bar = false;
+  size_t bar_container_count;
+  const bar_containers_t *bar_containers;
+  bar_container_count = bar_get_containers(&bar_containers);
+  for(size_t i=0; i<bar_container_count; i++) {
+    if(bar_containers->id[i] == event->window) {
+      bar = true;
+      break;
+    }
+  }
+  if(!bar) {
+    WINDOW_STATE state = layout_event_unmap(event->window);
+    if(state >= 0) {
+      if((size_t)state == layout_workspace_focused()) {
+        bar_visibility(!layout_workspace_isfullscreen(state));
+      } else {
+        c_bar_update_workspace(state);
+      }
+      c_bar_update_minimized();
+    }
   }
 #define PRINT OUT(event->window);
   LOG(TRACE, "event: unmap_notify");

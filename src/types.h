@@ -97,6 +97,8 @@ typedef enum {
         puts("withdrawn"); \
       } else if((state)==WINDOW_ICONIC) { \
         puts("iconic"); \
+      } else if((state)==WINDOW_INVALID) { \
+        printf("invalid"); \
       } else { \
         printf("%d\n", state); \
       } \

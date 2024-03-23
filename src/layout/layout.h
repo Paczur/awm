@@ -32,7 +32,7 @@ void layout_reset_sizes(const window_t*);
 void layout_resize_w(const window_t*, int);
 void layout_resize_h(const window_t*, int);
 void layout_show(size_t);
-int layout_minimize(window_t*);
+WINDOW_STATE layout_minimize(window_t*);
 void layout_destroy(xcb_window_t);
 void layout_restore(xcb_window_t, size_t);
 

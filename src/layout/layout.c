@@ -92,17 +92,18 @@ void layout_show(size_t p) {
     window_state_changed(w->id, WINDOW_ICONIC, workspace_focused);
   }
 }
-int layout_minimize(window_t *win) {
+WINDOW_STATE layout_minimize(window_t *win) {
   WINDOW_STATE state;
-  if(win == NULL || win->state < 0) return WINDOW_INVALID;
+  if(win == NULL) return WINDOW_INVALID;
+  if(win->state < 0) return win->state;
   state = win->state;
   if((size_t)state == workspace_focused) {
+    window_minimize_request(win);
     grid_minimizew(win);
   } else {
+    window_minimize(win);
     grid_unmark(win);
   }
-  window_minimize(win);
-  window_state_changed(win->id, state, WINDOW_ICONIC);
   return state;
 }
 void layout_destroy(xcb_window_t window) { grid_destroy(grid_xwin2pos(window)); }
@@ -113,7 +114,6 @@ void layout_restore(xcb_window_t window, size_t workspace) {
 
   if(workspace > MAX_WORKSPACES || !grid_restore_window(win, workspace)) {
     window_minimize(win);
-    win->minimize = false; //already minimized
     window_state_changed(window, WINDOW_WITHDRAWN, win->state);
     return;
   }
@@ -140,25 +140,40 @@ void layout_deinit(void) {
 
 bool layout_event_map(xcb_window_t window, bool iconic) {
   window_t *win = window_find(window);
-  WINDOW_STATE old;
+  WINDOW_STATE old_state;
   if(win == NULL) {
     window_event_create(window);
     win = window_find(window);
   }
-  old = win->state;
+  old_state = win->state;
 
   if(iconic || !grid_event_map(win)) {
     window_minimize(win);
-    window_state_changed(window, old, win->state);
+    window_state_changed(window, old_state, win->state);
+#define PRINT OUT_WINDOW(win); OUT_WINDOW_STATE(old_state);
+  LOGF(LAYOUT_TRACE);
+#undef PRINT
     return false;
   }
-  window_state_changed(window, old, win->state);
+#define PRINT OUT_WINDOW(win); OUT_WINDOW_STATE(old_state);
+  LOGF(LAYOUT_TRACE);
+#undef PRINT
   return true;
 }
 void layout_event_map_notify(xcb_window_t window) {
   window_t *win = window_find(window);
-  if(win == NULL) return;
-  window_state_changed(window, win->state, workspace_focused);
+  WINDOW_STATE old_state;
+  if(win == NULL) {
+    window_event_create(window);
+    win = window_find(window);
+  }
+  old_state = win->state;
+  win->state = workspace_focused;
+  if(old_state != win->state)
+    window_state_changed(window, old_state, win->state);
+#define PRINT OUT_WINDOW(win); OUT_WINDOW_STATE(old_state);
+  LOGF(LAYOUT_TRACE);
+#undef PRINT
 }
 void layout_event_create(xcb_window_t window) { window_event_create(window); }
 void layout_event_focus(xcb_window_t window) { grid_event_focus(window); }
@@ -175,12 +190,27 @@ WINDOW_STATE layout_event_destroy(xcb_window_t window) {
 WINDOW_STATE layout_event_unmap(xcb_window_t window) {
   window_t* win = window_find(window);
   if(win == NULL) return WINDOW_INVALID;
-  WINDOW_STATE state = win->state;
+  WINDOW_STATE old_state = win->state;
   grid_event_unmap(window);
-  window_state_changed(window, state, win->state);
-  layout_focus_restore();
-  if(state >= 0  && workspace_empty(state)) {
-    workspace_fullscreen_set(state, false);
+  if(window_minimize_requested(win)) {
+    window_minimize(win);
+  } else if(old_state >= 0 && workspace_focused == (size_t)old_state) {
+    win->state = WINDOW_WITHDRAWN;
   }
-  return state;
+  window_state_changed(window, old_state, win->state);
+  layout_focus_restore();
+  if(old_state >= 0) {
+    bool window_workspace_empty = workspace_empty(old_state);
+    if(window_workspace_empty) {
+      workspace_fullscreen_set(old_state, false);
+    }
+#define PRINT OUT_WINDOW(win); OUT_WINDOW_STATE(old_state); OUT(window_workspace_empty);
+    LOGF(LAYOUT_TRACE);
+#undef PRINT
+  } else {
+#define PRINT OUT_WINDOW(win); OUT_WINDOW_STATE(old_state);
+  LOGF(LAYOUT_TRACE);
+#undef PRINT
+  }
+  return old_state;
 }
