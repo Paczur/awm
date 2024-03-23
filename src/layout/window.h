@@ -22,7 +22,7 @@ void window_minimize(window_t*);
 void window_init(xcb_connection_t*, const char *const(*)[2], size_t,
                  xcb_get_property_reply_t*(*)(xcb_window_t, size_t));
 void window_deinit(void);
-int window_event_destroy(xcb_window_t, window_t**);
+void window_event_destroy(window_t*);
 void window_event_create(xcb_window_t);
 
 #endif

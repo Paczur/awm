@@ -3,7 +3,7 @@
 
 #include <xcb/xcb.h>
 #include <stddef.h>
-#include "types.h"
+#include "system_types.h"
 
 //XCB
 extern xcb_visualtype_t *visual_type;

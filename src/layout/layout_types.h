@@ -1,5 +1,5 @@
-#ifndef H_LAYOUT_STRUCTS
-#define H_LAYOUT_STRUCTS
+#ifndef H_LAYOUT_TYPES
+#define H_LAYOUT_TYPES
 
 #include <stdbool.h>
 #include <xcb/xcb.h>

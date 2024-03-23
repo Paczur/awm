@@ -1,5 +1,5 @@
-#ifndef H_BAR_STRUCTS
-#define H_BAR_STRUCTS
+#ifndef H_BAR_TYPES
+#define H_BAR_TYPES
 
 #include "../types.h"
 #include <xcb/xcb.h>

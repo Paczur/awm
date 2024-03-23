@@ -178,13 +178,18 @@ void layout_event_map_notify(xcb_window_t window) {
 void layout_event_create(xcb_window_t window) { window_event_create(window); }
 void layout_event_focus(xcb_window_t window) { grid_event_focus(window); }
 WINDOW_STATE layout_event_destroy(xcb_window_t window) {
-  WINDOW_STATE state;
-  window_t *p;
-  state = window_event_destroy(window, &p);
-  if(state >= 0) {
-    grid_unmark(p);
+  WINDOW_STATE old_state;
+  window_t *win = window_find(window);
+  if(win == NULL) return WINDOW_INVALID;
+  old_state = win->state;
+#define PRINT OUT_WINDOW(win); OUT_WINDOW_STATE(old_state);
+  LOGF(LAYOUT_TRACE);
+#undef PRINT
+  window_event_destroy(win);
+  if(old_state >= 0) {
+    grid_unmark(win);
   }
-  return state;
+  return old_state;
 }
 //TODO: Fix bug that clones firefox when it tries to move to diff workspace
 WINDOW_STATE layout_event_unmap(xcb_window_t window) {

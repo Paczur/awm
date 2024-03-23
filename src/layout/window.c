@@ -205,34 +205,33 @@ void window_deinit(void) {
 }
 
 
-WINDOW_STATE window_event_destroy(xcb_window_t window, window_t **wp) {
-  window_t *w = window_find(window);
+void window_event_destroy(window_t *win) {
   window_list_t *t;
   WINDOW_STATE state;
   pthread_rwlock_wrlock(&window_lock);
   window_list_t *wlist = windows_minimized;
-  if(w == NULL) {
+  if(win == NULL) {
     pthread_rwlock_unlock(&window_lock);
-    return -3;
+    return;
   }
-  if(w->prev != NULL) {
-    w->prev->next = w->next;
+  if(win->prev != NULL) {
+    win->prev->next = win->next;
   } else {
-    windows = w->next;
+    windows = win->next;
   }
-  if(w->next != NULL) {
-    w->next->prev = w->prev;
+  if(win->next != NULL) {
+    win->next->prev = win->prev;
   }
-  if(w->name != NULL)
-    free(w->name);
-  state = w->state;
+  if(win->name != NULL)
+    free(win->name);
+  state = win->state;
 
   if(state == -1) {
-    if(wlist->window == w) {
+    if(wlist->window == win) {
       windows_minimized = wlist->next;
       free(wlist);
     } else {
-      while(wlist->next->window != w)
+      while(wlist->next->window != win)
         wlist = wlist->next;
       t = wlist->next;
       wlist->next = wlist->next->next;
@@ -240,10 +239,8 @@ WINDOW_STATE window_event_destroy(xcb_window_t window, window_t **wp) {
     }
   }
 
-  *wp = w;
-  free(w);
+  free(win);
   pthread_rwlock_unlock(&window_lock);
-  return state;
 }
 
 void window_event_create(xcb_window_t window) {

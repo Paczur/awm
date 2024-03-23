@@ -229,6 +229,7 @@ size_t grid_next_pos(void) {
   return SIZE_MAX;
 }
 
+//w might be freed, can't access it
 void grid_unmark(window_t *w) {
   workspace_t *workspace;
   for(size_t j=0; j<MAX_WORKSPACES; j++) {

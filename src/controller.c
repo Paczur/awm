@@ -1,5 +1,5 @@
 #include "controller.h"
-#include "system.h"
+#include "system/system.h"
 #include "bar/bar.h"
 #include "layout/layout.h"
 #include "hint/hint.h"
@@ -382,13 +382,13 @@ void c_event_create(const xcb_generic_event_t *e) {
 }
 void c_event_destroy(const xcb_generic_event_t *e) {
   const xcb_destroy_notify_event_t *event = (const xcb_destroy_notify_event_t*)e;
-  int state_after_destroy = layout_event_destroy(event->window);
-  if(state_after_destroy == -1) {
+  WINDOW_STATE state_before_destroy = layout_event_destroy(event->window);
+  if(state_before_destroy == -1) {
     c_bar_update_minimized();
-  } else if(state_after_destroy >= 0) {
-    c_bar_update_workspace(state_after_destroy);
+  } else if(state_before_destroy >= 0) {
+    c_bar_update_workspace(state_before_destroy);
   }
-#define PRINT OUT(event->window); OUT(state_after_destroy);
+#define PRINT OUT(event->window); OUT_WINDOW_STATE(state_before_destroy);
   LOG(TRACE, "event: destroy_notify");
 #undef PRINT
 }
@@ -567,7 +567,7 @@ void c_init(void) {
   const bar_containers_t *bars;
   rect_t *t_rect;
 
-  system_init(); LOGE(DEBUG, "System init");
+  system_init();
   c_init_hint(); LOGE(DEBUG, "Hints init");
   c_init_shortcut(); LOGE(DEBUG, "Shortcuts init");
   system_monitors(&monitors, &monitor_count);

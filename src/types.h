@@ -151,10 +151,10 @@ typedef enum {
     } \
   } while(0)
 
-#define _LOGFE(level) printf("%s\n", __func__)
+#define _LOGFE(level) do { if(level) printf("%s\n", __func__); } while(0)
 
 #define _LOGE(level, text) \
-  if(level) puts(text)
+  do { if(level) puts(text); } while(0)
 
 #define LOG _LOG
 #define LOGF _LOGF
