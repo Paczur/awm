@@ -49,6 +49,10 @@ static void c_adopt_windows(void) {
 #undef PRINT
   free(windows);
 }
+static void c_sigterm_action(int a) {
+  (void)a;
+  c_wm_shutdown();
+}
 
 void c_wm_shutdown(void) {
   event_stop();
@@ -567,8 +571,8 @@ void c_init(void) {
   const bar_containers_t *bars;
   rect_t *t_rect;
 
-  system_init();
-  c_init_hint(); LOGE(DEBUG, "Hints init");
+  system_init(c_sigterm_action);
+  c_init_hint();
   c_init_shortcut(); LOGE(DEBUG, "Shortcuts init");
   system_monitors(&monitors, &monitor_count);
   t_rect = malloc(monitor_count*sizeof(rect_t));

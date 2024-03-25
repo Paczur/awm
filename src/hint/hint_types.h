@@ -16,4 +16,20 @@ typedef struct hint_init_t {
   hint_init_root_t root;
 } hint_init_t;
 
+#ifdef HINT_DEBUG
+#undef HINT_DEBUG
+#define HINT_DEBUG 1
+#else
+#define HINT_DEBUG 0
+#endif
+
+#ifdef HINT_TRACE
+#undef HINT_TRACE
+#define HINT_TRACE 1
+#undef HINT_DEBUG
+#define HINT_DEBUG 1
+#else
+#define HINT_TRACE 0
+#endif
+
 #endif

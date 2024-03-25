@@ -66,18 +66,20 @@ typedef enum {
   OUT_RAW(val); \
   OUT_SUFFIX();
 
-#define OUT_ARR_PREFIX(val) OUT_PREFIX(val); printf("[ ");
+#define OUT_ARR_PREFIX(val, count) \
+  OUT_PREFIX(val); \
+  printf("(\"" #count "\": %lu)[ ", (size_t)count);
 #define OUT_ARR_SUFFIX() printf(" ]"); OUT_SUFFIX()
 #define OUT_ARR_NEXT(val) printf(", ");
 #define OUT_ARR_GENERIC(val, count, out) \
   do { \
-    OUT_ARR_PREFIX(val); \
-    if(count > 0) { \
-      for(size_t _i=0; _i<(count)-1; _i++) { \
+    OUT_ARR_PREFIX(val, count); \
+    if((count) > 0 && (val) != NULL) { \
+      for(size_t _i=0; _i<((size_t)(count)-1); _i++) { \
         out((val)[_i]); \
-        OUT_ARR_NEXT(val[_i]); \
+        OUT_ARR_NEXT((val)[_i]); \
       } \
-      OUT_RAW(val[(count)-1]); \
+      OUT_RAW((val)[(count)-1]); \
     } \
     OUT_ARR_SUFFIX(); \
   } while(0)
@@ -151,7 +153,7 @@ typedef enum {
     } \
   } while(0)
 
-#define _LOGFE(level) do { if(level) printf("%s\n", __func__); } while(0)
+#define _LOGFE(level) do { if(level) printf("%s {}\n", __func__); } while(0)
 
 #define _LOGE(level, text) \
   do { if(level) puts(text); } while(0)

@@ -113,7 +113,9 @@ static void system_setup_wm(void) {
 static void system_setup_xkb(void) {
   const xcb_query_extension_reply_t *extreply = NULL;
   extreply = xcb_get_extension_data(conn, &xcb_xkb_id);
-  if(extreply && extreply->present) {
+  while(extreply == NULL)
+    extreply = xcb_get_extension_data(conn, &xcb_xkb_id);
+  if(extreply->present) {
     xcb_xkb_use_extension(conn, XCB_XKB_MAJOR_VERSION, XCB_XKB_MINOR_VERSION);
     xcb_xkb_select_events(conn,
                           XCB_XKB_ID_USE_CORE_KBD,
@@ -181,15 +183,18 @@ void system_monitors(rect_t **monitors, size_t *monitor_count) {
 
 uint8_t system_xkb(void) { return xkb_event; }
 
-void system_init(void) {
+void system_init(void (*term_action)(int)) {
+  struct sigaction action = { .sa_handler = term_action };
+  sigaction(SIGTERM, &action, NULL);
+
   system_setup_wm();
   system_setup_prefetch();
   system_setup_visual();
   system_setup_xkb();
-  LOGE(SYSTEM_DEBUG, "System init");
+  LOGFE(SYSTEM_DEBUG);
 }
 
 void system_deinit(void) {
   xcb_disconnect(conn);
-  LOGE(SYSTEM_DEBUG, "System deinit");
+  LOGFE(SYSTEM_DEBUG);
 }

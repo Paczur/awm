@@ -52,7 +52,7 @@ static void *block_info_update_periodic(void*) {
   struct timespec ts =
     (struct timespec) { .tv_nsec = (CLOCK_STEPS_PER_SECOND == 1) ?
       999999999 :
-      1000000000/CLOCK_STEPS_PER_SECOND };
+        1000000000/CLOCK_STEPS_PER_SECOND };
   for(size_t i=0; i<MAX_INFO_BLOCKS; i++) {
     if(block_info.data[i].cmd == NULL) {
       block_info.state[i].countdown = -1;
