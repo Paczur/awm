@@ -396,7 +396,6 @@ xcb_window_t hint_saved_window_focused(void) {
   return window;
 }
 
-
 void hint_frame_extents_set(xcb_window_t window) {
   uint32_t extents[4] = {0};
   xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window,
@@ -456,6 +455,7 @@ void hint_window_hints_set(xcb_window_t window) {
   LOGF(HINT_TRACE);
 #undef PRINT
 }
+
 
 void hint_init(const hint_init_t *init) {
   conn = init->conn;

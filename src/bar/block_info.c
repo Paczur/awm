@@ -126,6 +126,7 @@ void block_info_update(int n) {
 void block_info_redraw(size_t bar) {
   block_redraw_batch(block_info.blocks, MAX_INFO_BLOCKS, bar);
 }
+
 bool block_info_find_redraw(xcb_window_t window) {
   return block_find_redraw(block_info.blocks, MAX_INFO_BLOCKS, window);
 }

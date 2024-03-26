@@ -10,7 +10,6 @@
 extern block_geometry_t block_minimized_geometry[MAX_MINIMIZED_BLOCKS];
 
 void block_minimized_update(size_t, size_t);
-
 void block_minimized_redraw(size_t);
 bool block_minimized_find_redraw(xcb_window_t);
 
