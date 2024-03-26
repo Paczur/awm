@@ -166,10 +166,7 @@ bool layout_event_map(xcb_window_t window, bool iconic) {
 void layout_event_map_notify(xcb_window_t window) {
   window_t *win = window_find(window);
   WINDOW_STATE old_state;
-  if(win == NULL) {
-    window_event_create(window);
-    win = window_find(window);
-  }
+  if(win == NULL) return;
   old_state = win->state;
   win->state = workspace_focused;
   if(old_state != win->state)

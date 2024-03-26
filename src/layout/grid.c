@@ -375,8 +375,9 @@ void grid_place_windowwo(window_t *window, size_t grid_i, bool assume_map,
   grid_pos2cellwo(grid_i, wo)->window = window;
   grid_pos2cellwo(grid_i, wo)->origin = grid_i;
   if(wo == workspace_focused && !assume_map) {
-    xcb_map_window(conn, window->id);
+    grid_force_update(grid_i);
     grid_update(m);
+    xcb_map_window(conn, window->id);
   } else {
     workspaces[wo].update[m] = true;
   }
@@ -386,9 +387,10 @@ void grid_place_window(window_t *window, size_t grid_i, bool assume_map) {
   size_t m = grid_pos2mon(grid_i);
   grid_pos2cell(grid_i)->window = window;
   grid_pos2cell(grid_i)->origin = grid_i;
+  grid_force_update(grid_i);
+  grid_update(m);
   if(!assume_map)
     xcb_map_window(conn, window->id);
-  grid_update(m);
   xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT,
                       window->id, XCB_CURRENT_TIME);
 }

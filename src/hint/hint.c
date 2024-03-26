@@ -22,8 +22,6 @@ static xcb_window_t *client_list;
 static size_t client_list_length = 0;
 static size_t client_list_capacity;
 
-static bool thread_run = true;
-
 static xcb_window_t supporting_wm_window;
 
 static size_t workspace_focused;
@@ -476,6 +474,5 @@ void hint_init(const hint_init_t *init) {
 
 void hint_deinit(void) {
   xcb_destroy_window(conn, supporting_wm_window);
-  thread_run = false;
   LOGFE(HINT_DEBUG);
 }
