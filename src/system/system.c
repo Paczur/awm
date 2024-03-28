@@ -48,6 +48,7 @@ int system_sh_out(const char *cmd, char *out, size_t len) {
 }
 
 void system_sh(const char* cmd) {
+  int status;
   int pid = fork();
   if(pid == 0) {
     int pid2 = vfork();
@@ -56,6 +57,8 @@ void system_sh(const char* cmd) {
     } else {
       exit(0);
     }
+  } else {
+    waitpid(pid, &status, 0);
   }
 #define PRINT OUT(cmd); OUT(pid);
   LOGF(SYSTEM_TRACE);
