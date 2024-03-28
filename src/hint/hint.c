@@ -35,7 +35,7 @@ static void hint_set_root(const hint_init_root_t *init) {
     _NET_WM_ALLOWED_ACTIONS, _NET_WM_ACTION_MINIMIZE, _NET_WM_ACTION_CLOSE,
     _NET_FRAME_EXTENTS, _NET_REQUEST_FRAME_EXTENTS, _NET_WM_WINDOW_TYPE,
     _NET_WM_WINDOW_TYPE_SPLASH, _NET_WM_STATE, _NET_WM_STATE_HIDDEN,
-    _NET_WM_STATE_DEMANDS_ATTENTION
+    _NET_WM_STATE_DEMANDS_ATTENTION, _NET_WM_WINDOW_TYPE_UTILITY
   };
   supporting_wm_window = xcb_generate_id(conn);
   xcb_icccm_set_wm_protocols(conn, screen->root, WM_PROTOCOLS,
@@ -233,6 +233,10 @@ bool hint_atom_window_type_splash(xcb_atom_t a) {
   return _NET_WM_WINDOW_TYPE_SPLASH == a;
 }
 
+bool hint_atom_window_type_utility(xcb_atom_t a) {
+  return _NET_WM_WINDOW_TYPE_UTILITY == a;
+}
+
 bool hint_atom_urgent(xcb_atom_t atom) {
   return atom == WM_HINTS || atom == _NET_WM_STATE;
 }
@@ -394,6 +398,56 @@ xcb_window_t hint_saved_window_focused(void) {
   LOGF(HINT_TRACE);
 #undef PRINT
   return window;
+}
+
+void hint_window_rect_set(xcb_window_t window, uint32_t rect[static 4]) {
+  size_t len;
+  struct size_hints_t {
+    uint32_t flags;
+    uint32_t x; //obsolete
+    uint32_t y; //obsolete
+    uint32_t width; //obsolete
+    uint32_t height; //obsolete
+    uint32_t min_width;
+    uint32_t min_height;
+    uint32_t max_width;
+    uint32_t max_height;
+    uint32_t width_inc;
+    uint32_t height_inc;
+    uint32_t min_aspect[2];
+    uint32_t max_aspect[2];
+    uint32_t base_width;
+    uint32_t base_height;
+    uint32_t win_gravity;
+  };
+  struct size_hints_t hints = {0};
+  xcb_get_property_cookie_t cookie =
+    xcb_get_property(conn, 0, window, WM_NORMAL_HINTS,
+                     WM_SIZE_HINTS, 0, 17);
+  xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, cookie, NULL);
+  len = xcb_get_property_value_length(reply)/sizeof(uint32_t);
+  memcpy(&hints, xcb_get_property_value(reply), len*sizeof(uint32_t));
+  if(hints.flags & 1 || hints.flags & 4) {
+    rect[0] = hints.x;
+    rect[1] = hints.y;
+  } else {
+    rect[0] = (uint32_t)-1;
+    rect[1] = (uint32_t)-1;
+  }
+  if(hints.flags & 256) {
+    rect[2] = hints.base_width;
+    rect[3] = hints.base_height;
+  } else if(hints.flags & 2) {
+    rect[2] = hints.width;
+    rect[3] = hints.height;
+  } else {
+    rect[2] = (uint32_t)-1;
+    rect[3] = (uint32_t)-1;
+  }
+#define PRINT OUT(window); OUT_ARR(rect, 4);
+  LOGF(HINT_TRACE);
+#undef PRINT
+  free(reply);
 }
 
 void hint_frame_extents_set(xcb_window_t window) {

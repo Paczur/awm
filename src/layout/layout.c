@@ -12,6 +12,11 @@ static xcb_connection_t *conn;
 static const xcb_screen_t *screen;
 static void (*window_state_changed)(xcb_window_t, WINDOW_STATE, WINDOW_STATE);
 
+size_t layout_workareas(const workarea_t **w) {
+  if(w != NULL) *w = workareas;
+  return workarea_count;
+}
+
 size_t layout_workspaces(const workspace_t **w) {
   if(w != NULL) *w = workspaces;
   return MAX_WORKSPACES;
@@ -81,10 +86,12 @@ window_t *layout_to_right(void) { return grid_pos2win(grid_to_right()); }
 window_t *layout_to_left(void) { return grid_pos2win(grid_to_left()); }
 
 bool layout_urgency_set(window_t *win, bool state) {
+  if(win == NULL) return false;
   return window_set_urgency(win, state);
 }
 
 bool layout_input_set(window_t *win, bool state) {
+  if(win == NULL) return false;
   bool ret = window_set_input(win, state);
   if(ret && state == false && win->state == (int)workspace_focused)
     layout_focus_restore();

@@ -3,6 +3,8 @@
 
 #include "layout_types.h"
 
+size_t layout_workareas(const workarea_t **);
+
 size_t layout_workspaces(const workspace_t**);
 size_t layout_workspace_focused(void);
 void layout_workspace_switch(size_t);
