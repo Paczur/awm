@@ -152,6 +152,7 @@ void layout_restore(xcb_window_t window, size_t workspace) {
     window_state_changed(window, WINDOW_WITHDRAWN, win->state);
     return;
   }
+  win->state = workspace;
   window_state_changed(window, WINDOW_WITHDRAWN, win->state);
 }
 

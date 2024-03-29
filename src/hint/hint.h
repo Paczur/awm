@@ -25,6 +25,7 @@ bool hint_window_input(xcb_window_t);
 bool hint_window_urgent(xcb_window_t, xcb_atom_t);
 bool hint_atom_window_type_splash(xcb_atom_t);
 bool hint_atom_window_type_utility(xcb_atom_t);
+bool hint_atom_window_type_notification(xcb_atom_t);
 size_t hint_saved_windows(xcb_window_t**);
 size_t hint_saved_window_workspace(xcb_window_t);
 size_t hint_saved_workspace_focused(void);

@@ -299,7 +299,8 @@ void c_event_map(const xcb_generic_event_t *e) {
   for(size_t i=0; i<atom_length; i++) {
     //TODO: Figure out how to get size for those windows
     if(hint_atom_window_type_splash(atoms[i]) ||
-       hint_atom_window_type_utility(atoms[i])) {
+       hint_atom_window_type_utility(atoms[i]) ||
+       hint_atom_window_type_notification(atoms[i])) {
       hint_window_rect_set(event->window, rect);
       if(rect[0] == (uint32_t)-1 || rect[2] == (uint32_t)-1 ||
          rect[0] == 0 || rect[2] == 0) {
@@ -493,6 +494,7 @@ void c_event_property(const xcb_generic_event_t *e) {
 }
 void c_event_configure(const xcb_generic_event_t *e) {
   const xcb_configure_request_event_t *event = (xcb_configure_request_event_t*)e;
+  (void)event;
   LOGE(TRACE, "event: configure_request");
 }
 
@@ -629,6 +631,7 @@ void c_init(void) {
   event_listener_add(XCB_CLIENT_MESSAGE, c_event_message);
   event_listener_add(XCB_PROPERTY_NOTIFY, c_event_property);
   event_listener_add(system_xkb(), c_event_xkb);
+  event_listener_add(XCB_CONFIGURE_REQUEST, c_event_configure);
   xcb_flush(conn);
   fflush(stdout);
 }

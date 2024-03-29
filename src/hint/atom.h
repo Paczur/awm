@@ -32,6 +32,7 @@ extern xcb_atom_t _NET_REQUEST_FRAME_EXTENTS;
 extern xcb_atom_t _NET_WM_WINDOW_TYPE;
 extern xcb_atom_t _NET_WM_WINDOW_TYPE_SPLASH;
 extern xcb_atom_t _NET_WM_WINDOW_TYPE_UTILITY;
+extern xcb_atom_t _NET_WM_WINDOW_TYPE_NOTIFICATION;
 extern xcb_atom_t _NET_WM_STATE;
 extern xcb_atom_t _NET_WM_STATE_DEMANDS_ATTENTION;
 extern xcb_atom_t _NET_WM_STATE_HIDDEN;

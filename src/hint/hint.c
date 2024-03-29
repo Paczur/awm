@@ -35,7 +35,8 @@ static void hint_set_root(const hint_init_root_t *init) {
     _NET_WM_ALLOWED_ACTIONS, _NET_WM_ACTION_MINIMIZE, _NET_WM_ACTION_CLOSE,
     _NET_FRAME_EXTENTS, _NET_REQUEST_FRAME_EXTENTS, _NET_WM_WINDOW_TYPE,
     _NET_WM_WINDOW_TYPE_SPLASH, _NET_WM_STATE, _NET_WM_STATE_HIDDEN,
-    _NET_WM_STATE_DEMANDS_ATTENTION, _NET_WM_WINDOW_TYPE_UTILITY
+    _NET_WM_STATE_DEMANDS_ATTENTION, _NET_WM_WINDOW_TYPE_UTILITY,
+    _NET_WM_WINDOW_TYPE_NOTIFICATION
   };
   supporting_wm_window = xcb_generate_id(conn);
   xcb_icccm_set_wm_protocols(conn, screen->root, WM_PROTOCOLS,
@@ -235,6 +236,10 @@ bool hint_atom_window_type_splash(xcb_atom_t a) {
 
 bool hint_atom_window_type_utility(xcb_atom_t a) {
   return _NET_WM_WINDOW_TYPE_UTILITY == a;
+}
+
+bool hint_atom_window_type_notification(xcb_atom_t a) {
+  return _NET_WM_WINDOW_TYPE_NOTIFICATION == a;
 }
 
 bool hint_atom_urgent(xcb_atom_t atom) {
