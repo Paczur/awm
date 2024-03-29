@@ -3,7 +3,6 @@ BUILD=build
 DIRS=$(BIN) $(BUILD)
 SRC=src
 TOOLS=tools
-export CCACHE_DIR := ccache
 
 WARN=-Wall -Wextra
 VERBOSITY=-D DEBUG -D HINT_DEBUG -D LAYOUT_DEBUG -D SYSTEM_DEBUG
@@ -20,15 +19,19 @@ CFLAGS=$(WARN) -march=native -std=gnu99 $(LIBS)
 SOURCES=$(wildcard $(SRC)/*.c $(SRC)/**/*.c)
 OBJECTS=$(patsubst $(SRC)/%.c,$(BUILD)/%.o,$(SOURCES))
 DEPENDS=$(patsubst $(SRC)/%.c,$(BUILD)/%.d,$(SOURCES))
-CC=ccache gcc
 
-all: test
+export CCACHE_DIR := ccache
+CC=ccache gcc
 
 $(shell mkdir -p $(dir $(DEPENDS)))
 -include $(DEPENDS)
 
 .PHONY: all release debug test test_clean clean
+MAKEFLAGS := --jobs=$(shell nproc)
+MAKEFLAGS += --output-sync=target
 $(VERBOSE).SILENT:
+
+all: test
 
 test_clean:
 	rm -rf $(BIN)/out
