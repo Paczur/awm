@@ -3,9 +3,11 @@ BUILD=build
 DIRS=$(BIN) $(BUILD)
 SRC=src
 TOOLS=tools
+export CCACHE_DIR := ccache
 
 WARN=-Wall -Wextra
-DEBUG=-D DEBUG -Og -ggdb3 -fsanitize=address -fsanitize=pointer-compare \
+VERBOSITY=-D DEBUG -D HINT_DEBUG -D LAYOUT_DEBUG -D SYSTEM_DEBUG
+DEBUG=$(VERBOSITY) -Og -ggdb3 -fsanitize=address -fsanitize=pointer-compare \
 -fsanitize=pointer-subtract -fsanitize=undefined \
 -fsanitize-address-use-after-scope -fstack-check \
 -fno-stack-clash-protection
@@ -18,6 +20,7 @@ CFLAGS=$(WARN) -march=native -std=gnu99 $(LIBS)
 SOURCES=$(wildcard $(SRC)/*.c $(SRC)/**/*.c)
 OBJECTS=$(patsubst $(SRC)/%.c,$(BUILD)/%.o,$(SOURCES))
 DEPENDS=$(patsubst $(SRC)/%.c,$(BUILD)/%.d,$(SOURCES))
+CC=ccache gcc
 
 all: test
 
@@ -40,6 +43,9 @@ debug: binaries
 clean:
 	rm -rf $(BIN) $(BUILD)
 
+clean_all:
+	rm -rf $(BIN) $(BUILD) $(CCACHE_DIR)
+
 binaries: $(BIN)/idkwm tools
 
 $(BIN):
@@ -50,7 +56,7 @@ tools: $(BIN)/idkmsg
 $(BIN)/idkmsg: $(TOOLS)/idkmsg.c | $(BIN)
 	$(CC) $(CFLAGS) -o $@ $^
 
-$(BIN)/idkwm: $(SOURCES) | $(BIN)
+$(BIN)/idkwm: $(OBJECTS) | $(BIN)
 	$(CC) $(CFLAGS) -o $@ $^
 
 $(BUILD):
