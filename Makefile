@@ -23,6 +23,8 @@ DEPENDS=$(patsubst $(SRC)/%.c,$(BUILD)/%.d,$(SOURCES))
 export CCACHE_DIR := ccache
 CC=ccache gcc
 
+all: test
+
 $(shell mkdir -p $(dir $(DEPENDS)))
 -include $(DEPENDS)
 
@@ -31,7 +33,6 @@ MAKEFLAGS := --jobs=$(shell nproc)
 MAKEFLAGS += --output-sync=target
 $(VERBOSE).SILENT:
 
-all: test
 
 test_clean:
 	rm -rf $(BIN)/out
