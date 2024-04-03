@@ -187,7 +187,7 @@ xcb_window_t grid_pos2xwin(size_t n) {
 }
 
 size_t grid_win2pos(const window_t *win) {
-  if(win->state < 0) return -1;
+  if(!win || win->state < 0) return -1;
   const workspace_t *workspace = workspaces+win->state;
   for(size_t i=0; i<workarea_count*CELLS_PER_WORKAREA; i++) {
     if(workspace->grid[i].window == win)
