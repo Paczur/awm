@@ -6,8 +6,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#define LENGTH(x) (sizeof(x)/sizeof((x)[0]))
-
 static xcb_connection_t *conn;
 static const xcb_screen_t *screen;
 static void (*window_state_changed)(xcb_window_t, WINDOW_STATE, WINDOW_STATE);
@@ -195,8 +193,7 @@ bool layout_event_map(xcb_window_t window, bool iconic) {
     return false;
   }
   win->state = workspace_focused;
-  if(old_state != win->state)
-    window_state_changed(window, old_state, win->state);
+  window_state_changed(window, old_state, win->state);
 #define PRINT OUT_WINDOW(win); OUT_WINDOW_STATE(old_state);
   LOGF(LAYOUT_TRACE);
 #undef PRINT
@@ -209,8 +206,7 @@ void layout_event_map_notify(xcb_window_t window) {
   if(win == NULL) return;
   old_state = win->state;
   win->state = workspace_focused;
-  if(old_state != win->state)
-    window_state_changed(window, old_state, win->state);
+  window_state_changed(window, old_state, win->state);
 #define PRINT OUT_WINDOW(win); OUT_WINDOW_STATE(old_state);
   LOGF(LAYOUT_TRACE);
 #undef PRINT

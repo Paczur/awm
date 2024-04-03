@@ -29,6 +29,19 @@ static MODE next_mode = MODE_INVALID;
 { x ## _MIN_WIDTH, SETTINGS_INIT(x ## _ ## n), SETTINGS_INIT(x ## _ ## h), \
   SETTINGS_INIT(x ## _URGENT)}
 
+static void c_init_window(xcb_window_t window) {
+  const window_t *win;
+  int mask = XCB_EVENT_MASK_FOCUS_CHANGE | XCB_EVENT_MASK_ENTER_WINDOW |
+    XCB_EVENT_MASK_PROPERTY_CHANGE;
+  xcb_change_window_attributes(conn, window, XCB_CW_EVENT_MASK, &mask);
+  win = layout_xwin2win(window);
+  if(win == NULL) {
+    layout_event_create(window);
+    win = layout_xwin2win(window);
+  }
+  layout_input_set(layout_xwin2win(window),
+                   hint_window_input(window));
+}
 static void c_bar_update_minimized(void) {
   bar_update_minimized();
 }
@@ -43,6 +56,7 @@ static void c_adopt_windows(void) {
   size_t len = hint_saved_windows(&windows);
   for(size_t i=0; i<len; i++) {
     layout_restore(windows[i], hint_saved_window_workspace(windows[i]));
+    c_init_window(windows[i]);
   }
 #define PRINT OUT_ARR(windows, len);
   LOGF(TRACE);
@@ -129,7 +143,7 @@ void c_window_focus(size_t n) {
 void c_window_focused_swap(size_t n) {
   if(layout_swap(layout_focused(), layout_spawn2win(n))) {
 #define PRINT OUT(n);
-    LOGFE(TRACE);
+    LOGF(TRACE);
 #undef PRINT
   }
 }
@@ -221,7 +235,6 @@ void c_launcher_cancel(void) {
 }
 void c_launcher_run(void) {
   c_run(bar_launcher_return());
-  layout_focus_restore();
   c_mode_set(MODE_NORMAL);
   LOGFE(TRACE);
 }
@@ -329,6 +342,7 @@ void c_event_map(const xcb_generic_event_t *e) {
       return;
     }
   }
+  c_init_window(event->window);
   if(!layout_event_map(event->window,
                        !hint_initial_state_normal(event->window))) {
     c_bar_update_minimized();
@@ -339,8 +353,6 @@ void c_event_map(const xcb_generic_event_t *e) {
   free(atoms);
 }
 void c_event_map_notify(const xcb_generic_event_t *e) {
-  int mask = XCB_EVENT_MASK_FOCUS_CHANGE | XCB_EVENT_MASK_ENTER_WINDOW |
-    XCB_EVENT_MASK_PROPERTY_CHANGE;
   bool bar = false;
   const bar_containers_t *bar_containers;
   window_t *win;
@@ -354,11 +366,9 @@ void c_event_map_notify(const xcb_generic_event_t *e) {
     }
   }
   if(!bar) {
-    layout_event_map_notify(event->window);
-    xcb_change_window_attributes(conn, event->window, XCB_CW_EVENT_MASK, &mask);
     win = layout_xwin2win(event->window);
-    if(win != NULL) {
-      layout_input_set(win, hint_window_input(event->window));
+    layout_event_map_notify(event->window);
+    if(TRACE && win != NULL) {
 #define PRINT OUT_WINDOW(win);
       LOG(TRACE, "event: map_notify");
 #undef PRINT
