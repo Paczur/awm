@@ -194,6 +194,7 @@ bool layout_event_map(xcb_window_t window, bool iconic) {
   }
   win->state = workspace_focused;
   window_state_changed(window, old_state, win->state);
+  layout_focus(win);
 #define PRINT OUT_WINDOW(win); OUT_WINDOW_STATE(old_state);
   LOGF(LAYOUT_TRACE);
 #undef PRINT

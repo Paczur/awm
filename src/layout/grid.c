@@ -378,8 +378,6 @@ void grid_place_windowwo(window_t *window, size_t grid_i, bool assume_map,
     grid_force_update(grid_i);
     grid_update(m);
     xcb_map_window(conn, window->id);
-    xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT,
-                        window->id, XCB_CURRENT_TIME);
   } else {
     workspaces[wo].update[m] = true;
   }
@@ -393,8 +391,6 @@ void grid_place_window(window_t *window, size_t grid_i, bool assume_map) {
   grid_update(m);
   if(!assume_map)
     xcb_map_window(conn, window->id);
-  xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT,
-                      window->id, XCB_CURRENT_TIME);
 }
 
 size_t grid_focused(void) { return workspace_focusedw()->focus; }
