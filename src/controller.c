@@ -350,6 +350,8 @@ void c_event_map(const xcb_generic_event_t *e) {
   if(!layout_event_map(event->window,
                        !hint_initial_state_normal(event->window))) {
     c_bar_update_minimized();
+  } else {
+    xcb_ungrab_button(conn, XCB_BUTTON_INDEX_ANY, event->window, XCB_MOD_MASK_ANY);
   }
 #define PRINT OUT(event->window)
   LOG(TRACE, "event: map_request");
