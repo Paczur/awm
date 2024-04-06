@@ -166,6 +166,9 @@ static void grid_force_update(size_t pos) {
 }
 
 
+void grid_clean(void) {
+  memset(confstate, -1, CONF_ATOMS*CELLS_PER_WORKAREA*workarea_count*sizeof(uint32_t));
+}
 
 window_t *grid_pos2win(size_t n) {
   return grid_pos_invalid(n) ? NULL : workspace_focusedw()->grid[n].window;
@@ -306,18 +309,12 @@ void grid_update(size_t m) {
                            newstate+i*CONF_ATOMS);
     }
   }
+#define PRINT OUT(m); OUT(workspace); \
+  OUT_ARR(confstate+m*CONF_ATOMS*CELLS_PER_WORKAREA, CONF_ATOMS*CELLS_PER_WORKAREA); \
+  OUT_ARR(newstate, CONF_ATOMS*CELLS_PER_WORKAREA);
+  LOGF(LAYOUT_GRID_TRACE);
+#undef PRINT
   memcpy(confstate+m*CONF_ATOMS*CELLS_PER_WORKAREA, newstate, sizeof(newstate));
-  // puts("GRID:");
-  // for(size_t i=0; i<CELLS_PER_WORKAREA*workarea_count; i++) {
-  //   printf("%lu: ", i);
-  //   if(grid_pos2cell(i)->window == NULL) {
-  //     printf("w:NULL ");
-  //   } else {
-  //     printf("w:%u ", grid_pos2cell(i)->window->id);
-  //   }
-  //   printf("o:%lu\n", grid_pos2cell(i)->origin);
-  // }
-  // fflush(stdout);
 }
 
 void grid_adjust_pos(void) {

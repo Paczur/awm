@@ -148,10 +148,19 @@ void layout_restore(xcb_window_t window, size_t workspace) {
   if(workspace > MAX_WORKSPACES || !grid_restore_window(win, workspace)) {
     window_minimize(win);
     window_state_changed(window, WINDOW_WITHDRAWN, win->state);
+#define PRINT OUT_WINDOW(win); OUT(workspace);
+    LOGF(LAYOUT_TRACE);
+#undef PRINT
     return;
   }
   win->state = workspace;
   window_state_changed(window, WINDOW_WITHDRAWN, win->state);
+  if(workspace != workspace_focused) {
+    workspace_update(workspace);
+  }
+#define PRINT OUT_WINDOW(win); OUT(workspace); OUT(workspace_focused);
+  LOGF(LAYOUT_TRACE);
+#undef PRINT
 }
 
 
@@ -213,7 +222,7 @@ void layout_event_map_notify(xcb_window_t window) {
 #undef PRINT
 }
 
-void layout_event_create(xcb_window_t window) { }
+void layout_event_create(xcb_window_t window) { (void)window; }
 
 void layout_event_focus(xcb_window_t window) { grid_event_focus(window); }
 

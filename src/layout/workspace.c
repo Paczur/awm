@@ -49,29 +49,28 @@ bool workspace_fullscreen_set(size_t n, bool state) {
 }
 
 void workspace_switch(size_t n) {
-  size_t old_focus;
   if(n == workspace_focused) return;
   for(size_t i=0; i<workarea_count*CELLS_PER_WORKAREA; i++) {
-    if(workspaces[n].grid[i].window != NULL &&
-       workspaces[n].grid[i].origin == i) {
+    if(workspaces[workspace_focused].grid[i].window != NULL &&
+       workspaces[workspace_focused].grid[i].origin == i) {
+      xcb_unmap_window(conn, workspaces[workspace_focused].grid[i].window->id);
+    }
+  }
+  workspace_focused = n;
+  for(size_t i=0; i<workarea_count*CELLS_PER_WORKAREA; i++) {
+    if(workspaces[workspace_focused].grid[i].window != NULL &&
+       workspaces[workspace_focused].grid[i].origin == i) {
       xcb_map_window(conn, workspaces[n].grid[i].window->id);
     }
   }
-  old_focus = workspace_focused;
-  workspace_focused = n;
+  grid_clean();
+  grid_focus_restore();
   for(size_t i=0; i<workarea_count; i++) {
     if(workspaces[n].update[i]) {
       grid_update(i);
       workspaces[n].update[i] = false;
     } else {
       grid_refresh();
-    }
-  }
-  grid_focus_restore();
-  for(size_t i=0; i<workarea_count*CELLS_PER_WORKAREA; i++) {
-    if(workspaces[old_focus].grid[i].window != NULL &&
-       workspaces[old_focus].grid[i].origin == i) {
-      xcb_unmap_window(conn, workspaces[old_focus].grid[i].window->id);
     }
   }
 }

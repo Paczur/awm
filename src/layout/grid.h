@@ -26,6 +26,7 @@ bool grid_focus_pick(void);
 bool grid_focus_restore(void);
 void grid_place_window(window_t*, size_t, bool);
 
+void grid_clean(void);
 bool grid_swap(size_t, size_t);
 bool grid_focus(size_t);
 void grid_reset_sizes(size_t);
