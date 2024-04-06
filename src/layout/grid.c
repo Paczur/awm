@@ -147,18 +147,21 @@ static void grid_calculate(size_t m, uint32_t* values, size_t offset) {
     grid_expand_horizontally(m, values, offset);
   }
   if(grid_pos2mon(grid_focused()) == m) {
-    t = offset+grid_focusedc()->origin%CELLS_PER_WORKAREA*CELLS_PER_WORKAREA;
-    values[t+1] -= gap_size;
+    t = offset+grid_focusedc()->origin%CELLS_PER_WORKAREA*CONF_ATOMS;
     values[t+0] -= gap_size;
+    values[t+1] -= gap_size;
     values[t+2] += gap_size*2+border_size*2;
     values[t+3] += gap_size*2+border_size*2;
     values[t+4] = 0;
   }
+#define PRINT OUT(m); OUT_ARR(values+offset, CELLS_PER_WORKAREA*CONF_ATOMS);
+  LOGF(LAYOUT_GRID_TRACE);
+#undef PRINT
 }
 
 static void grid_force_update(size_t pos) {
   for(size_t i=0; i<CONF_ATOMS; i++) {
-    confstate[pos*CONF_ATOMS+i] = 0;
+    confstate[pos*CONF_ATOMS+i] = -1;
   }
 }
 

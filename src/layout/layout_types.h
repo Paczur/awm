@@ -126,4 +126,20 @@ typedef struct layout_init_t {
 #define LAYOUT_TRACE 0
 #endif
 
+#ifdef LAYOUT_GRID_DEBUG
+#undef LAYOUT_GRID_DEBUG
+#define LAYOUT_GRID_DEBUG 1
+#else
+#define LAYOUT_GRID_DEBUG 0
+#endif
+
+#ifdef LAYOUT_GRID_TRACE
+#undef LAYOUT_GRID_TRACE
+#define LAYOUT_GRID_TRACE 1
+#undef LAYOUT_GRID_DEBUG
+#define LAYOUT_GRID_DEBUG 1
+#else
+#define LAYOUT_GRID_TRACE 0
+#endif
+
 #endif
