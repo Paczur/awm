@@ -1,5 +1,9 @@
+#define REPEATABLE(mod, key, f) \
+{mod, key, f, true}
 #define WITH_CHANGE(mod, key, f) \
-{mod, key, f}, {MOD_SUPER | mod, key, f ## _change}
+{mod, key, f, false}, {MOD_SUPER | mod, key, f ## _change, true}
+#define BARE(mod, key, f) \
+{mod, key, f, false}
 #define CONFIG_NUMBER_PATTERN(mod, f) \
   WITH_CHANGE(mod, XK_1, f ## _0), \
   WITH_CHANGE(mod, XK_2, f ## _1), \
@@ -36,18 +40,18 @@
   CONFIG_DIRECTION_PATTERN(MOD_NONE,      focus_window),        \
   CONFIG_DIRECTION_PATTERN(MOD_SHIFT,     swap_window),         \
   CONFIG_DIRECTION_PATTERN(MOD_ALT,       enlarge),             \
-  WITH_CHANGE(MOD_NONE,  XF86XK_MonBrightnessDown, brightness_down), \
-  WITH_CHANGE(MOD_NONE,  XF86XK_MonBrightnessUp,   brightness_up),   \
-  WITH_CHANGE(MOD_NONE,  XK_F1,                    brightness_down), \
-  WITH_CHANGE(MOD_NONE,  XK_F2,                    brightness_up),   \
-  WITH_CHANGE(MOD_NONE,  XF86XK_AudioMute,         volume_mute),     \
-  WITH_CHANGE(MOD_NONE,  XF86XK_AudioLowerVolume,  volume_down),     \
-  WITH_CHANGE(MOD_NONE,  XF86XK_AudioRaiseVolume,  volume_up),       \
+  REPEATABLE(MOD_NONE,   XF86XK_MonBrightnessDown, brightness_down), \
+  REPEATABLE(MOD_NONE,   XF86XK_MonBrightnessUp,   brightness_up),   \
+  REPEATABLE(MOD_NONE,   XK_F1,                    brightness_down), \
+  REPEATABLE(MOD_NONE,   XK_F2,                    brightness_up),   \
+  REPEATABLE(MOD_NONE,   XF86XK_AudioMute,         volume_mute),     \
+  REPEATABLE(MOD_NONE,   XF86XK_AudioLowerVolume,  volume_down),     \
+  REPEATABLE(MOD_NONE,   XF86XK_AudioRaiseVolume,  volume_up),       \
+  REPEATABLE(MOD_NONE,   XK_F4,                    volume_mute),     \
+  REPEATABLE(MOD_NONE,   XK_F5,                    volume_down),     \
+  REPEATABLE(MOD_NONE,   XK_F6,                    volume_up),       \
   WITH_CHANGE(MOD_SHIFT, XK_s,                     system_suspend),  \
   WITH_CHANGE(MOD_ALT,   XK_s,                     system_shutdown), \
-  WITH_CHANGE(MOD_NONE,  XK_F4,                    volume_mute),     \
-  WITH_CHANGE(MOD_NONE,  XK_F5,                    volume_down),     \
-  WITH_CHANGE(MOD_NONE,  XK_F6,                    volume_up),       \
   WITH_CHANGE(MOD_NONE,  XK_q,                     destroy),         \
   WITH_CHANGE(MOD_SHIFT, XK_q,                     destroy_force),   \
   WITH_CHANGE(MOD_ALT,   XK_q,                     shutdown),        \
@@ -57,23 +61,23 @@
   WITH_CHANGE(MOD_NONE,  XK_equal,                 equal_sizes),     \
   WITH_CHANGE(MOD_NONE,  XK_Return,                terminal),        \
   WITH_CHANGE(MOD_NONE,  XK_f,                     fullscreen),      \
-  {MOD_NONE,             XK_r,                     launch},          \
   WITH_CHANGE(MOD_NONE,  XK_p,                     screenshot),      \
-  WITH_CHANGE(MOD_NONE,  XK_b,                     librewolf)        \
+  WITH_CHANGE(MOD_NONE,  XK_b,                     librewolf),       \
+  BARE(MOD_NONE,         XK_r,                     launch),          \
 }
 #define CONFIG_SHORTCUTS_NORMAL_MODE_RELEASE { \
-  {MOD_SUPER, XK_Super_L, mode_force}, \
+  BARE(MOD_SUPER, XK_Super_L, mode_force), \
 }
 #define CONFIG_SHORTCUTS_INSERT_MODE { \
-  {MOD_NONE, XK_Super_L, normal_mode}, \
+  BARE(MOD_NONE, XK_Super_L, normal_mode), \
 }
 #define CONFIG_SHORTCUTS_LAUNCHER { \
-  {MOD_NONE, XK_Super_L, launcher_abort}, \
-  {MOD_NONE, XK_Escape, launcher_abort}, \
-  {MOD_NONE, XK_Return, launcher_confirm}, \
-  {MOD_NONE, XK_Left, launcher_hint_left}, \
-  {MOD_NONE, XK_Right, launcher_hint_right}, \
-  {MOD_NONE, XK_BackSpace, launcher_erase}, \
+  BARE(MOD_NONE, XK_Super_L, launcher_abort), \
+  BARE(MOD_NONE, XK_Escape, launcher_abort), \
+  BARE(MOD_NONE, XK_Return, launcher_confirm), \
+  BARE(MOD_NONE, XK_Left, launcher_hint_left), \
+  BARE(MOD_NONE, XK_Right, launcher_hint_right), \
+  BARE(MOD_NONE, XK_BackSpace, launcher_erase), \
 }
 
 #define CONFIG_TERMINAL_CMD "mlterm"

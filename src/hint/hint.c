@@ -308,13 +308,19 @@ bool hint_window_input(xcb_window_t win) {
   xcb_get_property_reply_t *reply;
   cookie = xcb_get_property(conn, 0, win, WM_HINTS, WM_HINTS, 0, 2);
   reply = xcb_get_property_reply(conn, cookie, NULL);
+  if(reply) {
   arr = xcb_get_property_value(reply);
-  len = xcb_get_property_value_length(reply);
-  ret = !(len >= 64 && arr[0] && !arr[1]);
+    len = xcb_get_property_value_length(reply);
+    ret = !(len >= 64 && arr[0] && !arr[1]);
 #define PRINT OUT(win); OUT(ret);
-  LOGF(HINT_TRACE);
+    LOGF(HINT_TRACE);
 #undef PRINT
-  free(reply);
+    free(reply);
+  } else {
+#define PRINT OUT(win);
+    LOGF(HINT_TRACE);
+#undef PRINT
+  }
   return ret;
 }
 

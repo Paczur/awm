@@ -213,7 +213,7 @@ void layout_event_map_notify(xcb_window_t window) {
 #undef PRINT
 }
 
-void layout_event_create(xcb_window_t window) { window_event_create(window); }
+void layout_event_create(xcb_window_t window) { }
 
 void layout_event_focus(xcb_window_t window) { grid_event_focus(window); }
 

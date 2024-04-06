@@ -2,6 +2,7 @@
 #define H_CONFIG
 #include "user_config.h"
 #include <xcb/xcb.h>
+#include <stdbool.h>
 
 typedef enum {
   MOD_NONE = 0,
@@ -15,6 +16,7 @@ typedef struct config_shortcut_t {
   MODIFIER modifier;
   xcb_keysym_t keysym;
   void (*function) (void);
+  bool repeatable;
 } config_shortcut_t;
 
 #define TIMES10(x) x(0) x(1) x(2) x(3) x(4) x(5) x(6) x(7) x(8) x(9)

@@ -57,9 +57,10 @@ static void c_window_init(xcb_window_t window) {
   };
   xcb_change_window_attributes(conn, window,
                                XCB_CW_EVENT_MASK | XCB_CW_BORDER_PIXEL, values);
-  xcb_grab_button(conn, 1, window, XCB_EVENT_MASK_BUTTON_PRESS,
-                  XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE,
-                  XCB_NONE, XCB_BUTTON_INDEX_1, XCB_MOD_MASK_ANY);
+  xcb_grab_button(conn, 1, window,
+                  XCB_EVENT_MASK_BUTTON_PRESS,
+                  XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE,
+                  XCB_NONE, XCB_BUTTON_INDEX_ANY, XCB_MOD_MASK_ANY);
   win = layout_xwin2win(window);
   if(win == NULL) {
     layout_event_create(window);
@@ -361,7 +362,6 @@ void c_event_map(const xcb_generic_event_t *e) {
                            XCB_CONFIG_WINDOW_HEIGHT,
                            rect);
       xcb_map_window(conn, event->window);
-      layout_focus(layout_xwin2win(event->window));
       free(atoms);
 #define PRINT OUT(event->window); OUT_ARR(rect, 4);
       LOG(TRACE, "event: map_request(splash/utility window)");
@@ -373,8 +373,6 @@ void c_event_map(const xcb_generic_event_t *e) {
   if(!layout_event_map(event->window,
                        !hint_initial_state_normal(event->window))) {
     c_bar_update_minimized();
-  } else {
-    xcb_ungrab_button(conn, XCB_BUTTON_INDEX_ANY, event->window, XCB_MOD_MASK_ANY);
   }
 #define PRINT OUT(event->window)
   LOG(TRACE, "event: map_request");
@@ -396,6 +394,7 @@ void c_event_map_notify(const xcb_generic_event_t *e) {
   }
   if(!bar) {
     win = layout_xwin2win(event->window);
+    layout_input_set(win, hint_window_input(event->window));
     layout_event_map_notify(event->window);
     if(TRACE && win != NULL) {
 #define PRINT OUT_WINDOW(win);
@@ -443,13 +442,26 @@ void c_event_key_release(const xcb_generic_event_t *e) {
 }
 void c_event_button_press(const xcb_generic_event_t *e) {
   const xcb_button_press_event_t *event = (const xcb_button_press_event_t*)e;
+  xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, XCB_CURRENT_TIME);
   layout_focus(layout_xwin2win(event->event));
+  c_mode_set(MODE_INSERT);
 #define PRINT OUT(event->detail); OUT(event->state); OUT(event->event);
   LOG(TRACE, "event: button_press");
 #undef PRINT
 }
+void c_event_button_release(const xcb_generic_event_t *e) {
+  const xcb_button_release_event_t *event = (const xcb_button_release_event_t*)e;
+  xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, XCB_CURRENT_TIME);
+#define PRINT OUT(event->detail); OUT(event->state); OUT(event->event);
+  LOG(TRACE, "event: button_release");
+#undef PRINT
+}
 void c_event_create(const xcb_generic_event_t *e) {
   const xcb_create_notify_event_t *event = (const xcb_create_notify_event_t*)e;
+  xcb_grab_button(conn, 1, event->window,
+                  XCB_EVENT_MASK_BUTTON_PRESS,
+                  XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE,
+                  XCB_NONE, XCB_BUTTON_INDEX_ANY, XCB_MOD_MASK_ANY);
   layout_event_create(event->window);
 #define PRINT OUT(event->window);
   LOG(TRACE, "event: create_notify");
@@ -496,15 +508,11 @@ void c_event_unmap(const xcb_generic_event_t *e) {
 }
 void c_event_focus(const xcb_generic_event_t *e) {
   const xcb_focus_in_event_t *event = (const xcb_focus_in_event_t*)e;
-  const window_t *win;
   if(event->detail != XCB_NOTIFY_DETAIL_POINTER) {
-    win = layout_focused();
-    if(win != NULL) {
-      xcb_grab_button(conn, 1, win->id, XCB_EVENT_MASK_BUTTON_PRESS,
-                      XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE,
-                      XCB_NONE, XCB_BUTTON_INDEX_1, XCB_MOD_MASK_ANY);
-    }
-    xcb_ungrab_button(conn, XCB_BUTTON_INDEX_ANY, event->event, XCB_MOD_MASK_ANY);
+    xcb_grab_button(conn, 1, event->event,
+                    XCB_EVENT_MASK_BUTTON_PRESS,
+                    XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE,
+                    XCB_NONE, XCB_BUTTON_INDEX_ANY, XCB_MOD_MASK_ANY);
     layout_event_focus(event->event);
     hint_window_focused_set(event->event);
 #define PRINT OUT(event->event);
@@ -555,8 +563,33 @@ void c_event_property(const xcb_generic_event_t *e) {
 }
 void c_event_configure(const xcb_generic_event_t *e) {
   const xcb_configure_request_event_t *event = (xcb_configure_request_event_t*)e;
-  (void)event;
-  LOGE(TRACE, "event: configure_request");
+  uint32_t mask = XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT |
+    XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y;
+  uint32_t value_list[4];
+  size_t index = 0;
+  window_t *win = layout_xwin2win(event->window);
+  if(win == NULL) {
+    if(event->value_mask & XCB_CONFIG_WINDOW_X) {
+      value_list[index++] = event->x;
+    }
+    if(event->value_mask & XCB_CONFIG_WINDOW_Y) {
+      value_list[index++] = event->y;
+    }
+    if(event->value_mask & XCB_CONFIG_WINDOW_WIDTH) {
+      value_list[index++] = event->width;
+    }
+    if(event->value_mask & XCB_CONFIG_WINDOW_HEIGHT) {
+      value_list[index++] = event->height;
+    }
+    xcb_configure_window(conn, event->window, event->value_mask&mask, value_list);
+#define PRINT OUT(event->window); OUT(event->value_mask&mask); OUT_ARR(value_list, index);
+    LOG(TRACE, "event: configure_request");
+#undef PRINT
+  } else {
+#define PRINT OUT_WINDOW(win);
+    LOG(TRACE, "event: configure_request");
+#undef PRINT
+  }
 }
 
 static void convert_shortcuts(SHORTCUT_TYPE type,
@@ -573,7 +606,7 @@ static void convert_shortcuts(SHORTCUT_TYPE type,
     if(conf_shortcuts[i].modifier & MOD_CTRL)
       mod_mask |= XCB_MOD_MASK_CONTROL;
     shortcut_add(conf_shortcuts[i].keysym, type, mod_mask,
-                 conf_shortcuts[i].function);
+                 conf_shortcuts[i].function, conf_shortcuts[i].repeatable);
   }
 }
 

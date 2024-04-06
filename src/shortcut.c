@@ -35,10 +35,6 @@ bool shortcut_handle(xcb_keycode_t keycode, SHORTCUT_TYPE type, uint16_t state) 
   shortcut_t *t;
   int num_syms;
   size_t index;
-  if(full_state == last_shortcut_state && keycode == last_shortcut_keycode)
-    return false;
-  last_shortcut_state = full_state;
-  last_shortcut_keycode = keycode;
 
   num_syms = xkb_state_key_get_syms(xkbstate, keycode, &syms);
   for(int i=0; i<num_syms; i++) {
@@ -52,17 +48,23 @@ bool shortcut_handle(xcb_keycode_t keycode, SHORTCUT_TYPE type, uint16_t state) 
           t = t->next;
         } else break;
       }
-      if(t != NULL) {
+      if(t != NULL &&
+         (t->repeatable || full_state != last_shortcut_state ||
+           keycode != last_shortcut_keycode)) {
         t->function();
+        last_shortcut_state = full_state;
+        last_shortcut_keycode = keycode;
         return true;
       }
+      last_shortcut_state = full_state;
+      last_shortcut_keycode = keycode;
     }
   }
   return false;
 }
 
 void shortcut_add(xcb_keysym_t keysym, SHORTCUT_TYPE type, uint16_t mod_mask,
-                  void (*function) (void)) {
+                  void (*function) (void), bool repeatable) {
   shortcut_t *t;
   if(mod_mask & XCB_MOD_MASK_SHIFT) {
     keysym = xkb_keysym_to_upper(keysym);
@@ -83,6 +85,7 @@ void shortcut_add(xcb_keysym_t keysym, SHORTCUT_TYPE type, uint16_t mod_mask,
   t = shortcut_map[index]->shortcuts;
   t->state = (type<<16) | (mod_mask);
   t->function = function;
+  t->repeatable = repeatable;
 }
 
 void shortcut_enable(const xcb_screen_t *screen, SHORTCUT_TYPE type) {
