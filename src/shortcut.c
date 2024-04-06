@@ -11,6 +11,8 @@ static int32_t core_device;
 static struct xkb_keymap *keymap;
 static struct xkb_state *xkbstate;
 static xcb_connection_t *conn;
+static xcb_keycode_t last_shortcut_keycode;
+static uint32_t last_shortcut_state;
 
 static shortcut_node_t *shortcut_map[MAX_KEYSYMS] = {};
 
@@ -33,6 +35,10 @@ bool shortcut_handle(xcb_keycode_t keycode, SHORTCUT_TYPE type, uint16_t state) 
   shortcut_t *t;
   int num_syms;
   size_t index;
+  if(full_state == last_shortcut_state && keycode == last_shortcut_keycode)
+    return false;
+  last_shortcut_state = full_state;
+  last_shortcut_keycode = keycode;
 
   num_syms = xkb_state_key_get_syms(xkbstate, keycode, &syms);
   for(int i=0; i<num_syms; i++) {
@@ -152,9 +158,20 @@ int shortcut_utf8(xcb_keycode_t keycode, char* buff, size_t size) {
 }
 
 void shortcut_init(xcb_connection_t *c) {
+  xcb_xkb_per_client_flags_reply_t *reply;
+  xcb_xkb_per_client_flags_cookie_t cookie;
+  const uint32_t mask =
+    XCB_XKB_PER_CLIENT_FLAG_GRABS_USE_XKB_STATE |
+    XCB_XKB_PER_CLIENT_FLAG_DETECTABLE_AUTO_REPEAT;
   conn = c;
   ctx = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
   core_device = xkb_x11_get_core_keyboard_device_id(conn);
+  cookie = xcb_xkb_per_client_flags(conn,
+                                    XCB_XKB_ID_USE_CORE_KBD,
+                                    mask, mask, 0, 0, 0);
+  reply =
+    xcb_xkb_per_client_flags_reply(conn, cookie, NULL);
+  free(reply);
   shortcut_load_keymap();
 }
 

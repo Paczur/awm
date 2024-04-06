@@ -5,7 +5,6 @@
 
 static void (**event_dispatch) (const xcb_generic_event_t*);
 static size_t event_dispatch_length;
-static bool run;
 
 void event_listener_add(uint8_t type, void(*f)(const xcb_generic_event_t*)) {
   if(event_dispatch == NULL && XCB_GE_GENERIC < type) {
@@ -22,22 +21,15 @@ void event_listener_add(uint8_t type, void(*f)(const xcb_generic_event_t*)) {
   event_dispatch[type] = f;
 }
 
-void event_run(xcb_connection_t *conn) {
+void event_next(xcb_connection_t *conn) {
   xcb_generic_event_t* event;
   uint8_t type;
-  run = true;
-  while(run) {
-    event = xcb_wait_for_event(conn);
-    if(event == NULL) continue;
-    type = event->response_type&0x7F; //Mask highbit - synthetic
-    if(type < event_dispatch_length &&
-       event_dispatch[type] != NULL) {
-      event_dispatch[type](event);
-      xcb_flush(conn);
-      fflush(stdout);
-    }
-    free(event);
+  event = xcb_wait_for_event(conn);
+  if(event == NULL) return;
+  type = event->response_type&0x7F; //Mask highbit - synthetic
+  if(type < event_dispatch_length &&
+     event_dispatch[type] != NULL) {
+    event_dispatch[type](event);
   }
+  free(event);
 }
-
-void event_stop(void) { run = false; }

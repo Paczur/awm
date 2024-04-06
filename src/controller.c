@@ -14,6 +14,7 @@
 #include <X11/XF86keysym.h>
 #include <string.h>
 
+static bool run;
 static MODE mode;
 static MODE next_mode = MODE_INVALID;
 static uint32_t border_normal;
@@ -94,7 +95,7 @@ static void c_sigterm_action(int a) {
 }
 
 void c_wm_shutdown(void) {
-  event_stop();
+  run = false;
   LOGE(DEBUG, "Shutdown initiated");
 }
 void c_workspace_switch(size_t n) {
@@ -652,7 +653,14 @@ static void c_init_hint(void) {
             {layout_workspaces(NULL), layout_workspace_names()}});
 }
 
-void c_loop(void) { event_run(conn); }
+void c_loop(void) {
+  run = true;
+  while(run) {
+    event_next(conn);
+    xcb_flush(conn);
+    fflush(stdout);
+  }
+}
 
 void c_init(void) {
   rect_t *monitors;

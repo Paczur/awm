@@ -2,7 +2,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
-#define CLOCK_STEPS_PER_SECOND 10
+#define CLOCK_STEPS_PER_SECOND 50
 #define INFO_BLOCK_TEXT_LENGTH 40
 
 typedef struct block_info_state_t {
@@ -14,6 +14,7 @@ typedef struct block_info_state_t {
 
 typedef struct block_info_t {
   block_t *blocks;
+  pthread_rwlock_t *locks;
   block_settings_t normal;
   block_settings_t highlighted;
   block_settings_t urgent;
@@ -55,14 +56,19 @@ static void *block_info_update_periodic(void*) {
         1000000000/CLOCK_STEPS_PER_SECOND };
   for(size_t i=0; i<MAX_INFO_BLOCKS; i++) {
     if(block_info.data[i].cmd == NULL) {
+      pthread_rwlock_wrlock(block_info.locks+i);
       block_info.state[i].countdown = -1;
+      pthread_rwlock_unlock(block_info.locks+i);
     }
   }
   info_run_flag = true;
   while(info_run_flag) {
     max = -1;
     for(int i=0; i<MAX_INFO_BLOCKS; i++) {
+      pthread_rwlock_rdlock(block_info.locks+i);
       if(block_info.state[i].update) {
+        pthread_rwlock_unlock(block_info.locks+i);
+        pthread_rwlock_wrlock(block_info.locks+i);
         get_output(block_info.data[i].cmd,
                    block_info.state[i].text,
                    INFO_BLOCK_TEXT_LENGTH);
@@ -70,6 +76,8 @@ static void *block_info_update_periodic(void*) {
         block_info.state[i].update = false;
         max = MAX(i, max);
       } else if(block_info.state[i].countdown == 0) {
+        pthread_rwlock_unlock(block_info.locks+i);
+        pthread_rwlock_wrlock(block_info.locks+i);
         block_info.state[i].status =
           get_output(block_info.data[i].cmd,
                      block_info.state[i].text,
@@ -77,12 +85,16 @@ static void *block_info_update_periodic(void*) {
         block_info.state[i].countdown = block_info.data[i].timer*CLOCK_STEPS_PER_SECOND;
         max = MAX(i, max);
       } else if(block_info.state[i].countdown > 0) {
+        pthread_rwlock_unlock(block_info.locks+i);
+        pthread_rwlock_wrlock(block_info.locks+i);
         block_info.state[i].countdown--;
       }
+      pthread_rwlock_unlock(block_info.locks+i);
     }
     if(info_run_flag) {
       if(max >= 0) {
         for(int i=0; i<max+1; i++) {
+          pthread_rwlock_rdlock(block_info.locks+i);
           block_set_text(block_info.blocks+i, block_info.state[i].text);
         }
         block_geometry_update_right(block_info.blocks, block_info_geometry,
@@ -94,6 +106,9 @@ static void *block_info_update_periodic(void*) {
                                     block_info.min_width);
         block_info_offset_right =
           block_combined_width(block_info_geometry, MAX_INFO_BLOCKS);
+        for(int i=0; i<max+1; i++) {
+          pthread_rwlock_unlock(block_info.locks+i);
+        }
         callback();
         xcb_flush(conn);
       }
@@ -107,8 +122,10 @@ static void *block_info_update_periodic(void*) {
 void block_info_update_highlight(int n, int delay) {
   for(size_t i=0; i<MAX_INFO_BLOCKS; i++) {
     if(block_info.data[i].id == n) {
+      pthread_rwlock_wrlock(block_info.locks+i);
       block_info.state[i].countdown = delay*CLOCK_STEPS_PER_SECOND;
       block_info.state[i].update = true;
+      pthread_rwlock_unlock(block_info.locks+i);
       break;
     }
   }
@@ -116,10 +133,15 @@ void block_info_update_highlight(int n, int delay) {
 
 void block_info_update(int n) {
   for(size_t i=0; i<MAX_INFO_BLOCKS; i++) {
+    pthread_rwlock_rdlock(block_info.locks+i);
     if(block_info.data[i].id == n) {
+      pthread_rwlock_unlock(block_info.locks+i);
+      pthread_rwlock_wrlock(block_info.locks+i);
       block_info.state[i].countdown = 1;
+      pthread_rwlock_unlock(block_info.locks+i);
       break;
     }
+    pthread_rwlock_unlock(block_info.locks+i);
   }
 }
 
@@ -144,8 +166,10 @@ void block_info_init(const PangoFontDescription *font,
   get_output = init->get_output;
   memcpy(block_info.data, init->data, init->data_length*sizeof(block_info_data_t));
   block_info.blocks = malloc(MAX_INFO_BLOCKS*sizeof(block_t));
+  block_info.locks = malloc(MAX_INFO_BLOCKS*sizeof(pthread_rwlock_t));
   for(size_t i=0; i<MAX_INFO_BLOCKS; i++) {
     block_create(block_info.blocks+i, font);
+    pthread_rwlock_init(block_info.locks+i, NULL);
   }
   pthread_create(&block_info_thread, NULL, block_info_update_periodic, NULL);
 }
