@@ -77,7 +77,7 @@ static void grid_expand_horizontally(size_t m, uint32_t* values, size_t offset) 
         gap_size*2 + border_size*2;
       if(X(i) == 0) {
         values[offset+ri*CONF_ATOMS+0] -= values[offset+i*CONF_ATOMS+2]+
-          gap_size*2 + border_size*2;
+          gap_size*2;
       }
     }
   }
@@ -97,7 +97,7 @@ static void grid_expand_vertically(size_t m, uint32_t* values, size_t offset) {
         gap_size*2 + border_size*2;
       if(Y(i) == 0) {
         values[offset+ri*CONF_ATOMS+1] -= values[offset+i*CONF_ATOMS+3]+
-          gap_size*2 + border_size*2;
+          gap_size*2;
       }
     }
   }
@@ -291,7 +291,9 @@ void grid_update(size_t m) {
         confstate[m*CONF_ATOMS*CELLS_PER_WORKAREA+i*CONF_ATOMS+2]
         != newstate[i*CONF_ATOMS+2] ||
         confstate[m*CONF_ATOMS*CELLS_PER_WORKAREA+i*CONF_ATOMS+3]
-        != newstate[i*CONF_ATOMS+3])) {
+        != newstate[i*CONF_ATOMS+3] ||
+        confstate[m*CONF_ATOMS*CELLS_PER_WORKAREA+i*CONF_ATOMS+4]
+        != newstate[i*CONF_ATOMS+4])) {
       xcb_configure_window(conn,
                            grid_pos2win(grid_mon2pos(m)+i)->id,
                            XCB_CONFIG_WINDOW_X |
