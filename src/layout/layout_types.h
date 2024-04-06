@@ -50,6 +50,13 @@ typedef struct workspace_t {
   bool fullscreen: 1;
 } workspace_t;
 
+typedef struct grid_init_t {
+  size_t gaps;
+  size_t borders;
+  const size_t *spawn_order;
+  size_t spawn_order_length;
+} grid_init_t;
+
 typedef struct layout_init_t {
   xcb_connection_t *conn;
   const xcb_screen_t *screen;
@@ -60,9 +67,7 @@ typedef struct layout_init_t {
   size_t workarea_count;
   const char *const(*name_replacements)[2];
   size_t name_replacements_length;
-  size_t gaps;
-  const size_t *spawn_order;
-  size_t spawn_order_length;
+  grid_init_t grid_init;
 } layout_init_t;
 
 #define OUT_WINDOW(w) \

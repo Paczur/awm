@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <xcb/xcb.h>
 #include <stdbool.h>
+#include "layout_types.h"
 
 typedef struct grid_cell_t grid_cell_t;
 typedef struct window_t window_t;
@@ -44,7 +45,7 @@ size_t grid_focusable_to_right(void);
 size_t grid_focusable_to_left(void);
 bool grid_restore_window(window_t*, size_t);
 
-void grid_init(xcb_connection_t*, const size_t*, size_t, size_t);
+void grid_init(xcb_connection_t*, const grid_init_t*);
 void grid_deinit(void);
 
 void grid_event_focus(xcb_window_t);

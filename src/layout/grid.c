@@ -10,10 +10,13 @@
 #define Y(pos) ((pos)%CELLS_PER_WORKAREA/VERT_CELLS_PER_WORKAREA)
 #define COMB(x, y) ((x)+(y)*VERT_CELLS_PER_WORKAREA)
 
-static uint32_t *prevstate;
+#define CONF_ATOMS 5
+
+static uint32_t *confstate;
 static size_t *spawn_order;
 static size_t spawn_order_len;
 static size_t gap_size;
+static size_t border_size;
 static xcb_connection_t *conn;
 
 bool grid_pos_invalid(size_t n) { return n >= workarea_count*CELLS_PER_WORKAREA; }
@@ -70,9 +73,11 @@ static void grid_expand_horizontally(size_t m, uint32_t* values, size_t offset) 
       grid_pos2cell(p+i)->window = grid_pos2win(p+ri);
       grid_pos2cell(p+i)->origin = grid_pos2origin(p+ri);
 
-      values[offset+ri*4+2] += values[offset+i*4+2]+gap_size*2;
+      values[offset+ri*CONF_ATOMS+2] += values[offset+i*CONF_ATOMS+2]+
+        gap_size*2 + border_size*2;
       if(X(i) == 0) {
-        values[offset+ri*4+0] -= values[offset+i*4+2]+gap_size*2;
+        values[offset+ri*CONF_ATOMS+0] -= values[offset+i*CONF_ATOMS+2]+
+          gap_size*2 + border_size*2;
       }
     }
   }
@@ -88,9 +93,11 @@ static void grid_expand_vertically(size_t m, uint32_t* values, size_t offset) {
       grid_pos2cell(p+i)->window = grid_pos2win(p+ri);
       grid_pos2cell(p+i)->origin = grid_pos2origin(p+ri);
 
-      values[offset+ri*4+3] += values[offset+i*4+3]+gap_size*2;
+      values[offset+ri*CONF_ATOMS+3] += values[offset+i*CONF_ATOMS+3]+
+        gap_size*2 + border_size*2;
       if(Y(i) == 0) {
-        values[offset+ri*4+1] -= values[offset+i*4+3]+gap_size*2;
+        values[offset+ri*CONF_ATOMS+1] -= values[offset+i*CONF_ATOMS+3]+
+          gap_size*2 + border_size*2;
       }
     }
   }
@@ -112,23 +119,25 @@ static void grid_calculate(size_t m, uint32_t* values, size_t offset) {
     if(grid_pos2origin(p) != p)
       grid_pos2cell(p)->window = NULL;
 
-    values[offset+i*4+0] = workareas[m].x + gap_size +
+    values[offset+i*CONF_ATOMS+0] = workareas[m].x + gap_size +
       (X(i) == 0 ?
        0 :
        (workareas[m].w/2 + workspace->cross[m*GRID_AXIS+0]));
-    values[offset+i*4+1] = workareas[m].y + gap_size +
+    values[offset+i*CONF_ATOMS+1] = workareas[m].y + gap_size +
       (Y(i) == 0 ?
        0 :
        (workareas[m].h/2 + workspace->cross[m*GRID_AXIS+1]));
-    values[offset+i*4+2] = workareas[m].w/2 - gap_size*2 +
+    values[offset+i*CONF_ATOMS+2] = workareas[m].w/2 -
+      gap_size*2 - border_size*2 +
       (X(i) == 0 ?
        workspace->cross[m*GRID_AXIS+0] :
        -workspace->cross[m*GRID_AXIS+0]);
-    values[offset+i*4+3] = workareas[m].h/2 -
-      gap_size*2 +
+    values[offset+i*CONF_ATOMS+3] = workareas[m].h/2 -
+      gap_size*2 - border_size*2 +
       (Y(i) == 0 ?
        workspace->cross[m*GRID_AXIS+1] :
        -workspace->cross[m*GRID_AXIS+1]);
+    values[offset+i*CONF_ATOMS+4] = border_size;
   }
   if(workareas[m].w < workareas[m].h) {
     grid_expand_horizontally(m, values, offset);
@@ -141,14 +150,15 @@ static void grid_calculate(size_t m, uint32_t* values, size_t offset) {
     t = offset+grid_focusedc()->origin%CELLS_PER_WORKAREA*CELLS_PER_WORKAREA;
     values[t+1] -= gap_size;
     values[t+0] -= gap_size;
-    values[t+2] += gap_size*2;
-    values[t+3] += gap_size*2;
+    values[t+2] += gap_size*2+border_size*2;
+    values[t+3] += gap_size*2+border_size*2;
+    values[t+4] = 0;
   }
 }
 
 static void grid_force_update(size_t pos) {
-  for(size_t i=0; i<4; i++) {
-    prevstate[pos*4+i] = 0;
+  for(size_t i=0; i<CONF_ATOMS; i++) {
+    confstate[pos*CONF_ATOMS+i] = 0;
   }
 }
 
@@ -248,19 +258,19 @@ void grid_unmark(window_t *w) {
 
 void grid_refresh(void) {
   for(size_t i=0; i<workarea_count; i++) {
-    grid_calculate(i, prevstate, i*4*CELLS_PER_WORKAREA);
+    grid_calculate(i, confstate, i*CONF_ATOMS*CELLS_PER_WORKAREA);
   }
 }
 
 void grid_update(size_t m) {
   const workspace_t *workspace = workspace_focusedw();
-  uint32_t newstate[4*CELLS_PER_WORKAREA];
+  uint32_t newstate[CONF_ATOMS*CELLS_PER_WORKAREA];
   grid_calculate(m, newstate, 0);
   if(grid_mon_empty(m)) {
     for(size_t i=0; i<GRID_AXIS; i++) {
       workspace->cross[m*GRID_AXIS+i] = 0;
     }
-    memcpy(prevstate+m*4*CELLS_PER_WORKAREA, newstate, sizeof(newstate));
+    memcpy(confstate+m*CONF_ATOMS*CELLS_PER_WORKAREA, newstate, sizeof(newstate));
     return;
   }
   if(grid_pos2win(COMB(0, 0)) == grid_pos2win(COMB(0, 1)) &&
@@ -274,19 +284,24 @@ void grid_update(size_t m) {
   for(size_t i=0; i<CELLS_PER_WORKAREA; i++) {
     if(grid_pos2origin(grid_mon2pos(m)+i) == grid_mon2pos(m)+i &&
        grid_pos2win(grid_mon2pos(m)+i) != NULL &&
-       (prevstate[m*4*CELLS_PER_WORKAREA+i*4+0] != newstate[i*4+0] ||
-        prevstate[m*4*CELLS_PER_WORKAREA+i*4+1] != newstate[i*4+1] ||
-        prevstate[m*4*CELLS_PER_WORKAREA+i*4+2] != newstate[i*4+2] ||
-        prevstate[m*4*CELLS_PER_WORKAREA+i*4+3] != newstate[i*4+3])) {
+       (confstate[m*CONF_ATOMS*CELLS_PER_WORKAREA+i*CONF_ATOMS+0]
+        != newstate[i*CONF_ATOMS+0] ||
+        confstate[m*CONF_ATOMS*CELLS_PER_WORKAREA+i*CONF_ATOMS+1]
+        != newstate[i*CONF_ATOMS+1] ||
+        confstate[m*CONF_ATOMS*CELLS_PER_WORKAREA+i*CONF_ATOMS+2]
+        != newstate[i*CONF_ATOMS+2] ||
+        confstate[m*CONF_ATOMS*CELLS_PER_WORKAREA+i*CONF_ATOMS+3]
+        != newstate[i*CONF_ATOMS+3])) {
       xcb_configure_window(conn,
                            grid_pos2win(grid_mon2pos(m)+i)->id,
                            XCB_CONFIG_WINDOW_X |
                            XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH |
-                           XCB_CONFIG_WINDOW_HEIGHT,
-                           newstate+i*4);
+                           XCB_CONFIG_WINDOW_HEIGHT |
+                           XCB_CONFIG_WINDOW_BORDER_WIDTH,
+                           newstate+i*CONF_ATOMS);
     }
   }
-  memcpy(prevstate+m*4*CELLS_PER_WORKAREA, newstate, sizeof(newstate));
+  memcpy(confstate+m*CONF_ATOMS*CELLS_PER_WORKAREA, newstate, sizeof(newstate));
   // puts("GRID:");
   // for(size_t i=0; i<CELLS_PER_WORKAREA*workarea_count; i++) {
   //   printf("%lu: ", i);
@@ -349,9 +364,9 @@ bool grid_focus_pick(void) {
   workspace_t *workspace = workspace_focusedw();
   window_t *win;
   for(size_t i=0; i<workarea_count; i++) {
-    win = workspace->grid[i*4].window;
+    win = workspace->grid[i*CONF_ATOMS].window;
     if(win != NULL && win->input) {
-      grid_focus(i*4);
+      grid_focus(i*CONF_ATOMS);
       return true;
     }
   }
@@ -449,7 +464,8 @@ void grid_reset_sizes(size_t m) {
 
 void grid_resize_h(size_t m, int h) {
   const workspace_t* workspace = workspace_focusedw();
-  size_t ph = grid_workareas()[m].h/2 - gap_size*2 - workspace->cross[m*GRID_AXIS+1];
+  size_t ph = grid_workareas()[m].h/2 - gap_size*2 - border_size*2
+    - workspace->cross[m*GRID_AXIS+1];
   if((h > 0 && (ph - h > ph || ph - h == 0)) ||
      (h < 0 && (ph + workspace->cross[m*GRID_AXIS+1]*2 + h >
                 ph + workspace->cross[m*GRID_AXIS+1]*2 ||
@@ -461,7 +477,8 @@ void grid_resize_h(size_t m, int h) {
 
 void grid_resize_w(size_t m, int w) {
   const workspace_t* workspace = workspace_focusedw();
-  size_t pw = grid_workareas()[m].w/2 - gap_size*2 - workspace->cross[m*GRID_AXIS+0];
+  size_t pw = grid_workareas()[m].w/2 - gap_size*2 - border_size*2
+    - workspace->cross[m*GRID_AXIS+0];
   if((w > 0 && (pw - w > pw || pw - w == 0)) ||
      (w < 0 && (pw + workspace->cross[m*GRID_AXIS+0]*2 + w >
                 pw + workspace->cross[m*GRID_AXIS+0]*2 ||
@@ -605,18 +622,19 @@ bool grid_restore_window(window_t *win, size_t wo) {
 }
 
 
-void grid_init(xcb_connection_t *c, const size_t *so, size_t so_len, size_t n) {
+void grid_init(xcb_connection_t *c, const grid_init_t *init) {
   conn = c;
-  gap_size = n;
-  spawn_order = malloc(so_len*sizeof(size_t));
-  spawn_order_len = so_len;
-  memcpy(spawn_order, so, so_len*sizeof(size_t));
-  prevstate = calloc(workarea_count*4*CELLS_PER_WORKAREA, sizeof(uint32_t));
+  gap_size = init->gaps;
+  border_size = init->borders;
+  spawn_order = malloc(init->spawn_order_length*sizeof(size_t));
+  spawn_order_len = init->spawn_order_length;
+  memcpy(spawn_order, init->spawn_order, spawn_order_len*sizeof(size_t));
+  confstate = calloc(workarea_count*CONF_ATOMS*CELLS_PER_WORKAREA, sizeof(uint32_t));
 }
 
 void grid_deinit(void) {
   free(spawn_order);
-  free(prevstate);
+  free(confstate);
 }
 
 
@@ -630,28 +648,32 @@ void grid_event_focus(xcb_window_t window) {
      grid_pos2cell(grid_i)->window == grid_pos2cell(temp)->window)
     return;
   if(!grid_pos_invalid(grid_i) && grid_pos2cell(grid_i)->window != NULL) {
-    prevstate[grid_i*4+0] += gap_size;
-    prevstate[grid_i*4+1] += gap_size;
-    prevstate[grid_i*4+2] -= gap_size*2;
-    prevstate[grid_i*4+3] -= gap_size*2;
+    confstate[grid_i*CONF_ATOMS+0] += gap_size;
+    confstate[grid_i*CONF_ATOMS+1] += gap_size;
+    confstate[grid_i*CONF_ATOMS+2] -= gap_size*2+border_size*2;
+    confstate[grid_i*CONF_ATOMS+3] -= gap_size*2+border_size*2;
+    confstate[grid_i*CONF_ATOMS+4] = border_size;
     xcb_configure_window(conn,
                          grid_pos2cell(grid_i)->window->id,
                          XCB_CONFIG_WINDOW_X |
                          XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH |
-                         XCB_CONFIG_WINDOW_HEIGHT,
-                         prevstate+grid_i*4);
+                         XCB_CONFIG_WINDOW_HEIGHT |
+                         XCB_CONFIG_WINDOW_BORDER_WIDTH,
+                         confstate+grid_i*CONF_ATOMS);
   }
   if(!grid_pos_invalid(temp)) {
-    prevstate[temp*4+0] -= gap_size;
-    prevstate[temp*4+1] -= gap_size;
-    prevstate[temp*4+2] += gap_size*2;
-    prevstate[temp*4+3] += gap_size*2;
+    confstate[temp*CONF_ATOMS+0] -= gap_size;
+    confstate[temp*CONF_ATOMS+1] -= gap_size;
+    confstate[temp*CONF_ATOMS+2] += gap_size*2+border_size*2;
+    confstate[temp*CONF_ATOMS+3] += gap_size*2+border_size*2;
+    confstate[temp*CONF_ATOMS+4] = 0;
     xcb_configure_window(conn,
                          window,
                          XCB_CONFIG_WINDOW_X |
                          XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH |
-                         XCB_CONFIG_WINDOW_HEIGHT,
-                         prevstate+temp*4);
+                         XCB_CONFIG_WINDOW_HEIGHT |
+                         XCB_CONFIG_WINDOW_BORDER_WIDTH,
+                         confstate+temp*CONF_ATOMS);
     workspace_focusedw()->focus = temp;
   }
 }

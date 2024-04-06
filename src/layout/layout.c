@@ -164,7 +164,7 @@ void layout_init(const layout_init_t *init) {
   window_init(init->conn, init->name_replacements, init->name_replacements_length,
               init->get_class);
   workspace_init(init->conn);
-  grid_init(init->conn, init->spawn_order, init->spawn_order_length, init->gaps);
+  grid_init(init->conn, &init->grid_init);
 }
 
 void layout_deinit(void) {

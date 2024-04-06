@@ -16,6 +16,8 @@
 
 static MODE mode;
 static MODE next_mode = MODE_INVALID;
+static uint32_t border_normal;
+static uint32_t border_urgent;
 #define LENGTH(x) (sizeof(x)/sizeof((x)[0]))
 #define MIN(x,y) ((x)<=(y)?(x):(y))
 
@@ -29,11 +31,31 @@ static MODE next_mode = MODE_INVALID;
 { x ## _MIN_WIDTH, SETTINGS_INIT(x ## _ ## n), SETTINGS_INIT(x ## _ ## h), \
   SETTINGS_INIT(x ## _URGENT)}
 
+static uint32_t c_hex2xcolor(const char *hex) {
+  uint32_t mul = 1;
+  uint32_t ret = 0;
+  size_t end = 6;
+  while(end --> 0) {
+    if(hex[end] >= 'a') {
+      ret += mul * (hex[end] - 'a' + 10);
+    } else if(hex[end] >= 'A') {
+      ret += mul * (hex[end] - 'A' + 10);
+    } else {
+      ret += mul * (hex[end] - '0');
+    }
+    mul *= 16;
+  }
+  return ret;
+}
 static void c_window_init(xcb_window_t window) {
   const window_t *win;
-  int mask = XCB_EVENT_MASK_FOCUS_CHANGE | XCB_EVENT_MASK_ENTER_WINDOW |
-    XCB_EVENT_MASK_PROPERTY_CHANGE;
-  xcb_change_window_attributes(conn, window, XCB_CW_EVENT_MASK, &mask);
+  int values[2] = {
+    border_normal,
+    XCB_EVENT_MASK_FOCUS_CHANGE | XCB_EVENT_MASK_ENTER_WINDOW |
+      XCB_EVENT_MASK_PROPERTY_CHANGE
+  };
+  xcb_change_window_attributes(conn, window,
+                               XCB_CW_EVENT_MASK | XCB_CW_BORDER_PIXEL, values);
   xcb_grab_button(conn, 1, window, XCB_EVENT_MASK_BUTTON_PRESS,
                   XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE,
                   XCB_NONE, XCB_BUTTON_INDEX_1, XCB_MOD_MASK_ANY);
@@ -497,11 +519,18 @@ void c_event_xkb(const xcb_generic_event_t *e) {
   shortcut_event_state((xcb_xkb_state_notify_event_t*)e);
 }
 void c_event_property(const xcb_generic_event_t *e) {
+  uint32_t color;
   window_t *win = NULL;
   const xcb_property_notify_event_t *event = (const xcb_property_notify_event_t*)e;
   if(hint_atom_urgent(event->atom)) {
     win = layout_xwin2win(event->window);
     bool state = hint_window_urgent(event->window, event->atom);
+    if(state) {
+      color = border_urgent;
+    } else {
+      color = border_normal;
+    }
+    xcb_change_window_attributes(conn, event->window, XCB_CW_BORDER_PIXEL, &color);
     if(layout_urgency_set(win, state)) {
       if(win->state == WINDOW_ICONIC) {
         c_bar_update_minimized();
@@ -599,8 +628,8 @@ static void c_init_layout(rect_t *t_rect, const rect_t *monitors,
     .workareas_fullscreen = monitors, .workarea_count = monitor_count,
     .name_replacements = (const char *const [][2])CONFIG_BAR_MINIMIZED_NAME_REPLACEMENTS,
     .name_replacements_length = LENGTH((char*[][2])CONFIG_BAR_MINIMIZED_NAME_REPLACEMENTS),
-    .gaps = CONFIG_GAPS, .spawn_order = (const size_t[])CONFIG_SPAWN_ORDER,
-    .spawn_order_length = LENGTH((size_t[])CONFIG_SPAWN_ORDER)
+    .grid_init = { CONFIG_GAPS, CONFIG_BORDERS,
+      (const size_t[])CONFIG_SPAWN_ORDER, LENGTH((size_t[])CONFIG_SPAWN_ORDER) }
   };
   layout_init(&linit);
 }
@@ -631,6 +660,8 @@ void c_init(void) {
   size_t bar_count;
   const bar_containers_t *bars;
   rect_t *t_rect;
+  border_urgent = c_hex2xcolor(CONFIG_BORDER_URGENT);
+  border_normal = c_hex2xcolor(CONFIG_BORDER_NORMAL);
 
   system_init(c_sigterm_action);
   c_init_hint();

@@ -272,8 +272,10 @@ bool hint_window_urgent(xcb_window_t win, xcb_atom_t atom) {
   if(atom == WM_HINTS) {
     cookie = xcb_get_property(conn, 0, win, WM_HINTS, WM_HINTS, 0, 1);
     reply = xcb_get_property_reply(conn, cookie, NULL);
-    ret = 256 & *(uint32_t*)xcb_get_property_value(reply);
-    free(reply);
+    if(reply != NULL) {
+      ret = 256 & *(uint32_t*)xcb_get_property_value(reply);
+      free(reply);
+    }
   } else if(atom == _NET_WM_STATE) {
     cookie = xcb_get_property(conn, 0, win, _NET_WM_STATE, XCB_ATOM_ATOM,
                               0, MAX_WINDOW_STATE_ATOMS);
