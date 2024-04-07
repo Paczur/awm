@@ -48,6 +48,7 @@ static uint32_t c_hex2xcolor(const char *hex) {
   }
   return ret;
 }
+
 static void c_window_init(xcb_window_t window) {
   const window_t *win;
   int values[2] = {
@@ -69,15 +70,19 @@ static void c_window_init(xcb_window_t window) {
   layout_input_set(layout_xwin2win(window),
                    hint_window_input(window));
 }
+
 static void c_bar_update_minimized(void) {
   bar_update_minimized();
 }
+
 static void c_bar_update_workspace(size_t n) {
   bar_update_workspace(n);
 }
+
 static void c_bar_update_mode(void) {
   bar_update_mode(mode);
 }
+
 static void c_windows_adopt(void) {
   xcb_window_t *windows;
   size_t len = hint_saved_windows(&windows);
@@ -90,15 +95,18 @@ static void c_windows_adopt(void) {
 #undef PRINT
   free(windows);
 }
+
 static void c_sigterm_action(int a) {
   (void)a;
   c_wm_shutdown();
 }
 
+
 void c_wm_shutdown(void) {
   run = false;
   LOGE(DEBUG, "Shutdown initiated");
 }
+
 void c_workspace_switch(size_t n) {
   bool old_maximized;
   bool new_maximized;
@@ -117,6 +125,7 @@ void c_workspace_switch(size_t n) {
   LOGF(TRACE);
 #undef PRINT
 }
+
 void c_workspace_fullscreen(size_t n) {
   bool old_state = layout_workspace_isfullscreen(n);
   size_t focused_workspace = layout_workspace_focused();
@@ -129,13 +138,16 @@ void c_workspace_fullscreen(size_t n) {
   LOGF(TRACE);
 #undef PRINT
 }
+
 void c_workspace_focused_fullscreen(void) {
   size_t focused_workspace = layout_workspace_focused();
   c_workspace_fullscreen(focused_workspace);
 }
+
 xcb_window_t c_window_focused(void) {
   return layout_win2xwin(layout_focused());
 }
+
 void c_window_show(size_t n) {
   layout_show(n);
   c_bar_update_minimized();
@@ -143,6 +155,7 @@ void c_window_show(size_t n) {
   LOGF(TRACE);
 #undef PRINT
 }
+
 bool c_window_minimize(xcb_window_t xwin) {
   if(xwin == (xcb_window_t)-1) return false;
   window_t *window = layout_xwin2win(xwin);
@@ -153,6 +166,7 @@ bool c_window_minimize(xcb_window_t xwin) {
 #undef PRINT
   return true;
 }
+
 void c_window_destroy(xcb_window_t window, bool force) {
   if(force || !hint_window_delete(window))
     layout_destroy(window);
@@ -160,6 +174,7 @@ void c_window_destroy(xcb_window_t window, bool force) {
   LOGF(TRACE);
 #undef PRINT
 }
+
 void c_window_focus(size_t n) {
   if(layout_focus(layout_spawn2win(n))) {
 #define PRINT OUT(n);
@@ -167,6 +182,7 @@ void c_window_focus(size_t n) {
 #undef PRINT
   }
 }
+
 void c_window_focused_swap(size_t n) {
   if(layout_swap(layout_focused(), layout_spawn2win(n))) {
 #define PRINT OUT(n);
@@ -174,62 +190,74 @@ void c_window_focused_swap(size_t n) {
 #undef PRINT
   }
 }
+
 void c_window_focus_down(void) {
   if(layout_focus(layout_below())) {
     LOGFE(TRACE);
   }
 }
+
 void c_window_focus_up(void) {
   if(layout_focus(layout_above())) {
     LOGFE(TRACE);
   }
 }
+
 void c_window_focus_left(void) {
   if(layout_focus(layout_to_left())) {
     LOGFE(TRACE);
   }
 }
+
 void c_window_focus_right(void) {
   if(layout_focus(layout_to_right())) {
     LOGFE(TRACE);
   }
 }
+
 void c_window_focused_swap_down(void) {
   if(layout_swap(layout_focused(), layout_below())) {
     LOGFE(TRACE);
   }
 }
+
 void c_window_focused_swap_up(void) {
   if(layout_swap(layout_focused(), layout_above())) {
     LOGFE(TRACE);
   }
 }
+
 void c_window_focused_swap_left(void) {
   if(layout_swap(layout_focused(), layout_to_left())) {
     LOGFE(TRACE);
   }
 }
+
 void c_window_focused_swap_right(void) {
   if(layout_swap(layout_focused(), layout_to_right())) {
     LOGFE(TRACE);
   }
 }
+
 void c_window_focused_resize_w(int n) {
   layout_resize_w(layout_focused(), n);
 #define PRINT OUT(n);
   LOGF(TRACE);
 #undef PRINT
 }
+
 void c_window_focused_resize_h(int n) {
   layout_resize_h(layout_focused(), n);
 #define PRINT OUT(n);
   LOGF(TRACE);
 #undef PRINT
 }
+
 void c_window_focused_reset_size(void) {
   layout_reset_sizes(layout_focused());
   LOGFE(TRACE);
 }
+
 void c_run(const char* cmd) {
   const char rstr[] = " >/dev/null 2>&1";
   size_t len = strlen(cmd);
@@ -242,45 +270,55 @@ void c_run(const char* cmd) {
 #undef PRINT
   free(rcmd);
 }
+
 void c_window_focused_destroy(bool force) {
   c_window_destroy(layout_win2xwin(layout_focused()), force);
 }
+
 void c_window_focused_minimize(void) {
   if(!layout_minimize(layout_focused())) return;
   c_bar_update_minimized();
   LOGFE(TRACE);
 }
+
 void c_launcher_show(void) {
   bar_launcher_show();
   LOGFE(TRACE);
 }
+
 void c_launcher_cancel(void) {
   bar_launcher_hide();
   layout_focus_restore();
   c_mode_set(MODE_NORMAL);
   LOGFE(TRACE);
 }
+
 void c_launcher_run(void) {
   c_run(bar_launcher_return());
   c_mode_set(MODE_NORMAL);
   LOGFE(TRACE);
 }
+
 void c_launcher_select_left(void) {
   bar_launcher_select_left();
   LOGFE(TRACE);
 }
+
 void c_launcher_select_right(void) {
   bar_launcher_select_right();
   LOGFE(TRACE);
 }
+
 void c_launcher_erase(void) {
   bar_launcher_erase();
   LOGFE(TRACE);
 }
+
 void c_mode_delay(MODE m) {
   next_mode = m;
   LOGFE(TRACE);
 }
+
 void c_mode_force(void) {
   MODE mode = next_mode;
   if(mode != MODE_INVALID) c_mode_set(next_mode);
@@ -288,6 +326,7 @@ void c_mode_force(void) {
   LOGF(TRACE);
 #undef PRINT
 }
+
 void c_mode_set(MODE new_mode) {
   MODE old_mode = mode;
   SHORTCUT_TYPE type = (new_mode == MODE_INSERT)?
@@ -300,18 +339,21 @@ void c_mode_set(MODE new_mode) {
   LOGF(TRACE);
 #undef PRINT
 }
+
 void c_bar_block_update(size_t n) {
   bar_update_info(n);
 #define PRINT OUT(n);
   LOGF(TRACE);
 #undef PRINT
 }
+
 void c_bar_block_update_highlight(size_t n, int delay) {
   bar_update_info_highlight(n, delay);
 #define PRINT OUT(n); OUT(delay);
   LOGF(TRACE);
 #undef PRINT
 }
+
 void c_event_message(const xcb_generic_event_t *e) {
   const xcb_client_message_event_t *event = (const xcb_client_message_event_t*)e;
   if(hint_atom_wm_change_state(event->type) &&
@@ -330,6 +372,7 @@ void c_event_message(const xcb_generic_event_t *e) {
 #undef PRINT
   }
 }
+
 void c_event_map(const xcb_generic_event_t *e) {
   const xcb_map_request_event_t *event = (const xcb_map_request_event_t*)e;
   xcb_atom_t *atoms;
@@ -370,6 +413,7 @@ void c_event_map(const xcb_generic_event_t *e) {
 #undef PRINT
   free(atoms);
 }
+
 void c_event_map_notify(const xcb_generic_event_t *e) {
   bool bar = false;
   const bar_containers_t *bar_containers;
@@ -398,6 +442,7 @@ void c_event_map_notify(const xcb_generic_event_t *e) {
   LOG(TRACE, "event: map_notify");
 #undef PRINT
 }
+
 void c_event_key_press(const xcb_generic_event_t *e) {
   char buff[10];
   size_t len;
@@ -422,6 +467,7 @@ void c_event_key_press(const xcb_generic_event_t *e) {
   LOG(TRACE, "event: key_press");
 #undef PRINT
 }
+
 void c_event_key_release(const xcb_generic_event_t *e) {
   const xcb_key_release_event_t *event = (const xcb_key_release_event_t*)e;
   if(mode == MODE_NORMAL) {
@@ -431,6 +477,7 @@ void c_event_key_release(const xcb_generic_event_t *e) {
   LOG(TRACE, "event: key_release");
 #undef PRINT
 }
+
 void c_event_button_press(const xcb_generic_event_t *e) {
   const xcb_button_press_event_t *event = (const xcb_button_press_event_t*)e;
   xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, XCB_CURRENT_TIME);
@@ -440,6 +487,7 @@ void c_event_button_press(const xcb_generic_event_t *e) {
   LOG(TRACE, "event: button_press");
 #undef PRINT
 }
+
 void c_event_button_release(const xcb_generic_event_t *e) {
   const xcb_button_release_event_t *event = (const xcb_button_release_event_t*)e;
   xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, XCB_CURRENT_TIME);
@@ -447,6 +495,7 @@ void c_event_button_release(const xcb_generic_event_t *e) {
   LOG(TRACE, "event: button_release");
 #undef PRINT
 }
+
 void c_event_create(const xcb_generic_event_t *e) {
   const xcb_create_notify_event_t *event = (const xcb_create_notify_event_t*)e;
   xcb_grab_button(conn, 1, event->window,
@@ -458,6 +507,7 @@ void c_event_create(const xcb_generic_event_t *e) {
   LOG(TRACE, "event: create_notify");
 #undef PRINT
 }
+
 void c_event_destroy(const xcb_generic_event_t *e) {
   const xcb_destroy_notify_event_t *event = (const xcb_destroy_notify_event_t*)e;
   WINDOW_STATE state_before_destroy = layout_event_destroy(event->window);
@@ -470,6 +520,7 @@ void c_event_destroy(const xcb_generic_event_t *e) {
   LOG(TRACE, "event: destroy_notify");
 #undef PRINT
 }
+
 void c_event_unmap(const xcb_generic_event_t *e) {
   const xcb_unmap_notify_event_t *event = (const xcb_unmap_notify_event_t*)e;
   bool bar = false;
@@ -497,6 +548,7 @@ void c_event_unmap(const xcb_generic_event_t *e) {
   LOG(TRACE, "event: unmap_notify");
 #undef PRINT
 }
+
 void c_event_focus(const xcb_generic_event_t *e) {
   const xcb_focus_in_event_t *event = (const xcb_focus_in_event_t*)e;
   if(event->detail != XCB_NOTIFY_DETAIL_POINTER) {
@@ -511,13 +563,16 @@ void c_event_focus(const xcb_generic_event_t *e) {
 #undef PRINT
   }
 }
+
 void c_event_expose(const xcb_generic_event_t *e) {
   const xcb_expose_event_t *event = (const xcb_expose_event_t*)e;
   bar_redraw(event->window);
 }
+
 void c_event_xkb(const xcb_generic_event_t *e) {
   shortcut_event_state((xcb_xkb_state_notify_event_t*)e);
 }
+
 void c_event_property(const xcb_generic_event_t *e) {
   uint32_t color;
   window_t *win = NULL;
@@ -552,6 +607,7 @@ void c_event_property(const xcb_generic_event_t *e) {
     }
   }
 }
+
 void c_event_configure(const xcb_generic_event_t *e) {
   const xcb_configure_request_event_t *event = (xcb_configure_request_event_t*)e;
   uint32_t mask = XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT |
@@ -639,6 +695,7 @@ static void c_init_bar(rect_t *t_rect, const rect_t *monitors,
   };
   bar_init(&binit);
 }
+
 static void c_init_layout(rect_t *t_rect, const rect_t *monitors,
                           size_t monitor_count) {
   for(size_t i=0; i<monitor_count; i++) {
@@ -658,6 +715,7 @@ static void c_init_layout(rect_t *t_rect, const rect_t *monitors,
   };
   layout_init(&linit);
 }
+
 static void c_init_shortcut(void) {
   config_shortcut_t insert_shortcuts[] = CONFIG_SHORTCUTS_INSERT_MODE;
   config_shortcut_t normal_shortcuts[] = CONFIG_SHORTCUTS_NORMAL_MODE;
@@ -672,10 +730,12 @@ static void c_init_shortcut(void) {
   convert_shortcuts(SH_TYPE_LAUNCHER, launcher_shortcuts,
                     LENGTH(launcher_shortcuts));
 }
+
 static void c_init_hint(void) {
   hint_init(&(hint_init_t){conn, screen,
             {layout_workspaces(NULL), layout_workspace_names()}});
 }
+
 
 void c_loop(void) {
   run = true;
