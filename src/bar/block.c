@@ -8,8 +8,8 @@ static xcb_connection_t *conn;
 static const xcb_screen_t *screen;
 static xcb_visualtype_t *visual_type;
 
-static void block_geometry(const block_t *block, uint32_t min_width,
-                           uint32_t *width, uint32_t *text_x, uint32_t *text_y) {
+static void block_geometry(const block_t *block, uint16_t min_width,
+                           uint16_t *width, uint16_t *text_x, uint16_t *text_y) {
   PangoRectangle t;
   PangoRectangle t2;
   pango_layout_get_extents(block->pango[0], &t, &t2);
@@ -17,7 +17,7 @@ static void block_geometry(const block_t *block, uint32_t min_width,
   pango_extents_to_pixels(&t2, NULL);
   if(t.x<0) t.x = 0;
   if(t2.y<0) t2.y = 0;
-  if((uint32_t)t2.height < bar_containers.h) {
+  if((uint16_t)t2.height < bar_containers.h) {
     *text_y = bar_containers.h - t2.height;
     *text_y /= 2;
     *text_y -= t2.y;
@@ -64,12 +64,12 @@ void block_settings(block_settings_t *bs, const block_settings_init_t *init) {
   bs->foreground[2] = block_background(init->foreground, 4, 6)/255.0;
 }
 
-uint32_t block_next_x(const block_geometry_t *geom) {
+uint16_t block_next_x(const block_geometry_t *geom) {
   return (geom->w < 2) ? geom->x : geom->x + geom->w + bar_containers.separator;
 }
 
-uint32_t block_combined_width(const block_geometry_t *geom, size_t count) {
-  uint32_t width = 0;
+uint16_t block_combined_width(const block_geometry_t *geom, size_t count) {
+  uint16_t width = 0;
   for(size_t i=0; i<count; i++) {
     if(geom[i].w > 1)
       width += geom[i].w + bar_containers.separator;
@@ -284,7 +284,7 @@ void block_launcher_create(block_t *block, const PangoFontDescription *font) {
 }
 
 void block_geometry_batch(const block_t *blocks, block_geometry_t *geom,
-                          size_t count, uint32_t min_width) {
+                          size_t count, uint16_t min_width) {
   geom[0].x = 0;
   block_geometry(blocks, min_width, &geom->w, &geom->text_x, &geom->text_y);
   for(size_t i=1; i<count; i++) {
@@ -294,7 +294,7 @@ void block_geometry_batch(const block_t *blocks, block_geometry_t *geom,
   }
 }
 
-void block_geometry_left(const block_t *block, uint32_t min_width,
+void block_geometry_left(const block_t *block, uint16_t min_width,
                          const block_geometry_t *in, block_geometry_t *out) {
   if(in == NULL) {
     out->x = 0;
@@ -307,12 +307,12 @@ void block_geometry_left(const block_t *block, uint32_t min_width,
 void block_geometry_update_center(block_t *blocks, block_geometry_t *geom,
                                   size_t count,
                                   const block_settings_t* (*settings)(size_t),
-                                  uint32_t left_offset, uint32_t min_width,
-                                  uint32_t right_offset) {
-  uint32_t width;
+                                  uint16_t left_offset, uint16_t min_width,
+                                  uint16_t right_offset) {
+  uint16_t width;
   size_t visible;
-  uint32_t available;
-  uint32_t max_x;
+  uint16_t available;
+  uint16_t max_x;
   block_geometry_batch(blocks, geom, count, min_width);
   for(size_t i=0; i<bar_container_count; i++) {
     max_x = bar_containers.w[i] - right_offset;
@@ -354,9 +354,9 @@ void block_geometry_update_center(block_t *blocks, block_geometry_t *geom,
 void block_geometry_update_right(block_t *blocks, block_geometry_t *geom,
                                  size_t count, size_t right_offset,
                                  const block_settings_t* (*settings)(size_t),
-                                 uint32_t min_width) {
-  uint32_t width;
-  uint32_t start = 0;
+                                 uint16_t min_width) {
+  uint16_t width;
+  uint16_t start = 0;
   block_geometry_batch(blocks, geom, count, min_width);
   width = block_combined_width(geom, count);
   for(size_t i=0; i<bar_container_count; i++) {

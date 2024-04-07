@@ -5,7 +5,7 @@
 
 #define MAX_INFO_BLOCKS 10
 
-extern uint32_t block_info_offset_right;
+extern uint16_t block_info_offset_right;
 
 void block_info_redraw(size_t);
 bool block_info_find_redraw(xcb_window_t);

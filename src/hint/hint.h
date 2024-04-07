@@ -9,7 +9,7 @@ bool hint_window_delete(xcb_window_t);
 xcb_get_property_reply_t *hint_window_class(xcb_window_t, size_t);
 void hint_window_update_state(xcb_window_t, WINDOW_STATE, WINDOW_STATE);
 void hint_window_hints_set(xcb_window_t);
-void hint_window_rect_set(xcb_window_t, rect_t*);
+void hint_window_rect_set(xcb_window_t, uint32_t [static 4]);
 void hint_workspace_focused_set(size_t workspace);
 void hint_window_focused_set(xcb_window_t);
 void hint_frame_extents_set(xcb_window_t);

@@ -9,13 +9,13 @@
 typedef struct bar_containers_t {
   xcb_window_t *id;
   xcb_window_t *launcher;
-  uint32_t *x;
-  uint32_t *y;
-  uint32_t *w;
+  uint16_t *x;
+  uint16_t *y;
+  uint16_t *w;
   uint32_t background;
-  uint32_t h;
-  uint32_t padding;
-  uint32_t separator;
+  uint16_t h;
+  uint16_t padding;
+  uint16_t separator;
 } bar_containers_t;
 
 typedef struct block_settings_t {
@@ -35,18 +35,18 @@ typedef struct block_info_data_t {
 } block_info_data_t;
 
 typedef struct bar_launcher_hint_init_t {
-  uint32_t min_width;
+  uint16_t min_width;
   const block_settings_init_t unfocused;
   const block_settings_init_t focused;
 } bar_launcher_hint_init_t;
 
 typedef struct bar_launcher_prompt_init_t {
-  uint32_t min_width;
+  uint16_t min_width;
   const block_settings_init_t settings;
 } bar_launcher_prompt_init_t;
 
 typedef struct bar_block_minimized_init_t {
-  uint32_t min_width;
+  uint16_t min_width;
   const block_settings_init_t even;
   const block_settings_init_t odd;
   const block_settings_init_t urgent;
@@ -57,7 +57,7 @@ typedef struct bar_block_minimized_init_t {
 } bar_block_minimized_init_t;
 
 typedef struct bar_block_info_init_t {
-  uint32_t min_width;
+  uint16_t min_width;
   const block_settings_init_t normal;
   const block_settings_init_t highlighted;
   const block_settings_init_t urgent;
@@ -67,13 +67,13 @@ typedef struct bar_block_info_init_t {
 } bar_block_info_init_t;
 
 typedef struct bar_block_mode_init_t {
-  uint32_t min_width;
+  uint16_t min_width;
   const block_settings_init_t insert;
   const block_settings_init_t normal;
 } bar_block_mode_init_t;
 
 typedef struct bar_block_workspace_init_t {
-  uint32_t min_width;
+  uint16_t min_width;
   const block_settings_init_t unfocused;
   const block_settings_init_t focused;
   const block_settings_init_t urgent;

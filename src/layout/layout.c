@@ -1,6 +1,5 @@
 #include "layout.h"
 #include "grid.h"
-#include "unmanaged.h"
 #include "window.h"
 #include "workspace.h"
 #include "workarea.h"
@@ -66,7 +65,7 @@ window_t *layout_spawn2win(size_t s) { return grid_pos2win(grid_ord2pos(s)); }
 window_t *layout_focused(void) { return grid_focusedw(); }
 
 bool layout_focus(const window_t *win) {
-  if(win == NULL || win->state == WINDOW_UNMANAGED) return false;
+  if(win == NULL) return false;
   return grid_focus(grid_win2pos(win));
 }
 
@@ -85,12 +84,12 @@ window_t *layout_to_right(void) { return grid_pos2win(grid_to_right()); }
 window_t *layout_to_left(void) { return grid_pos2win(grid_to_left()); }
 
 bool layout_urgency_set(window_t *win, bool state) {
-  if(win == NULL || win->state == WINDOW_UNMANAGED) return false;
+  if(win == NULL) return false;
   return window_set_urgency(win, state);
 }
 
 bool layout_input_set(window_t *win, bool state) {
-  if(win == NULL || win->state == WINDOW_UNMANAGED) return false;
+  if(win == NULL) return false;
   bool ret = window_set_input(win, state);
   if(ret && state == false && win->state == (int)workspace_focused)
     layout_focus_restore();
@@ -115,7 +114,7 @@ void layout_resize_h(const window_t *win, int n) {
 
 void layout_show(size_t p) {
   window_t *w = window_minimized_nth(p);
-  if(w == NULL || w->state == WINDOW_UNMANAGED) return;
+  if(w == NULL) return;
   window_show(w);
   if(!grid_show(w)) {
     window_minimize(w);
@@ -126,7 +125,7 @@ void layout_show(size_t p) {
 
 WINDOW_STATE layout_minimize(window_t *win) {
   WINDOW_STATE state;
-  if(win == NULL || win->state == WINDOW_UNMANAGED) return WINDOW_INVALID;
+  if(win == NULL) return WINDOW_INVALID;
   if(win->state < 0) return win->state;
   state = win->state;
   if((size_t)state == workspace_focused) {
@@ -175,7 +174,6 @@ void layout_init(const layout_init_t *init) {
               init->get_class);
   workspace_init(init->conn);
   grid_init(init->conn, &init->grid_init);
-  unmanaged_init(init->conn);
 }
 
 void layout_deinit(void) {
@@ -186,8 +184,7 @@ void layout_deinit(void) {
 }
 
 
-//rect passed if window is unmanaged
-bool layout_event_map(xcb_window_t window, bool iconic, const rect_t *rect) {
+bool layout_event_map(xcb_window_t window, bool iconic) {
   window_t *win = window_find(window);
   WINDOW_STATE old_state;
   if(win == NULL) {
@@ -195,15 +192,6 @@ bool layout_event_map(xcb_window_t window, bool iconic, const rect_t *rect) {
     win = window_find(window);
   }
   old_state = win->state;
-  if(rect != NULL) {
-    win->state = WINDOW_UNMANAGED;
-    window_state_changed(window, old_state, win->state);
-    unmanaged_event_map(window, rect);
-#define PRINT OUT_WINDOW(win); OUT_WINDOW_STATE(old_state); OUT_RECTP(rect);
-    LOGF(LAYOUT_TRACE);
-#undef PRINT
-    return false;
-  }
 
   if(iconic || !grid_event_map(win)) {
     window_minimize(win);
@@ -225,7 +213,7 @@ bool layout_event_map(xcb_window_t window, bool iconic, const rect_t *rect) {
 void layout_event_map_notify(xcb_window_t window) {
   window_t *win = window_find(window);
   WINDOW_STATE old_state;
-  if(win == NULL || win->state == WINDOW_UNMANAGED) return;
+  if(win == NULL) return;
   old_state = win->state;
   win->state = workspace_focused;
   window_state_changed(window, old_state, win->state);
@@ -255,7 +243,7 @@ WINDOW_STATE layout_event_destroy(xcb_window_t window) {
 
 WINDOW_STATE layout_event_unmap(xcb_window_t window) {
   window_t* win = window_find(window);
-  if(win == NULL || win->state == WINDOW_UNMANAGED) return WINDOW_INVALID;
+  if(win == NULL) return WINDOW_INVALID;
   WINDOW_STATE old_state = win->state;
   grid_event_unmap(window);
   if(window_minimize_requested(win)) {

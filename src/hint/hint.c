@@ -66,11 +66,10 @@ static void hint_set_root(const hint_init_root_t *init) {
 static void hint_window_update_wm_state(xcb_window_t window,
                                         WINDOW_STATE prev,
                                         WINDOW_STATE state) {
-  if(prev == state && state < 0)
+  if(prev == state && (state == WINDOW_ICONIC || state == WINDOW_WITHDRAWN))
     return;
   uint32_t st[] = { (state == WINDOW_ICONIC) ? 3 :
-    ((size_t)state == workspace_focused || state == WINDOW_UNMANAGED) ? 1 : 0,
-      XCB_NONE };
+    ((size_t)state != workspace_focused) ? 0 : 1, XCB_NONE };
   xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window, WM_STATE,
                       WM_STATE, 32, 2, &st);
 }
@@ -92,10 +91,9 @@ static void hint_window_update_net_wm_desktop(xcb_window_t window,
 static void hint_window_update_net_client_list(xcb_window_t window,
                                                WINDOW_STATE prev,
                                                WINDOW_STATE state) {
-  if((prev == WINDOW_WITHDRAWN || prev == WINDOW_UNMANAGED) ==
-     (state == WINDOW_WITHDRAWN || state == WINDOW_UNMANAGED))
+  if((prev == WINDOW_WITHDRAWN) == (state == WINDOW_WITHDRAWN))
     return;
-  if(prev == WINDOW_WITHDRAWN || prev == WINDOW_UNMANAGED) {
+  if(prev == WINDOW_WITHDRAWN) {
     if(client_list_length == client_list_capacity) {
       client_list_capacity += CLIENT_LIST_STARTING_CAPACITY;
       client_list = realloc(client_list, client_list_capacity*sizeof(xcb_window_t));
@@ -126,9 +124,9 @@ static void hint_window_update_net_wm_allowed_actions(xcb_window_t window,
                                                       WINDOW_STATE prev,
                                                       WINDOW_STATE state) {
   xcb_atom_t actions[2] = { _NET_WM_ACTION_CLOSE };
-  if((prev < 0) == (state < 0))
+  if((prev == WINDOW_ICONIC) == (state == WINDOW_ICONIC))
     return;
-  if(prev < 0) {
+  if(prev == WINDOW_ICONIC) {
     actions[1] = _NET_WM_ACTION_MINIMIZE;
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window,
                         _NET_WM_ALLOWED_ACTIONS, XCB_ATOM_ATOM, 32, 2,
@@ -415,7 +413,7 @@ xcb_window_t hint_saved_window_focused(void) {
   return window;
 }
 
-void hint_window_rect_set(xcb_window_t window, rect_t *rect) {
+void hint_window_rect_set(xcb_window_t window, uint32_t rect[static 4]) {
   size_t len;
   struct size_hints_t {
     uint32_t flags;
@@ -443,23 +441,23 @@ void hint_window_rect_set(xcb_window_t window, rect_t *rect) {
   len = xcb_get_property_value_length(reply)/sizeof(uint32_t);
   memcpy(&hints, xcb_get_property_value(reply), len*sizeof(uint32_t));
   if(hints.flags & 1 || hints.flags & 4) {
-    rect->x = hints.x;
-    rect->y = hints.y;
+    rect[0] = hints.x;
+    rect[1] = hints.y;
   } else {
-    rect->x = (uint32_t)-1;
-    rect->y = (uint32_t)-1;
+    rect[0] = (uint32_t)-1;
+    rect[1] = (uint32_t)-1;
   }
   if(hints.flags & 256) {
-    rect->w = hints.base_width;
-    rect->h = hints.base_height;
+    rect[2] = hints.base_width;
+    rect[3] = hints.base_height;
   } else if(hints.flags & 2) {
-    rect->w = hints.width;
-    rect->h = hints.height;
+    rect[2] = hints.width;
+    rect[3] = hints.height;
   } else {
-    rect->w = (uint32_t)-1;
-    rect->h = (uint32_t)-1;
+    rect[2] = (uint32_t)-1;
+    rect[3] = (uint32_t)-1;
   }
-#define PRINT OUT(window); OUT_RECTP(rect);
+#define PRINT OUT(window); OUT_ARR(rect, 4);
   LOGF(HINT_TRACE);
 #undef PRINT
   free(reply);

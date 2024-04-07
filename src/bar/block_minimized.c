@@ -5,7 +5,7 @@ typedef struct block_minimized_t {
  block_settings_t odd;
  block_settings_t even;
  block_settings_t urgent;
- uint32_t min_width;
+ uint16_t min_width;
 } block_minimized_t;
 
 block_geometry_t block_minimized_geometry[MAX_MINIMIZED_BLOCKS];

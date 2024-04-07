@@ -4,7 +4,7 @@
 typedef struct launcher_prompt_t {
   block_t block;
   block_settings_t settings;
-  uint32_t min_width;
+  uint16_t min_width;
 } launcher_prompt_t;
 
 char launcher_prompt_search[LAUNCHER_PROMPT_MAX_LENGTH];

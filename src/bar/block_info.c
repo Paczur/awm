@@ -26,7 +26,7 @@ typedef struct block_info_t {
 //TODO: DON'T INITIALIZE EVERYTHING
 //TODO: FIX BUGGY RENDERING ON SECOND MONITOR
 
-uint32_t block_info_offset_right;
+uint16_t block_info_offset_right;
 static block_info_t block_info;
 static pthread_t block_info_thread;
 static bool info_run_flag;

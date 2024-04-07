@@ -4,7 +4,7 @@ typedef struct block_mode_t {
   block_t block;
   block_settings_t insert;
   block_settings_t normal;
-  uint32_t min_width;
+  uint16_t min_width;
 } block_mode_t;
 
 static block_mode_t block_mode;
