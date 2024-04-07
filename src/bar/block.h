@@ -17,19 +17,19 @@ typedef struct block_t {
 } block_t;
 
 typedef struct block_geometry_t {
-  uint16_t x;
-  uint16_t w;
-  uint16_t text_x;
-  uint16_t text_y;
+  uint32_t x;
+  uint32_t w;
+  uint32_t text_x;
+  uint32_t text_y;
 } block_geometry_t;
 
 uint32_t block_background(const char*, size_t, size_t);
 
 void block_settings(block_settings_t*, const block_settings_init_t*);
 
-uint16_t block_next_x(const block_geometry_t*);
+uint32_t block_next_x(const block_geometry_t*);
 
-uint16_t block_combined_width(const block_geometry_t*, size_t);
+uint32_t block_combined_width(const block_geometry_t*, size_t);
 
 void block_redraw(const block_t*, size_t);
 
@@ -49,16 +49,16 @@ void block_update(const block_t*, const block_settings_t*, const block_geometry_
 void block_update_same(const block_t*, const block_settings_t*,
                        const block_geometry_t*);
 
-void block_geometry_left(const block_t*, uint16_t, const block_geometry_t*,
+void block_geometry_left(const block_t*, uint32_t, const block_geometry_t*,
                          block_geometry_t*);
 
 void block_geometry_update_center(block_t*, block_geometry_t*, size_t,
                                   const block_settings_t*(*)(size_t),
-                                  uint16_t, uint16_t, uint16_t);
+                                  uint32_t, uint32_t, uint32_t);
 
 void block_geometry_update_right(block_t*, block_geometry_t*, size_t, size_t,
                                  const block_settings_t*(*)(size_t),
-                                 uint16_t);
+                                 uint32_t);
 
 void block_set_text_batch(const block_t*, size_t, const char*);
 

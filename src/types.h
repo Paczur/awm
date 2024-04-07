@@ -8,9 +8,10 @@ typedef unsigned char uchar;
 #define LENGTH(x) (sizeof(x)/sizeof((x)[0]))
 
 typedef enum WINDOW_STATE {
-  WINDOW_INVALID = -3,
-  WINDOW_WITHDRAWN = -2,
-  WINDOW_ICONIC = -1,
+  WINDOW_INVALID = -4,
+  WINDOW_WITHDRAWN = -3,
+  WINDOW_ICONIC = -2,
+  WINDOW_UNMANAGED = -1,
   WINDOW_WORKSPACE_START = 0,
 } WINDOW_STATE;
 
@@ -29,10 +30,10 @@ typedef struct plist_t {
 } plist_t;
 
 typedef struct rect_t {
-  uint16_t x;
-  uint16_t y;
-  uint16_t w;
-  uint16_t h;
+  uint32_t x;
+  uint32_t y;
+  uint32_t w;
+  uint32_t h;
 } rect_t;
 
 typedef enum {
@@ -101,6 +102,8 @@ typedef enum {
         puts("iconic"); \
       } else if((state)==WINDOW_INVALID) { \
         printf("invalid"); \
+      } else if((state)==WINDOW_UNMANAGED) { \
+        printf("unmanaged"); \
       } else { \
         printf("%d\n", state); \
       } \
@@ -108,6 +111,14 @@ typedef enum {
 #define OUT_WINDOW_STATE_ARR(state, count) OUT_ARR_GENERIC(mode, count, OUT_MODE)
 
 #define OUT_RECT(r) \
+  do { \
+    OUT(r.x); \
+    OUT(r.y); \
+    OUT(r.w); \
+    OUT(r.h); \
+  } while(0)
+
+#define OUT_RECTP(r) \
   do { \
     OUT(r->x); \
     OUT(r->y); \

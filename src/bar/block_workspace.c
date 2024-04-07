@@ -5,7 +5,7 @@ typedef struct block_workspace_t {
   block_settings_t focused;
   block_settings_t unfocused;
   block_settings_t urgent;
-  uint16_t min_width;
+  uint32_t min_width;
 } block_workspace_t;
 
 static block_workspace_t block_workspace;

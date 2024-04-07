@@ -190,9 +190,9 @@ void bar_init(const bar_init_t *init) {
   PangoFontDescription *font;
   bar_containers_t containers;
   focused_workspace = init->focused_workspace;
-  containers.x = malloc(init->bar_container_count*sizeof(uint16_t));
-  containers.y = malloc(init->bar_container_count*sizeof(uint16_t));
-  containers.w = malloc(init->bar_container_count*sizeof(uint16_t));
+  containers.x = malloc(init->bar_container_count*sizeof(uint32_t));
+  containers.y = malloc(init->bar_container_count*sizeof(uint32_t));
+  containers.w = malloc(init->bar_container_count*sizeof(uint32_t));
   containers.h = init->bar_containers[0].h;
   containers.background = block_background(init->bar_background, 0, 6);
   containers.padding = init->block_padding;

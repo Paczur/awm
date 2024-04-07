@@ -5,7 +5,7 @@ typedef struct launcher_hint_t {
   block_t *blocks;
   block_settings_t focused;
   block_settings_t unfocused;
-  uint16_t min_width;
+  uint32_t min_width;
 } launcher_hint_t;
 
 size_t launcher_hint_selected;
