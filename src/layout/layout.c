@@ -11,12 +11,12 @@ static const xcb_screen_t *screen;
 static void (*window_state_changed)(xcb_window_t, WINDOW_STATE, WINDOW_STATE);
 
 size_t layout_workareas(const workarea_t **w) {
-  if(w != NULL) *w = workareas;
+  if(w) *w = workareas;
   return workarea_count;
 }
 
 size_t layout_workspaces(const workspace_t **w) {
-  if(w != NULL) *w = workspaces;
+  if(w) *w = workspaces;
   return MAX_WORKSPACES;
 }
 
@@ -55,7 +55,7 @@ pthread_rwlock_t *layout_window_lock(void) { return &window_lock; }
 window_list_t *const*layout_minimized(void) { return &windows_minimized; }
 
 xcb_window_t layout_win2xwin(const window_t *win) {
-  return (win==NULL)? (xcb_window_t)-1: win->id;
+  return (!win)? (xcb_window_t)-1: win->id;
 }
 
 window_t *layout_xwin2win(xcb_window_t win) { return window_find(win); }
@@ -65,7 +65,7 @@ window_t *layout_spawn2win(size_t s) { return grid_pos2win(grid_ord2pos(s)); }
 window_t *layout_focused(void) { return grid_focusedw(); }
 
 bool layout_focus(const window_t *win) {
-  if(win == NULL) return false;
+  if(!win) return false;
   return grid_focus(grid_win2pos(win));
 }
 
@@ -84,12 +84,12 @@ window_t *layout_to_right(void) { return grid_pos2win(grid_to_right()); }
 window_t *layout_to_left(void) { return grid_pos2win(grid_to_left()); }
 
 bool layout_urgency_set(window_t *win, bool state) {
-  if(win == NULL) return false;
+  if(!win) return false;
   return window_set_urgency(win, state);
 }
 
 bool layout_input_set(window_t *win, bool state) {
-  if(win == NULL) return false;
+  if(!win) return false;
   bool ret = window_set_input(win, state);
   if(ret && state == false && win->state == (int)workspace_focused)
     layout_focus_restore();
@@ -114,7 +114,7 @@ void layout_resize_h(const window_t *win, int n) {
 
 void layout_show(size_t p) {
   window_t *w = window_minimized_nth(p);
-  if(w == NULL) return;
+  if(!w) return;
   window_show(w);
   if(!grid_show(w)) {
     window_minimize(w);
@@ -125,7 +125,7 @@ void layout_show(size_t p) {
 
 WINDOW_STATE layout_minimize(window_t *win) {
   WINDOW_STATE state;
-  if(win == NULL) return WINDOW_INVALID;
+  if(!win) return WINDOW_INVALID;
   if(win->state < 0) return win->state;
   state = win->state;
   if((size_t)state == workspace_focused) {
@@ -187,10 +187,7 @@ void layout_deinit(void) {
 bool layout_event_map(xcb_window_t window, bool iconic) {
   window_t *win = window_find(window);
   WINDOW_STATE old_state;
-  if(win == NULL) {
-    window_event_create(window);
-    win = window_find(window);
-  }
+  if(!win) win = window_event_create(window);
   old_state = win->state;
 
   if(iconic || !grid_event_map(win)) {
@@ -213,7 +210,7 @@ bool layout_event_map(xcb_window_t window, bool iconic) {
 void layout_event_map_notify(xcb_window_t window) {
   window_t *win = window_find(window);
   WINDOW_STATE old_state;
-  if(win == NULL) return;
+  if(!win) return;
   old_state = win->state;
   win->state = workspace_focused;
   window_state_changed(window, old_state, win->state);
@@ -229,7 +226,7 @@ void layout_event_focus(xcb_window_t window) { grid_event_focus(window); }
 WINDOW_STATE layout_event_destroy(xcb_window_t window) {
   WINDOW_STATE old_state;
   window_t *win = window_find(window);
-  if(win == NULL) return WINDOW_INVALID;
+  if(!win) return WINDOW_INVALID;
   old_state = win->state;
 #define PRINT OUT_WINDOW(win); OUT_WINDOW_STATE(old_state);
   LOGF(LAYOUT_TRACE);
@@ -243,7 +240,7 @@ WINDOW_STATE layout_event_destroy(xcb_window_t window) {
 
 WINDOW_STATE layout_event_unmap(xcb_window_t window) {
   window_t* win = window_find(window);
-  if(win == NULL) return WINDOW_INVALID;
+  if(!win) return WINDOW_INVALID;
   WINDOW_STATE old_state = win->state;
   grid_event_unmap(window);
   if(window_minimize_requested(win)) {

@@ -413,7 +413,7 @@ xcb_window_t hint_saved_window_focused(void) {
   return window;
 }
 
-void hint_window_rect_set(xcb_window_t window, uint32_t rect[static 4]) {
+void hint_window_rect_set(xcb_window_t window, rect_t *rect) {
   size_t len;
   struct size_hints_t {
     uint32_t flags;
@@ -441,23 +441,23 @@ void hint_window_rect_set(xcb_window_t window, uint32_t rect[static 4]) {
   len = xcb_get_property_value_length(reply)/sizeof(uint32_t);
   memcpy(&hints, xcb_get_property_value(reply), len*sizeof(uint32_t));
   if(hints.flags & 1 || hints.flags & 4) {
-    rect[0] = hints.x;
-    rect[1] = hints.y;
+    rect->x = hints.x;
+    rect->y = hints.y;
   } else {
-    rect[0] = (uint32_t)-1;
-    rect[1] = (uint32_t)-1;
+    rect->x = (uint32_t)-1;
+    rect->y = (uint32_t)-1;
   }
   if(hints.flags & 256) {
-    rect[2] = hints.base_width;
-    rect[3] = hints.base_height;
+    rect->w = hints.base_width;
+    rect->h = hints.base_height;
   } else if(hints.flags & 2) {
-    rect[2] = hints.width;
-    rect[3] = hints.height;
+    rect->w = hints.width;
+    rect->h = hints.height;
   } else {
-    rect[2] = (uint32_t)-1;
-    rect[3] = (uint32_t)-1;
+    rect->w = (uint32_t)-1;
+    rect->h = (uint32_t)-1;
   }
-#define PRINT OUT(window); OUT_ARR(rect, 4);
+#define PRINT OUT(window); OUT_RECTP(rect);
   LOGF(HINT_TRACE);
 #undef PRINT
   free(reply);

@@ -243,7 +243,7 @@ void window_event_destroy(window_t *win) {
   pthread_rwlock_unlock(&window_lock);
 }
 
-void window_event_create(xcb_window_t window) {
+window_t *window_event_create(xcb_window_t window) {
   pthread_rwlock_wrlock(&window_lock);
   window_t *w = malloc(sizeof(window_t));
   if(windows != NULL)

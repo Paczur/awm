@@ -332,38 +332,29 @@ void c_event_message(const xcb_generic_event_t *e) {
 }
 void c_event_map(const xcb_generic_event_t *e) {
   const xcb_map_request_event_t *event = (const xcb_map_request_event_t*)e;
-  const workarea_t *workareas;
   xcb_atom_t *atoms;
-  uint32_t rect[4];
+  rect_t rect;
   size_t atom_length = hint_atom_window_type(&atoms, event->window);
   for(size_t i=0; i<atom_length; i++) {
     //TODO: Figure out how to get size for those windows
     if(hint_atom_window_type_splash(atoms[i]) ||
        hint_atom_window_type_utility(atoms[i]) ||
        hint_atom_window_type_notification(atoms[i])) {
-      hint_window_rect_set(event->window, rect);
-      if(rect[0] == (uint32_t)-1 || rect[2] == (uint32_t)-1 ||
-         rect[0] == 0 || rect[2] == 0) {
-        layout_workareas(&workareas);
-        if(rect[0] == (uint32_t)-1 || rect[0] == 0) {
-          rect[0] = workareas[0].x;
-          rect[1] = workareas[0].y;
-        }
-        if(rect[2] == (uint32_t)-1 || rect[2] == 0) {
-          rect[2] = workareas[0].w-rect[0];
-          rect[3] = workareas[0].h-rect[1];
-        }
+      hint_window_rect_set(event->window, &rect);
+      if(rect.x != (uint32_t)-1 && rect.y != (uint32_t)-1 &&
+         rect.w != 0 && rect.h != 0 &&
+         rect.w != (uint32_t)-1 && rect.h != (uint32_t)-1) {
+        xcb_configure_window(conn,
+                             event->window,
+                             XCB_CONFIG_WINDOW_X |
+                             XCB_CONFIG_WINDOW_Y |
+                             XCB_CONFIG_WINDOW_WIDTH |
+                             XCB_CONFIG_WINDOW_HEIGHT,
+                             &rect);
       }
-      xcb_configure_window(conn,
-                           event->window,
-                           XCB_CONFIG_WINDOW_X |
-                           XCB_CONFIG_WINDOW_Y |
-                           XCB_CONFIG_WINDOW_WIDTH |
-                           XCB_CONFIG_WINDOW_HEIGHT,
-                           rect);
       xcb_map_window(conn, event->window);
       free(atoms);
-#define PRINT OUT(event->window); OUT_ARR(rect, 4);
+#define PRINT OUT(event->window); OUT_RECT(rect);
       LOG(TRACE, "event: map_request(splash/utility window)");
 #undef PRINT
       return;

@@ -29,10 +29,10 @@ typedef struct plist_t {
 } plist_t;
 
 typedef struct rect_t {
-  uint16_t x;
-  uint16_t y;
-  uint16_t w;
-  uint16_t h;
+  uint32_t x;
+  uint32_t y;
+  uint32_t w;
+  uint32_t h;
 } rect_t;
 
 typedef enum {
@@ -108,6 +108,13 @@ typedef enum {
 #define OUT_WINDOW_STATE_ARR(state, count) OUT_ARR_GENERIC(mode, count, OUT_MODE)
 
 #define OUT_RECT(r) \
+  do { \
+    OUT(r.x); \
+    OUT(r.y); \
+    OUT(r.w); \
+    OUT(r.h); \
+  } while(0)
+#define OUT_RECTP(r) \
   do { \
     OUT(r->x); \
     OUT(r->y); \
