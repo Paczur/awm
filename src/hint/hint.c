@@ -66,10 +66,10 @@ static void hint_set_root(const hint_init_root_t *init) {
 static void hint_window_update_wm_state(xcb_window_t window,
                                         WINDOW_STATE prev,
                                         WINDOW_STATE state) {
-  if(prev == state && (state == WINDOW_ICONIC || state == WINDOW_WITHDRAWN))
+  if(prev == state && state < 0)
     return;
   uint32_t st[] = { (state == WINDOW_ICONIC) ? 3 :
-    ((size_t)state != workspace_focused) ? 0 : 1, XCB_NONE };
+    ((size_t)state == workspace_focused) ? 1 : 0, XCB_NONE };
   xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window, WM_STATE,
                       WM_STATE, 32, 2, &st);
 }
@@ -124,9 +124,9 @@ static void hint_window_update_net_wm_allowed_actions(xcb_window_t window,
                                                       WINDOW_STATE prev,
                                                       WINDOW_STATE state) {
   xcb_atom_t actions[2] = { _NET_WM_ACTION_CLOSE };
-  if((prev == WINDOW_ICONIC) == (state == WINDOW_ICONIC))
+  if((prev < 0) == (state < 0))
     return;
-  if(prev == WINDOW_ICONIC) {
+  if(prev < 0) {
     actions[1] = _NET_WM_ACTION_MINIMIZE;
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window,
                         _NET_WM_ALLOWED_ACTIONS, XCB_ATOM_ATOM, 32, 2,
