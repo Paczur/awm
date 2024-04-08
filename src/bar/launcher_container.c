@@ -5,7 +5,8 @@ static xcb_connection_t *conn;
 
 void launcher_container_show(void) {
   for(size_t i=0; i<bar_container_count; i++) {
-    xcb_map_window(conn, bar_containers.launcher[i]);
+    if(bar_containers.visibility[i])
+      xcb_map_window(conn, bar_containers.launcher[i]);
   }
 }
 

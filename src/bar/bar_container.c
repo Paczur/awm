@@ -1,5 +1,6 @@
 #include "bar_container.h"
 #include <stdlib.h>
+#include <string.h>
 
 bar_containers_t bar_containers;
 size_t bar_container_count;
@@ -30,6 +31,8 @@ void bar_container_init(xcb_connection_t *c, const xcb_screen_t *screen,
                       screen->root_visual, mask, values);
     xcb_map_window(conn, bar_containers.id[i]);
   }
+  bar_containers.visibility = malloc(bar_container_count*sizeof(bool));
+  memset(bar_containers.visibility, 1, bar_container_count*sizeof(bool));
 }
 
 void bar_container_deinit(void) {

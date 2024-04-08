@@ -19,7 +19,6 @@
   to_block_settings(b, def ## _BACKGROUND, def ## _FOREGROUND)
 
 static bool launcher_visible;
-static bool bar_visible;
 static xcb_connection_t *conn;
 static const xcb_screen_t *screen;
 
@@ -36,7 +35,14 @@ size_t bar_get_containers(const bar_containers_t **cont) {
 }
 
 void bar_launcher_show(void) {
-  if(bar_visible) {
+  bool visible = false;
+  for(size_t i=0; i<bar_container_count; i++) {
+    if(bar_containers.visibility[i]) {
+      visible = true;
+      break;
+    }
+  }
+  if(visible) {
     launcher_container_show();
     launcher_visible = true;
     launcher_prompt_clear();
@@ -113,74 +119,60 @@ bool bar_launcher_window(xcb_window_t window) {
 }
 
 void bar_update_minimized(void) {
-  if(bar_visible) {
-    block_minimized_update(block_next_x(block_workspace_geometry+MAX_WORKSPACE_BLOCKS-1),
-                           block_info_offset_right);
-  }
+  block_minimized_update(block_next_x(block_workspace_geometry+MAX_WORKSPACE_BLOCKS-1),
+                         block_info_offset_right);
 }
 
 void bar_update_workspace(size_t n) {
-  if(bar_visible) {
-    size_t pos = block_next_x(block_workspace_geometry+(MAX_WORKSPACE_BLOCKS-1));
-    bool update = (pos == block_minimized_geometry[0].x);
-    block_workspace_update(focused_workspace(),
-                           block_next_x(&block_mode_geometry), n);
-    if(update)
-      bar_update_minimized();
-  }
+  size_t pos = block_next_x(block_workspace_geometry+(MAX_WORKSPACE_BLOCKS-1));
+  bool update = (pos == block_minimized_geometry[0].x);
+  block_workspace_update(focused_workspace(),
+                         block_next_x(&block_mode_geometry), n);
+  if(update)
+    bar_update_minimized();
 }
 
 void bar_update_mode(MODE m) {
-  if(bar_visible) {
-    size_t pos = block_next_x(&block_mode_geometry);
-    block_mode_update(m == MODE_NORMAL);
-    if(block_next_x(&block_mode_geometry) != pos)
-      bar_update_workspace(0);
-  }
+  size_t pos = block_next_x(&block_mode_geometry);
+  block_mode_update(m == MODE_NORMAL);
+  if(block_next_x(&block_mode_geometry) != pos)
+    bar_update_workspace(0);
 }
 
 void bar_redraw(xcb_window_t window) {
-  if(bar_visible) {
-    size_t bar = bar_container_find(window);
-    if(bar >= bar_container_count) {
-      if(!launcher_visible) {
-        if(block_mode_find_redraw(window)) return;
-        if(block_workspace_find_redraw(window)) return;
-        if(block_info_find_redraw(window)) return;
-        if(block_minimized_find_redraw(window)) return;
-      } else {
-        if(launcher_prompt_find_redraw(window)) return;
-        if(launcher_hint_find_redraw(window)) return;
-      }
-      return;
+  size_t bar = bar_container_find(window);
+  if(bar >= bar_container_count) {
+    if(!launcher_visible) {
+      if(block_mode_find_redraw(window)) return;
+      if(block_workspace_find_redraw(window)) return;
+      if(block_info_find_redraw(window)) return;
+      if(block_minimized_find_redraw(window)) return;
+    } else {
+      if(launcher_prompt_find_redraw(window)) return;
+      if(launcher_hint_find_redraw(window)) return;
     }
+    return;
   }
 }
 
 void bar_update_info_highlight(int n, int delay) {
-  if(bar_visible)
-    block_info_update_highlight(n, delay);
+  block_info_update_highlight(n, delay);
 }
 
 void bar_update_info(int n) {
-  if(bar_visible)
-    block_info_update(n);
+  block_info_update(n);
 }
 
-void bar_visibility(bool st) {
-  if(st == bar_visible) return;
-  bar_visible = st;
+void bar_visibility(size_t bar, bool st) {
+  if(st == bar_containers.visibility[bar]) return;
+  bar_containers.visibility[bar] = st;
   if(st) {
-    for(size_t i=0; i<bar_container_count; i++) {
-      xcb_map_window(conn, bar_containers.id[i]);
-    }
+    xcb_map_window(conn, bar_containers.id[bar]);
     bar_update_minimized();
     bar_update_workspace(0);
   } else {
     bar_launcher_hide();
-    for(size_t i=0; i<bar_container_count; i++) {
-      xcb_unmap_window(conn, bar_containers.id[i]);
-    }
+    xcb_unmap_window(conn, bar_containers.id[bar]);
   }
 }
 
@@ -204,7 +196,6 @@ void bar_init(const bar_init_t *init) {
     containers.w[i] = init->bar_containers[i].w;
   }
   bar_container_init(conn, screen, containers, init->bar_container_count);
-  bar_visible = true;
   block_init(conn, screen, init->visual_type);
   font = pango_font_description_from_string(init->bar_font);
   block_mode_init(font, &init->block_mode);

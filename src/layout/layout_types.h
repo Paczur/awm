@@ -47,7 +47,7 @@ typedef struct workspace_t {
   size_t focus;
   int *cross;
   bool *update;
-  bool fullscreen: 1;
+  bool *fullscreen;
 } workspace_t;
 
 typedef struct grid_init_t {

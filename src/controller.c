@@ -108,30 +108,33 @@ void c_wm_shutdown(void) {
 }
 
 void c_workspace_switch(size_t n) {
-  bool old_maximized;
-  bool new_maximized;
+  bool old_maximized = false;
+  size_t workarea_count;
+  bool new_maximized = false;
   size_t focused_workspace = layout_workspace_focused();
   if(n == focused_workspace || n > MAX_WORKSPACES) return;
   size_t refresh = MIN(n, focused_workspace);
-  old_maximized = layout_workspace_isfullscreen(focused_workspace);
-  new_maximized = layout_workspace_isfullscreen(n);
+  workarea_count = layout_workareas(NULL);
+  for(size_t i=0; i<workarea_count; i++) {
+    old_maximized = layout_workspace_area_isfullscreen(focused_workspace, i);
+    new_maximized = layout_workspace_area_isfullscreen(n, i);
+    if(new_maximized != old_maximized)
+      bar_visibility(i, !new_maximized);
+  }
   layout_workspace_switch(n);
   hint_workspace_focused_set(n);
-  if(new_maximized != old_maximized)
-    bar_visibility(!new_maximized);
-  if(!new_maximized)
-    c_bar_update_workspace(refresh);
+  c_bar_update_workspace(refresh);
 #define PRINT OUT(n); OUT(refresh); OUT(old_maximized); OUT(new_maximized);
   LOGF(TRACE);
 #undef PRINT
 }
 
-void c_workspace_fullscreen(size_t n) {
-  bool old_state = layout_workspace_isfullscreen(n);
+void c_workspace_fullscreen(size_t n, size_t m) {
+  bool old_state = layout_workspace_area_isfullscreen(n, m);
   size_t focused_workspace = layout_workspace_focused();
-  bool new_state = layout_workspace_fullscreen_toggle(n);
+  bool new_state = layout_workspace_area_fullscreen_toggle(n, m);
   if(focused_workspace == n && new_state != old_state) {
-    bar_visibility(!new_state);
+    bar_visibility(m, !new_state);
   }
 
 #define PRINT OUT(n); OUT(focused_workspace); OUT(old_state); OUT(new_state);
@@ -141,7 +144,7 @@ void c_workspace_fullscreen(size_t n) {
 
 void c_workspace_focused_fullscreen(void) {
   size_t focused_workspace = layout_workspace_focused();
-  c_workspace_fullscreen(focused_workspace);
+  c_workspace_fullscreen(focused_workspace, layout_area_focused());
 }
 
 xcb_window_t c_window_focused(void) {
@@ -160,8 +163,8 @@ bool c_window_minimize(xcb_window_t xwin) {
   if(xwin == (xcb_window_t)-1) return false;
   window_t *window = layout_xwin2win(xwin);
   if(window == NULL) return false;
-  WINDOW_STATE state = layout_minimize(window);
-#define PRINT OUT(window); OUT_WINDOW_STATE(state);
+  layout_minimize(window);
+#define PRINT OUT_WINDOW(window);
   LOGF(TRACE);
 #undef PRINT
   return true;
@@ -524,6 +527,8 @@ void c_event_destroy(const xcb_generic_event_t *e) {
 void c_event_unmap(const xcb_generic_event_t *e) {
   const xcb_unmap_notify_event_t *event = (const xcb_unmap_notify_event_t*)e;
   bool bar = false;
+  size_t workarea_count;
+  WINDOW_STATE state;
   size_t bar_container_count;
   const bar_containers_t *bar_containers;
   bar_container_count = bar_get_containers(&bar_containers);
@@ -534,17 +539,16 @@ void c_event_unmap(const xcb_generic_event_t *e) {
     }
   }
   if(!bar) {
-    WINDOW_STATE state = layout_event_unmap(event->window);
+    state = layout_event_unmap(event->window);
+    workarea_count = layout_workareas(NULL);
     if(state >= 0) {
-      if((size_t)state == layout_workspace_focused()) {
-        bar_visibility(!layout_workspace_isfullscreen(state));
-      } else {
-        c_bar_update_workspace(state);
+      for(size_t i=0; i<workarea_count; i++) {
+        bar_visibility(i, !layout_workspace_area_isfullscreen(state, i));
       }
       c_bar_update_minimized();
     }
   }
-#define PRINT OUT(event->window);
+#define PRINT OUT(event->window); OUT(bar);
   LOG(TRACE, "event: unmap_notify");
 #undef PRINT
 }

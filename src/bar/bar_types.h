@@ -16,6 +16,7 @@ typedef struct bar_containers_t {
   uint32_t h;
   uint32_t padding;
   uint32_t separator;
+  bool *visibility;
 } bar_containers_t;
 
 typedef struct block_settings_t {

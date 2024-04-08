@@ -14,9 +14,13 @@ workspace_t *workspace_focusedw(void) {
   return workspaces+workspace_focused;
 }
 
+bool workspace_area_empty(size_t n, size_t m) {
+  return !workspaces[n].grid[m*CELLS_PER_WORKAREA].window;
+}
+
 bool workspace_empty(size_t n) {
   for(size_t i=0; i<workarea_count; i++) {
-    if(workspaces[n].grid[i*CELLS_PER_WORKAREA].window != NULL)
+    if(!workspace_area_empty(n, i))
       return false;
   }
   return true;
@@ -31,21 +35,21 @@ bool workspace_urgent(size_t n) {
   return false;
 }
 
-bool workspace_fullscreen_toggle(size_t n) {
-  bool empty = workspace_empty(n);
-  bool state = workspaces[n].fullscreen ^ 1;
+bool workspace_area_fullscreen_toggle(size_t n, size_t m) {
+  bool empty = workspace_area_empty(n, m);
+  bool state = workspaces[n].fullscreen[m] ^ 1;
   if(!empty || (empty && !state)) {
-    workspaces[n].fullscreen = state;
+    workspaces[n].fullscreen[m] = state;
   }
-  return workspaces[n].fullscreen;
+  return workspaces[n].fullscreen[m];
 }
 
-bool workspace_fullscreen_set(size_t n, bool state) {
-  bool empty = workspace_empty(n);
+bool workspace_area_fullscreen_set(size_t n, size_t m, bool state) {
+  bool empty = workspace_area_empty(n, m);
   if(!empty || (empty && !state)) {
-    workspaces[n].fullscreen = state;
+    workspaces[n].fullscreen[m] = state;
   }
-  return workspaces[n].fullscreen;
+  return workspaces[n].fullscreen[m];
 }
 
 void workspace_switch(size_t n) {
@@ -75,6 +79,10 @@ void workspace_switch(size_t n) {
   }
 }
 
+void workspace_area_update(size_t n, size_t m) {
+  workspaces[n].update[m] = true;
+}
+
 void workspace_update(size_t n) {
   for(size_t i=0; i<workarea_count; i++)
     workspaces[n].update[i] = true;
@@ -90,6 +98,7 @@ void workspace_init(xcb_connection_t *c) {
       workspaces[i].grid[j].origin = -1;
     }
     workspaces[i].update = calloc(workarea_count, sizeof(bool));
+    workspaces[i].fullscreen = calloc(workarea_count, sizeof(bool));
   }
 }
 
@@ -98,5 +107,16 @@ void workspace_deinit(void) {
     free(workspaces[i].grid);
     free(workspaces[i].cross);
     free(workspaces[i].update);
+    free(workspaces[i].fullscreen);
+  }
+}
+
+void workspace_event_unmap(const window_t *win, WINDOW_STATE prev) {
+  (void)win;
+  if(prev < 0) return;
+  for(size_t i=0; i<workarea_count; i++) {
+    if(workspace_area_empty(prev, i)) {
+      workspace_area_fullscreen_set(prev, i, false);
+    }
   }
 }
