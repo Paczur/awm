@@ -4,6 +4,7 @@
 typedef unsigned char uchar;
 
 #include <stdint.h>
+#include <string.h>
 
 #define LENGTH(x) (sizeof(x)/sizeof((x)[0]))
 
@@ -100,7 +101,7 @@ typedef enum {
       } else if((state)==WINDOW_ICONIC) { \
         puts("iconic"); \
       } else if((state)==WINDOW_INVALID) { \
-        printf("invalid"); \
+        puts("invalid"); \
       } else { \
         printf("%d\n", state); \
       } \
