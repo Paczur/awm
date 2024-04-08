@@ -258,4 +258,5 @@ window_t *window_event_create(xcb_window_t window) {
   w->input = false;
   windows = w;
   pthread_rwlock_unlock(&window_lock);
+  return w;
 }
