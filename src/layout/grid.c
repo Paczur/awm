@@ -24,6 +24,7 @@ size_t grid_area2pos(size_t m) { return m*CELLS_PER_WORKAREA; }
 
 static grid_cell_t *grid_focusedc(void) {
   workspace_t *w = workspaces+workspace_focused;
+  if(w->focus > workarea_count*CELLS_PER_WORKAREA) return NULL;
   return w->grid+w->focus;
 }
 
@@ -377,6 +378,7 @@ bool grid_focus_pick(void) {
       return true;
     }
   }
+  workspace->focus = -1;
   return false;
 }
 
@@ -454,8 +456,8 @@ bool grid_swap(size_t n1, size_t n2) {
 bool grid_focus(size_t n) {
   grid_cell_t *target = grid_pos2cell(n);
   grid_cell_t *curr = grid_focusedc();
-  if(target == NULL || target->window == NULL || !target->window->input ||
-     (curr != NULL && curr->window != NULL && curr->window == target->window))
+  if(!target || !target->window || !target->window->input ||
+     (curr && curr->window && curr->window == target->window))
     return false;
   xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT,
                       target->window->id, XCB_CURRENT_TIME);
@@ -697,17 +699,12 @@ bool grid_event_map(window_t *window) {
 }
 
 void grid_event_unmap(xcb_window_t window) {
-  xcb_focus_out_event_t fallback = { XCB_FOCUS_OUT, .event = window };
   size_t pos = grid_xwin2pos(window);
   if(grid_pos_invalid(pos)) return;
   pos = grid_pos2origin(pos);
   grid_pos2cell(pos)->window = NULL;
   grid_pos2cell(pos)->origin = -1;
   grid_update(grid_pos2area(pos));
-  if(grid_focused() == pos && !grid_focus_restore()) {
-    xcb_send_event(conn, 0, window, XCB_EVENT_MASK_FOCUS_CHANGE,
-                   (char*)&fallback);
-  }
   grid_adjust_pos();
   grid_update(grid_pos2area(pos));
 }

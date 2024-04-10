@@ -317,6 +317,7 @@ bool hint_window_input(xcb_window_t win) {
 #undef PRINT
     free(reply);
   } else {
+    ret = true;
 #define PRINT OUT(win);
     LOGF(HINT_TRACE);
 #undef PRINT

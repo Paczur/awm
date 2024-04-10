@@ -94,10 +94,12 @@ bool layout_focus(const window_t *win) {
   return ret;
 }
 
-void layout_focus_restore(void) {
+bool layout_focus_restore(void) {
   if(!grid_focus_restore()) {
-    workspace_focusedw()->focus = 0;
+    workspace_focusedw()->focus = -1;
+    return false;
   }
+  return true;
   LOGFE(LAYOUT_TRACE);
 }
 
@@ -229,6 +231,10 @@ void layout_restore(xcb_window_t window, size_t workspace) {
 #undef PRINT
 }
 
+window_t *layout_create(xcb_window_t window) {
+  return window_event_create(window);
+}
+
 
 void layout_init(const layout_init_t *init) {
   conn = init->conn;
@@ -306,6 +312,7 @@ WINDOW_STATE layout_event_destroy(xcb_window_t window) {
 }
 
 WINDOW_STATE layout_event_unmap(xcb_window_t window) {
+  xcb_focus_out_event_t fallback = { XCB_FOCUS_OUT, .event = window };
   window_t* win = window_find(window);
   if(!win) return WINDOW_INVALID;
   WINDOW_STATE old_state = win->state;
@@ -316,7 +323,10 @@ WINDOW_STATE layout_event_unmap(xcb_window_t window) {
     win->state = WINDOW_WITHDRAWN;
   }
   window_state_changed(window, old_state, win->state);
-  layout_focus_restore();
+  if(!layout_focus_restore()) {
+    xcb_send_event(conn, 0, window, XCB_EVENT_MASK_FOCUS_CHANGE,
+                   (char*)&fallback);
+  }
   workspace_event_unmap(win, old_state);
 #define PRINT OUT_WINDOW(win); OUT_WINDOW_STATE(old_state);
   LOGF(LAYOUT_TRACE);

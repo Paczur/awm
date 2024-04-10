@@ -23,7 +23,7 @@ window_t *layout_spawn2win(size_t);
 window_t *layout_focused(void);
 size_t layout_area_focused(void);
 xcb_window_t layout_focused_xwin(void);
-void layout_focus_restore(void);
+bool layout_focus_restore(void);
 bool layout_focus(const window_t*);
 window_t *layout_above(void);
 window_t *layout_below(void);
@@ -39,6 +39,7 @@ void layout_show(size_t);
 WINDOW_STATE layout_minimize(window_t*);
 void layout_destroy(xcb_window_t);
 void layout_restore(xcb_window_t, size_t);
+window_t *layout_create(xcb_window_t);
 
 void layout_init(const layout_init_t*);
 void layout_deinit(void);

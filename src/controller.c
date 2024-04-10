@@ -64,8 +64,7 @@ static void c_window_init(xcb_window_t window) {
                   XCB_NONE, XCB_BUTTON_INDEX_ANY, XCB_MOD_MASK_ANY);
   win = layout_xwin2win(window);
   if(win == NULL) {
-    layout_event_create(window);
-    win = layout_xwin2win(window);
+    win = layout_create(window);
   }
   layout_input_set(layout_xwin2win(window),
                    hint_window_input(window));

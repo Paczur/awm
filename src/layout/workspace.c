@@ -99,6 +99,7 @@ void workspace_init(xcb_connection_t *c) {
     }
     workspaces[i].update = calloc(workarea_count, sizeof(bool));
     workspaces[i].fullscreen = calloc(workarea_count, sizeof(bool));
+    workspaces[i].focus = -1;
   }
 }
 
