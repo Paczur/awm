@@ -1,7 +1,9 @@
 #define REPEATABLE(mod, key, f) \
 {mod, key, f, true}
+#define REPEATABLE_CHANGE(mod, key, f) \
+{mod, key, f, true}, {MOD_SUPER | mod, key, f ## _change, false}
 #define WITH_CHANGE(mod, key, f) \
-{mod, key, f, false}, {MOD_SUPER | mod, key, f ## _change, true}
+{mod, key, f, false}, {MOD_SUPER | mod, key, f ## _change, false}
 #define BARE(mod, key, f) \
 {mod, key, f, false}
 #define CONFIG_NUMBER_PATTERN(mod, f) \
@@ -31,6 +33,11 @@
   WITH_CHANGE(mod, XK_j, f ## _down), \
   WITH_CHANGE(mod, XK_k, f ## _up),   \
   WITH_CHANGE(mod, XK_l, f ## _right)
+#define REPEATABLE_DIRECTION_PATTERN(mod, f) \
+  REPEATABLE_CHANGE(mod, XK_h, f ## _left), \
+  REPEATABLE_CHANGE(mod, XK_j, f ## _down), \
+  REPEATABLE_CHANGE(mod, XK_k, f ## _up),   \
+  REPEATABLE_CHANGE(mod, XK_l, f ## _right)
 
 #define CONFIG_SHORTCUTS_NORMAL_MODE { \
   CONFIG_NUMBER_PATTERN(MOD_NONE,         layout_focus),        \
@@ -39,7 +46,7 @@
   CONFIG_NUMBER_PATTERN(MOD_CTRL,         show),                \
   CONFIG_DIRECTION_PATTERN(MOD_NONE,      focus_window),        \
   CONFIG_DIRECTION_PATTERN(MOD_SHIFT,     swap_window),         \
-  CONFIG_DIRECTION_PATTERN(MOD_ALT,       enlarge),             \
+  REPEATABLE_DIRECTION_PATTERN(MOD_ALT,   enlarge),             \
   REPEATABLE(MOD_NONE,   XF86XK_MonBrightnessDown, brightness_down), \
   REPEATABLE(MOD_NONE,   XF86XK_MonBrightnessUp,   brightness_up),   \
   REPEATABLE(MOD_NONE,   XK_F1,                    brightness_down), \
