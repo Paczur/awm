@@ -35,14 +35,14 @@ size_t bar_get_containers(const bar_containers_t **cont) {
 }
 
 void bar_launcher_show(void) {
-  bool visible = false;
+  size_t visible = -1;
   for(size_t i=0; i<bar_container_count; i++) {
     if(bar_containers.visibility[i]) {
-      visible = true;
+      visible = i;
       break;
     }
   }
-  if(visible) {
+  if(visible < bar_container_count) {
     launcher_container_show();
     launcher_visible = true;
     launcher_prompt_clear();
@@ -52,7 +52,7 @@ void bar_launcher_show(void) {
                    XCB_GRAB_ANY, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
     }
     xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT,
-                        bar_containers.launcher[0], XCB_CURRENT_TIME);
+                        bar_containers.launcher[visible], XCB_CURRENT_TIME);
     launcher_trie_unmark(launcher_trie_tree);
     launcher_trie_populate(&launcher_trie_tree);
     launcher_trie_cleanup(launcher_trie_tree);
