@@ -53,7 +53,11 @@ bool workspace_area_fullscreen_set(size_t n, size_t m, bool state) {
 }
 
 void workspace_switch(size_t n) {
+  if(n > MAX_WORKSPACES) return;
   if(n == workspace_focused) return;
+  workspace_t *old = workspaces+workspace_focused;
+  workspace_t *new = workspaces+n;
+
   for(size_t i=0; i<workarea_count*CELLS_PER_WORKAREA; i++) {
     if(workspaces[workspace_focused].grid[i].window != NULL &&
        workspaces[workspace_focused].grid[i].origin == i) {
@@ -77,6 +81,10 @@ void workspace_switch(size_t n) {
       grid_refresh();
     }
   }
+
+#define PRINT OUT_WORKSPACE(old); OUT_WORKSPACE(new);
+  LOGF(LAYOUT_WORKSPACE_TRACE);
+#undef PRINT
 }
 
 void workspace_area_update(size_t n, size_t m) {

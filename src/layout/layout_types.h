@@ -91,21 +91,26 @@ typedef struct layout_init_t {
 #define OUT_GRID_CELL(c) \
   do { \
     OUT(c); \
-    if((c)!=NULL) { \
+    if(c!=NULL) { \
       OUT_WINDOW(c->window); \
       OUT(c->origin); \
     } \
   } while(0)
-#define OUT_GRID_CELL_ARR(c, count) OUT_ARR_GENERIC(c, count, OUT_GRID_CELL)
+#define OUT_GRID_CELL_RAW(c) \
+  do { \
+    OUT(&c); \
+    OUT_WINDOW(c.window); \
+    OUT(c.origin); \
+  } while(0)
+#define OUT_GRID_CELL_ARR(c, count) OUT_ARR_GENERIC(c, count, OUT_GRID_CELL_RAW)
 #define OUT_WORKSPACE(w) \
   do { \
     OUT(w); \
-    if((w) != NULL) { \
-      OUT_GRID_CELL_ARR((w)->grid, workarea_count*CELLS_PER_WORKAREA); \
+    if(w != NULL) { \
       OUT(w->focus); \
       OUT_ARR(w->cross, 2); \
       OUT_ARR(w->update, workarea_count); \
-      OUT(w->fullscreen); \
+      OUT_ARR(w->fullscreen, workarea_count); \
     } \
   } while(0)
 #define OUT_WORKSPACE_ARR(w, count) OUT_ARR_GENERIC(w, count, OUT_WORKSPACE)
@@ -140,6 +145,22 @@ typedef struct layout_init_t {
 #define LAYOUT_GRID_DEBUG 1
 #else
 #define LAYOUT_GRID_TRACE 0
+#endif
+
+#ifdef LAYOUT_WORKSPACE_DEBUG
+#undef LAYOUT_WORKSPACE_DEBUG
+#define LAYOUT_WORKSPACE_DEBUG 1
+#else
+#define LAYOUT_WORKSPACE_DEBUG 0
+#endif
+
+#ifdef LAYOUT_WORKSPACE_TRACE
+#undef LAYOUT_WORKSPACE_TRACE
+#define LAYOUT_WORKSPACE_TRACE 1
+#undef LAYOUT_WORKSPACE_DEBUG
+#define LAYOUT_WORKSPACE_DEBUG 1
+#else
+#define LAYOUT_WORKSPACE_TRACE 0
 #endif
 
 #endif

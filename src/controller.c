@@ -123,7 +123,7 @@ void c_workspace_switch(size_t n) {
   layout_workspace_switch(n);
   hint_workspace_focused_set(n);
   c_bar_update_workspace(refresh);
-#define PRINT OUT(n); OUT(refresh); OUT(old_maximized); OUT(new_maximized);
+#define PRINT OUT(n); OUT(refresh);
   LOGF(TRACE);
 #undef PRINT
 }
@@ -540,7 +540,7 @@ void c_event_unmap(const xcb_generic_event_t *e) {
   if(!bar) {
     state = layout_event_unmap(event->window);
     workarea_count = layout_workareas(NULL);
-    if(state >= 0) {
+    if(state >= 0 && (size_t)state == layout_workspace_focused()) {
       for(size_t i=0; i<workarea_count; i++) {
         bar_visibility(i, !layout_workspace_area_isfullscreen(state, i));
       }

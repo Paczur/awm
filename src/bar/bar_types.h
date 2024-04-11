@@ -102,4 +102,35 @@ typedef struct bar_init_t {
   bar_launcher_hint_init_t launcher_hint;
 } bar_init_t;
 
+#define OUT_CONTAINER(cont, i) \
+  do { \
+    OUT(i); \
+    OUT(cont.id[i]); \
+    OUT(cont.launcher[i]); \
+    OUT(cont.x[i]); \
+    OUT(cont.y[i]); \
+    OUT(cont.w[i]); \
+    OUT(cont.h); \
+    OUT(cont.background); \
+    OUT(cont.padding); \
+    OUT(cont.separator); \
+    OUT(cont.visibility[i]); \
+  } while(0)
+
+#ifdef BAR_DEBUG
+#undef BAR_DEBUG
+#define BAR_DEBUG 1
+#else
+#define BAR_DEBUG 0
+#endif
+
+#ifdef BAR_TRACE
+#undef BAR_TRACE
+#define BAR_TRACE 1
+#undef BAR_DEBUG
+#define BAR_DEBUG 1
+#else
+#define BAR_TRACE 0
+#endif
+
 #endif

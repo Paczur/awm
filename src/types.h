@@ -80,7 +80,7 @@ typedef enum {
         out((val)[_i]); \
         OUT_ARR_NEXT((val)[_i]); \
       } \
-      OUT_RAW((val)[(count)-1]); \
+      out((val)[(count)-1]); \
     } \
     OUT_ARR_SUFFIX(); \
   } while(0)

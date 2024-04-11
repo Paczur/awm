@@ -165,7 +165,6 @@ void bar_update_info(int n) {
 
 void bar_visibility(size_t bar, bool st) {
   if(st == bar_containers.visibility[bar]) return;
-  bar_containers.visibility[bar] = st;
   if(st) {
     xcb_map_window(conn, bar_containers.id[bar]);
     bar_update_minimized();
@@ -174,6 +173,10 @@ void bar_visibility(size_t bar, bool st) {
     bar_launcher_hide();
     xcb_unmap_window(conn, bar_containers.id[bar]);
   }
+  bar_containers.visibility[bar] = st;
+#define PRINT OUT_CONTAINER(bar_containers, bar); OUT(st);
+  LOGF(BAR_TRACE);
+#undef PRINT
 }
 
 void bar_init(const bar_init_t *init) {
