@@ -99,8 +99,8 @@ bool layout_focus_restore(void) {
     workspace_focusedw()->focus = -1;
     return false;
   }
-  return true;
   LOGFE(LAYOUT_TRACE);
+  return true;
 }
 
 window_t *layout_above(void) { return grid_pos2win(grid_above()); }
@@ -114,9 +114,11 @@ window_t *layout_to_left(void) { return grid_pos2win(grid_to_left()); }
 bool layout_urgency_set(window_t *win, bool state) {
   if(!win) return false;
   bool ret = window_set_urgency(win, state);
+  if(ret) {
 #define PRINT OUT_WINDOW(win); OUT(state); OUT(ret);
-  LOGF(LAYOUT_TRACE);
+    LOGF(LAYOUT_TRACE);
 #undef PRINT
+  }
   return ret;
 }
 
@@ -125,9 +127,11 @@ bool layout_input_set(window_t *win, bool state) {
   bool ret = window_set_input(win, state);
   if(ret && state == false && win->state == (int)workspace_focused)
     layout_focus_restore();
+  if(ret) {
 #define PRINT OUT_WINDOW(win); OUT(state); OUT(ret);
-  LOGF(LAYOUT_TRACE);
+    LOGF(LAYOUT_TRACE);
 #undef PRINT
+  }
   return ret;
 }
 
@@ -175,7 +179,9 @@ void layout_show(size_t p) {
   if(!grid_show(win)) {
     window_minimize(win);
   } else {
+    win->state = workspace_focused;
     window_state_changed(win->id, WINDOW_ICONIC, workspace_focused);
+    layout_focus(win);
   }
 #define PRINT OUT(p); OUT_WINDOW(win);
   LOGF(LAYOUT_TRACE);

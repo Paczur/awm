@@ -461,6 +461,9 @@ bool grid_focus(size_t n) {
     return false;
   xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT,
                       target->window->id, XCB_CURRENT_TIME);
+#define PRINT OUT_GRID_CELL(target); OUT_GRID_CELL(curr); OUT(n);
+  LOGF(LAYOUT_GRID_TRACE);
+#undef PRINT
   return true;
 }
 
@@ -689,13 +692,7 @@ void grid_event_focus(xcb_window_t window) {
 
 bool grid_event_map(window_t *window) {
   if(window->state >= WINDOW_WORKSPACE_START) return true;
-  size_t next = grid_next_pos();
-
-  if(grid_pos_invalid(next))
-    return false;
-
-  grid_place_window(window, next, false);
-  return true;
+  return grid_show(window);
 }
 
 void grid_event_unmap(xcb_window_t window) {

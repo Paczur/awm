@@ -5,11 +5,10 @@ SRC=src
 TOOLS=tools
 
 WARN=-Wall -Wextra
-VERBOSITY=-D DEBUG -D HINT_DEBUG -D LAYOUT_DEBUG -D SYSTEM_DEBUG
-DEBUG=$(VERBOSITY) -Og -ggdb3 -fsanitize=address -fsanitize=pointer-compare \
--fsanitize=pointer-subtract -fsanitize=undefined \
--fsanitize-address-use-after-scope -fstack-check \
--fno-stack-clash-protection
+VERBOSITY=-D DEBUG -D HINT_DEBUG -D LAYOUT_TRACE -D SYSTEM_DEBUG -D LAYOUT_GRID_TRACE
+MEMORY_DEBUG=-fsanitize=address -fsanitize=pointer-compare -fsanitize=pointer-subtract
+DEBUG=$(VERBOSITY) -Og -ggdb3  -fsanitize=undefined \
+			-fsanitize-address-use-after-scope -fstack-check -fno-stack-clash-protection
 TEXT=$(shell pkg-config --cflags --libs pangocairo fontconfig)
 X=$(shell pkg-config --cflags --libs xcb xcb-randr xcb-xkb xkbcommon-x11 xcb-icccm)
 THREADS=-lpthread
