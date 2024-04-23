@@ -381,7 +381,6 @@ void c_event_map(const xcb_generic_event_t *e) {
   rect_t rect;
   size_t atom_length = hint_atom_window_type(&atoms, event->window);
   for(size_t i=0; i<atom_length; i++) {
-    //TODO: Figure out how to get size for those windows
     if(hint_atom_window_type_splash(atoms[i]) ||
        hint_atom_window_type_utility(atoms[i]) ||
        hint_atom_window_type_notification(atoms[i])) {

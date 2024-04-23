@@ -2,8 +2,6 @@
 #include "bar_container.h"
 #include <stdio.h>
 
-//TODO: Reposition only for left and right align
-
 static xcb_connection_t *conn;
 static const xcb_screen_t *screen;
 static xcb_visualtype_t *visual_type;

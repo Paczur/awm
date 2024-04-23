@@ -138,7 +138,6 @@ static void hint_window_update_net_wm_allowed_actions(xcb_window_t window,
   }
 }
 
-//TODO: Potentialy refactor this function
 static void hint_window_update_net_wm_state(xcb_window_t window,
                                             WINDOW_STATE prev,
                                             WINDOW_STATE state) {

@@ -19,22 +19,23 @@ typedef struct block_info_t {
   block_settings_t highlighted;
   block_settings_t urgent;
   size_t min_width;
-  block_info_data_t data[MAX_INFO_BLOCKS];
-  block_info_state_t state[MAX_INFO_BLOCKS];
+  block_info_data_t *data;
+  block_info_state_t *state;
 } block_info_t;
 
-//TODO: DON'T INITIALIZE EVERYTHING
 //TODO: FIX BUGGY RENDERING ON SECOND MONITOR
 
 uint32_t block_info_offset_right;
+static size_t block_count;
 static block_info_t block_info;
 static pthread_t block_info_thread;
 static bool info_run_flag;
 static bool info_run_finished = false;
 static void (*callback)(void);
 static int (*get_output)(const char*, char*, size_t);
-static block_geometry_t block_info_geometry[MAX_INFO_BLOCKS];
+static block_geometry_t *block_info_geometry;
 static xcb_connection_t *conn;
+
 
 static const block_settings_t *block_info_get_settings(size_t n)  {
   switch(block_info.state[n].status) {
@@ -47,14 +48,13 @@ static const block_settings_t *block_info_get_settings(size_t n)  {
     return &block_info.normal;
   }
 }
-
 static void *block_info_update_periodic(void*) {
   int max;
   struct timespec ts =
     (struct timespec) { .tv_nsec = (CLOCK_STEPS_PER_SECOND == 1) ?
       999999999 :
         1000000000/CLOCK_STEPS_PER_SECOND };
-  for(size_t i=0; i<MAX_INFO_BLOCKS; i++) {
+  for(size_t i=0; i<block_count; i++) {
     if(block_info.data[i].cmd == NULL) {
       pthread_rwlock_wrlock(block_info.locks+i);
       block_info.state[i].countdown = -1;
@@ -64,7 +64,7 @@ static void *block_info_update_periodic(void*) {
   info_run_flag = true;
   while(info_run_flag) {
     max = -1;
-    for(int i=0; i<MAX_INFO_BLOCKS; i++) {
+    for(int i=0; (size_t)i<block_count; i++) {
       pthread_rwlock_rdlock(block_info.locks+i);
       if(block_info.state[i].update) {
         pthread_rwlock_unlock(block_info.locks+i);
@@ -99,13 +99,13 @@ static void *block_info_update_periodic(void*) {
         }
         block_geometry_update_right(block_info.blocks, block_info_geometry,
                                     max+1,
-                                    (max+1 == MAX_INFO_BLOCKS)?0:
+                                    ((size_t)max+1 == block_count)?0:
                                     block_combined_width(block_info_geometry+max+1,
-                                                         MAX_INFO_BLOCKS-max-1),
+                                                         block_count-max-1),
                                     block_info_get_settings,
                                     block_info.min_width);
         block_info_offset_right =
-          block_combined_width(block_info_geometry, MAX_INFO_BLOCKS);
+          block_combined_width(block_info_geometry, block_count);
         for(int i=0; i<max+1; i++) {
           pthread_rwlock_unlock(block_info.locks+i);
         }
@@ -120,7 +120,7 @@ static void *block_info_update_periodic(void*) {
 }
 
 void block_info_update_highlight(int n, int delay) {
-  for(size_t i=0; i<MAX_INFO_BLOCKS; i++) {
+  for(size_t i=0; i<block_count; i++) {
     if(block_info.data[i].id == n) {
       pthread_rwlock_wrlock(block_info.locks+i);
       block_info.state[i].countdown = delay*CLOCK_STEPS_PER_SECOND;
@@ -132,7 +132,7 @@ void block_info_update_highlight(int n, int delay) {
 }
 
 void block_info_update(int n) {
-  for(size_t i=0; i<MAX_INFO_BLOCKS; i++) {
+  for(size_t i=0; i<block_count; i++) {
     pthread_rwlock_rdlock(block_info.locks+i);
     if(block_info.data[i].id == n) {
       pthread_rwlock_unlock(block_info.locks+i);
@@ -146,11 +146,11 @@ void block_info_update(int n) {
 }
 
 void block_info_redraw(size_t bar) {
-  block_redraw_batch(block_info.blocks, MAX_INFO_BLOCKS, bar);
+  block_redraw_batch(block_info.blocks, block_count, bar);
 }
 
 bool block_info_find_redraw(xcb_window_t window) {
-  return block_find_redraw(block_info.blocks, MAX_INFO_BLOCKS, window);
+  return block_find_redraw(block_info.blocks, block_count, window);
 }
 
 void block_info_init(const PangoFontDescription *font,
@@ -164,10 +164,19 @@ void block_info_init(const PangoFontDescription *font,
   callback = cb;
   conn = c;
   get_output = init->get_output;
+  for(size_t i=MAX_INFO_BLOCKS-1; i>0; i--) {
+    if(init->data->cmd != NULL) {
+      block_count = i;
+      break;
+    }
+  }
+  block_info.data = malloc(block_count*sizeof(block_info_data_t));
+  block_info.state = calloc(block_count, sizeof(block_info_state_t));
+  block_info_geometry = malloc(block_count*sizeof(block_geometry_t));
   memcpy(block_info.data, init->data, init->data_length*sizeof(block_info_data_t));
-  block_info.blocks = malloc(MAX_INFO_BLOCKS*sizeof(block_t));
-  block_info.locks = malloc(MAX_INFO_BLOCKS*sizeof(pthread_rwlock_t));
-  for(size_t i=0; i<MAX_INFO_BLOCKS; i++) {
+  block_info.blocks = malloc(block_count*sizeof(block_t));
+  block_info.locks = malloc(block_count*sizeof(pthread_rwlock_t));
+  for(size_t i=0; i<block_count; i++) {
     block_create(block_info.blocks+i, font);
     pthread_rwlock_init(block_info.locks+i, NULL);
   }
@@ -177,8 +186,11 @@ void block_info_init(const PangoFontDescription *font,
 void block_info_deinit(void) {
   info_run_flag = false;
   while(!info_run_finished) {}
-  for(size_t i=0; i<MAX_INFO_BLOCKS; i++) {
+  for(size_t i=0; i<block_count; i++) {
     block_destroy(block_info.blocks+i);
   }
   free(block_info.blocks);
+  free(block_info.data);
+  free(block_info.state);
+  free(block_info_geometry);
 }
