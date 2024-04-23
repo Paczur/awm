@@ -6,7 +6,7 @@
 #define MAX_MINIMIZED_BLOCKS 10
 #define WINDOW_NAME_MAX_LENGTH 40
 
-//x coord is not reliable
+// x coord is not reliable
 extern block_geometry_t block_minimized_geometry[MAX_MINIMIZED_BLOCKS];
 
 void block_minimized_update(size_t, size_t);

@@ -1,33 +1,32 @@
 #include "workspace.h"
-#include "workarea.h"
-#include "window.h"
-#include "grid.h"
-#include <stdlib.h>
+
 #include <stdio.h>
+#include <stdlib.h>
+
+#include "grid.h"
+#include "window.h"
+#include "workarea.h"
 
 workspace_t workspaces[MAX_WORKSPACES];
 size_t workspace_focused;
 
 static xcb_connection_t *conn;
 
-workspace_t *workspace_focusedw(void) {
-  return workspaces+workspace_focused;
-}
+workspace_t *workspace_focusedw(void) { return workspaces + workspace_focused; }
 
 bool workspace_area_empty(size_t n, size_t m) {
-  return !workspaces[n].grid[m*CELLS_PER_WORKAREA].window;
+  return !workspaces[n].grid[m * CELLS_PER_WORKAREA].window;
 }
 
 bool workspace_empty(size_t n) {
-  for(size_t i=0; i<workarea_count; i++) {
-    if(!workspace_area_empty(n, i))
-      return false;
+  for(size_t i = 0; i < workarea_count; i++) {
+    if(!workspace_area_empty(n, i)) return false;
   }
   return true;
 }
 
 bool workspace_urgent(size_t n) {
-  for(size_t i=0; i<CELLS_PER_WORKAREA*workarea_count; i++) {
+  for(size_t i = 0; i < CELLS_PER_WORKAREA * workarea_count; i++) {
     if(workspaces[n].grid[i].window != NULL &&
        workspaces[n].grid[i].window->urgent)
       return true;
@@ -55,17 +54,17 @@ bool workspace_area_fullscreen_set(size_t n, size_t m, bool state) {
 void workspace_switch(size_t n) {
   if(n > MAX_WORKSPACES) return;
   if(n == workspace_focused) return;
-  workspace_t *old = workspaces+workspace_focused;
-  workspace_t *new = workspaces+n;
+  workspace_t *old = workspaces + workspace_focused;
+  workspace_t *new = workspaces + n;
 
-  for(size_t i=0; i<workarea_count*CELLS_PER_WORKAREA; i++) {
+  for(size_t i = 0; i < workarea_count * CELLS_PER_WORKAREA; i++) {
     if(workspaces[workspace_focused].grid[i].window != NULL &&
        workspaces[workspace_focused].grid[i].origin == i) {
       xcb_unmap_window(conn, workspaces[workspace_focused].grid[i].window->id);
     }
   }
   workspace_focused = n;
-  for(size_t i=0; i<workarea_count*CELLS_PER_WORKAREA; i++) {
+  for(size_t i = 0; i < workarea_count * CELLS_PER_WORKAREA; i++) {
     if(workspaces[workspace_focused].grid[i].window != NULL &&
        workspaces[workspace_focused].grid[i].origin == i) {
       xcb_map_window(conn, workspaces[n].grid[i].window->id);
@@ -73,7 +72,7 @@ void workspace_switch(size_t n) {
   }
   grid_clean();
   grid_focus_restore();
-  for(size_t i=0; i<workarea_count; i++) {
+  for(size_t i = 0; i < workarea_count; i++) {
     if(workspaces[n].update[i]) {
       grid_update(i);
       workspaces[n].update[i] = false;
@@ -82,7 +81,9 @@ void workspace_switch(size_t n) {
     }
   }
 
-#define PRINT OUT_WORKSPACE(old); OUT_WORKSPACE(new);
+#define PRINT         \
+  OUT_WORKSPACE(old); \
+  OUT_WORKSPACE(new);
   LOGF(LAYOUT_WORKSPACE_TRACE);
 #undef PRINT
 }
@@ -92,17 +93,16 @@ void workspace_area_update(size_t n, size_t m) {
 }
 
 void workspace_update(size_t n) {
-  for(size_t i=0; i<workarea_count; i++)
-    workspaces[n].update[i] = true;
+  for(size_t i = 0; i < workarea_count; i++) workspaces[n].update[i] = true;
 }
-
 
 void workspace_init(xcb_connection_t *c) {
   conn = c;
-  for(size_t i=0; i<MAX_WORKSPACES; i++) {
-    workspaces[i].grid = calloc(CELLS_PER_WORKAREA*workarea_count, sizeof(grid_cell_t));
-    workspaces[i].cross = calloc(GRID_AXIS*workarea_count, sizeof(int));
-    for(size_t j=0; j<CELLS_PER_WORKAREA; j++) {
+  for(size_t i = 0; i < MAX_WORKSPACES; i++) {
+    workspaces[i].grid =
+    calloc(CELLS_PER_WORKAREA * workarea_count, sizeof(grid_cell_t));
+    workspaces[i].cross = calloc(GRID_AXIS * workarea_count, sizeof(int));
+    for(size_t j = 0; j < CELLS_PER_WORKAREA; j++) {
       workspaces[i].grid[j].origin = -1;
     }
     workspaces[i].update = calloc(workarea_count, sizeof(bool));
@@ -112,7 +112,7 @@ void workspace_init(xcb_connection_t *c) {
 }
 
 void workspace_deinit(void) {
-  for(size_t i=0; i<MAX_WORKSPACES; i++) {
+  for(size_t i = 0; i < MAX_WORKSPACES; i++) {
     free(workspaces[i].grid);
     free(workspaces[i].cross);
     free(workspaces[i].update);
@@ -123,7 +123,7 @@ void workspace_deinit(void) {
 void workspace_event_unmap(const window_t *win, WINDOW_STATE prev) {
   (void)win;
   if(prev < 0) return;
-  for(size_t i=0; i<workarea_count; i++) {
+  for(size_t i = 0; i < workarea_count; i++) {
     if(workspace_area_empty(prev, i)) {
       workspace_area_fullscreen_set(prev, i, false);
     }

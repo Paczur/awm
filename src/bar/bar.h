@@ -1,14 +1,15 @@
 #ifndef H_BAR
 #define H_BAR
 
-#include "bar_types.h"
 #include <stdbool.h>
 
-size_t bar_get_containers(const bar_containers_t**);
+#include "bar_types.h"
+
+size_t bar_get_containers(const bar_containers_t **);
 void bar_launcher_show(void);
 void bar_launcher_hide(void);
 bool bar_launcher_window(xcb_window_t);
-void bar_launcher_append(const char*, size_t);
+void bar_launcher_append(const char *, size_t);
 void bar_launcher_erase(void);
 void bar_launcher_select_left(void);
 void bar_launcher_select_right(void);
@@ -23,7 +24,7 @@ void bar_visibility(size_t, bool);
 
 void bar_redraw(xcb_window_t);
 
-void bar_init(const bar_init_t*);
+void bar_init(const bar_init_t *);
 void bar_deinit(void);
 
 #endif

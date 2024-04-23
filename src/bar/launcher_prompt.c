@@ -1,4 +1,5 @@
 #include "launcher_prompt.h"
+
 #include "launcher_container.h"
 
 typedef struct launcher_prompt_t {
@@ -16,21 +17,22 @@ static size_t launcher_prompt_search_char_sizes_index;
 
 static void launcher_prompt_update(void) {
   block_set_text(&launcher_prompt.block, launcher_prompt_search);
-  block_geometry_left(&launcher_prompt.block, launcher_prompt.min_width,
-                      NULL, &launcher_prompt_geometry);
-  for(size_t i=0; i<bar_container_count; i++) {
+  block_geometry_left(&launcher_prompt.block, launcher_prompt.min_width, NULL,
+                      &launcher_prompt_geometry);
+  for(size_t i = 0; i < bar_container_count; i++) {
     block_update(&launcher_prompt.block, &launcher_prompt.settings,
                  &launcher_prompt_geometry, i);
   }
 }
 
 void launcher_prompt_append(const char *str, size_t len) {
-  if(len+1+launcher_prompt_search_length > LAUNCHER_PROMPT_MAX_LENGTH) return;
-  memcpy(launcher_prompt_search+launcher_prompt_search_length, str, len);
+  if(len + 1 + launcher_prompt_search_length > LAUNCHER_PROMPT_MAX_LENGTH)
+    return;
+  memcpy(launcher_prompt_search + launcher_prompt_search_length, str, len);
   launcher_prompt_search_length += len;
   launcher_prompt_search[launcher_prompt_search_length] = 0;
   launcher_prompt_search_char_sizes[launcher_prompt_search_char_sizes_index++] =
-    len;
+  len;
   launcher_prompt_update();
   if(!launcher_prompt.block.state[0]) {
     block_show_all(&launcher_prompt.block);
@@ -40,7 +42,7 @@ void launcher_prompt_append(const char *str, size_t len) {
 void launcher_prompt_erase(void) {
   if(launcher_prompt_search_char_sizes_index == 0) return;
   launcher_prompt_search_length -=
-    launcher_prompt_search_char_sizes[--launcher_prompt_search_char_sizes_index];
+  launcher_prompt_search_char_sizes[--launcher_prompt_search_char_sizes_index];
   launcher_prompt_search[launcher_prompt_search_length] = 0;
   launcher_prompt_update();
   if(launcher_prompt.block.state[0] &&
@@ -70,8 +72,8 @@ void launcher_prompt_init(const PangoFontDescription *font,
   launcher_prompt.min_width = init->min_width;
   block_launcher_create(&launcher_prompt.block, font);
   block_show_all(&launcher_prompt.block);
-  block_geometry_left(&launcher_prompt.block, launcher_prompt.min_width,
-                      NULL, &launcher_prompt_geometry);
+  block_geometry_left(&launcher_prompt.block, launcher_prompt.min_width, NULL,
+                      &launcher_prompt_geometry);
   if(launcher_prompt.min_width == 0) {
     launcher_prompt.block.state[0] = false;
   } else {
@@ -80,12 +82,10 @@ void launcher_prompt_init(const PangoFontDescription *font,
   if(launcher_prompt_geometry.w < launcher_prompt.min_width) {
     launcher_prompt_geometry.w = launcher_prompt.min_width;
   }
-  for(size_t i=0; i<bar_container_count; i++) {
+  for(size_t i = 0; i < bar_container_count; i++) {
     block_update(&launcher_prompt.block, &launcher_prompt.settings,
                  &launcher_prompt_geometry, i);
   }
 }
 
-void launcher_prompt_deinit(void) {
-  block_destroy(&launcher_prompt.block);
-}
+void launcher_prompt_deinit(void) { block_destroy(&launcher_prompt.block); }

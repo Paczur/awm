@@ -1,17 +1,19 @@
 #include "controller.h"
-#include "system/system.h"
-#include "bar/bar.h"
-#include "layout/layout.h"
-#include "hint/hint.h"
-#include "event.h"
-#include "shortcut.h"
-#include "config.h"
-#include <stdlib.h>
+
 #include <stdio.h>
-#define XK_LATIN1 //letters
-#define XK_MISCELLANY //modifiers and special
-#include <X11/keysymdef.h>
+#include <stdlib.h>
+
+#include "bar/bar.h"
+#include "config.h"
+#include "event.h"
+#include "hint/hint.h"
+#include "layout/layout.h"
+#include "shortcut.h"
+#include "system/system.h"
+#define XK_LATIN1      // letters
+#define XK_MISCELLANY  // modifiers and special
 #include <X11/XF86keysym.h>
+#include <X11/keysymdef.h>
 #include <string.h>
 
 static bool run;
@@ -19,24 +21,26 @@ static MODE mode;
 static MODE next_mode = MODE_INVALID;
 static uint32_t border_normal;
 static uint32_t border_urgent;
-#define LENGTH(x) (sizeof(x)/sizeof((x)[0]))
-#define MIN(x,y) ((x)<=(y)?(x):(y))
+#define LENGTH(x) (sizeof(x) / sizeof((x)[0]))
+#define MIN(x, y) ((x) <= (y) ? (x) : (y))
 
 #define SETTINGS_INIT(x) \
-{ x ## _BACKGROUND, x ## _FOREGROUND }
+  { x##_BACKGROUND, x##_FOREGROUND }
 
 #define COMMON_INIT(x, n, h) \
-{ x ## _MIN_WIDTH, SETTINGS_INIT(x ## _ ## n), SETTINGS_INIT(x ## _ ## h) }
+  { x##_MIN_WIDTH, SETTINGS_INIT(x##_##n), SETTINGS_INIT(x##_##h) }
 
-#define COMMON_URGENT_INIT(x, n, h) \
-{ x ## _MIN_WIDTH, SETTINGS_INIT(x ## _ ## n), SETTINGS_INIT(x ## _ ## h), \
-  SETTINGS_INIT(x ## _URGENT)}
+#define COMMON_URGENT_INIT(x, n, h)                                \
+  {                                                                \
+    x##_MIN_WIDTH, SETTINGS_INIT(x##_##n), SETTINGS_INIT(x##_##h), \
+    SETTINGS_INIT(x##_URGENT)                                      \
+  }
 
 static uint32_t c_hex2xcolor(const char *hex) {
   uint32_t mul = 1;
   uint32_t ret = 0;
   size_t end = 6;
-  while(end --> 0) {
+  while(end-- > 0) {
     if(hex[end] >= 'a') {
       ret += mul * (hex[end] - 'a' + 10);
     } else if(hex[end] >= 'A') {
@@ -51,41 +55,31 @@ static uint32_t c_hex2xcolor(const char *hex) {
 
 static void c_window_init(xcb_window_t window) {
   const window_t *win;
-  int values[2] = {
-    border_normal,
-    XCB_EVENT_MASK_FOCUS_CHANGE | XCB_EVENT_MASK_ENTER_WINDOW |
-      XCB_EVENT_MASK_PROPERTY_CHANGE
-  };
+  int values[2] = {border_normal, XCB_EVENT_MASK_FOCUS_CHANGE |
+                                  XCB_EVENT_MASK_ENTER_WINDOW |
+                                  XCB_EVENT_MASK_PROPERTY_CHANGE};
   xcb_change_window_attributes(conn, window,
                                XCB_CW_EVENT_MASK | XCB_CW_BORDER_PIXEL, values);
-  xcb_grab_button(conn, 1, window,
-                  XCB_EVENT_MASK_BUTTON_PRESS,
-                  XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE,
-                  XCB_NONE, XCB_BUTTON_INDEX_ANY, XCB_MOD_MASK_ANY);
+  xcb_grab_button(conn, 1, window, XCB_EVENT_MASK_BUTTON_PRESS,
+                  XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE,
+                  XCB_BUTTON_INDEX_ANY, XCB_MOD_MASK_ANY);
   win = layout_xwin2win(window);
   if(win == NULL) {
     win = layout_create(window);
   }
-  layout_input_set(layout_xwin2win(window),
-                   hint_window_input(window));
+  layout_input_set(layout_xwin2win(window), hint_window_input(window));
 }
 
-static void c_bar_update_minimized(void) {
-  bar_update_minimized();
-}
+static void c_bar_update_minimized(void) { bar_update_minimized(); }
 
-static void c_bar_update_workspace(size_t n) {
-  bar_update_workspace(n);
-}
+static void c_bar_update_workspace(size_t n) { bar_update_workspace(n); }
 
-static void c_bar_update_mode(void) {
-  bar_update_mode(mode);
-}
+static void c_bar_update_mode(void) { bar_update_mode(mode); }
 
 static void c_windows_adopt(void) {
   xcb_window_t *windows;
   size_t len = hint_saved_windows(&windows);
-  for(size_t i=0; i<len; i++) {
+  for(size_t i = 0; i < len; i++) {
     layout_restore(windows[i], hint_saved_window_workspace(windows[i]));
     c_window_init(windows[i]);
   }
@@ -100,7 +94,6 @@ static void c_sigterm_action(int a) {
   c_wm_shutdown();
 }
 
-
 void c_wm_shutdown(void) {
   run = false;
   LOGE(DEBUG, "Shutdown initiated");
@@ -114,16 +107,17 @@ void c_workspace_switch(size_t n) {
   if(n == focused_workspace || n > MAX_WORKSPACES) return;
   size_t refresh = MIN(n, focused_workspace);
   workarea_count = layout_workareas(NULL);
-  for(size_t i=0; i<workarea_count; i++) {
+  for(size_t i = 0; i < workarea_count; i++) {
     old_maximized = layout_workspace_area_isfullscreen(focused_workspace, i);
     new_maximized = layout_workspace_area_isfullscreen(n, i);
-    if(new_maximized != old_maximized)
-      bar_visibility(i, !new_maximized);
+    if(new_maximized != old_maximized) bar_visibility(i, !new_maximized);
   }
   layout_workspace_switch(n);
   hint_workspace_focused_set(n);
   c_bar_update_workspace(refresh);
-#define PRINT OUT(n); OUT(refresh);
+#define PRINT \
+  OUT(n);     \
+  OUT(refresh);
   LOGF(TRACE);
 #undef PRINT
 }
@@ -136,7 +130,11 @@ void c_workspace_fullscreen(size_t n, size_t m) {
     bar_visibility(m, !new_state);
   }
 
-#define PRINT OUT(n); OUT(focused_workspace); OUT(old_state); OUT(new_state);
+#define PRINT             \
+  OUT(n);                 \
+  OUT(focused_workspace); \
+  OUT(old_state);         \
+  OUT(new_state);
   LOGF(TRACE);
 #undef PRINT
 }
@@ -170,9 +168,10 @@ bool c_window_minimize(xcb_window_t xwin) {
 }
 
 void c_window_destroy(xcb_window_t window, bool force) {
-  if(force || !hint_window_delete(window))
-    layout_destroy(window);
-#define PRINT OUT(window); OUT(force);
+  if(force || !hint_window_delete(window)) layout_destroy(window);
+#define PRINT  \
+  OUT(window); \
+  OUT(force);
   LOGF(TRACE);
 #undef PRINT
 }
@@ -260,12 +259,12 @@ void c_window_focused_reset_size(void) {
   LOGFE(TRACE);
 }
 
-void c_run(const char* cmd) {
+void c_run(const char *cmd) {
   const char rstr[] = " >/dev/null 2>&1";
   size_t len = strlen(cmd);
   char *rcmd = malloc(len + sizeof(rstr));
   memcpy(rcmd, cmd, len);
-  memcpy(rcmd+len, rstr, sizeof(rstr));
+  memcpy(rcmd + len, rstr, sizeof(rstr));
   system_sh(rcmd);
 #define PRINT OUT(rcmd);
   LOGF(TRACE);
@@ -331,13 +330,15 @@ void c_mode_force(void) {
 
 void c_mode_set(MODE new_mode) {
   MODE old_mode = mode;
-  SHORTCUT_TYPE type = (new_mode == MODE_INSERT)?
-    SH_TYPE_INSERT_MODE:SH_TYPE_NORMAL_MODE;
+  SHORTCUT_TYPE type =
+  (new_mode == MODE_INSERT) ? SH_TYPE_INSERT_MODE : SH_TYPE_NORMAL_MODE;
   next_mode = MODE_INVALID;
   shortcut_enable(screen, type);
   mode = new_mode;
   c_bar_update_mode();
-#define PRINT OUT_MODE(old_mode); OUT_MODE(new_mode);
+#define PRINT         \
+  OUT_MODE(old_mode); \
+  OUT_MODE(new_mode);
   LOGF(TRACE);
 #undef PRINT
 }
@@ -351,13 +352,16 @@ void c_bar_block_update(size_t n) {
 
 void c_bar_block_update_highlight(size_t n, int delay) {
   bar_update_info_highlight(n, delay);
-#define PRINT OUT(n); OUT(delay);
+#define PRINT \
+  OUT(n);     \
+  OUT(delay);
   LOGF(TRACE);
 #undef PRINT
 }
 
 void c_event_message(const xcb_generic_event_t *e) {
-  const xcb_client_message_event_t *event = (const xcb_client_message_event_t*)e;
+  const xcb_client_message_event_t *event =
+  (const xcb_client_message_event_t *)e;
   if(hint_atom_wm_change_state(event->type) &&
      hint_state_iconic(event->data.data8[0])) {
     c_window_minimize(event->window);
@@ -366,7 +370,9 @@ void c_event_message(const xcb_generic_event_t *e) {
 #undef PRINT
   } else if(hint_atom_close_window(event->type)) {
     c_window_destroy(event->window, false);
-#define PRINT OUT(event->type); OUT(event->window);
+#define PRINT       \
+  OUT(event->type); \
+  OUT(event->window);
     LOG(TRACE, "event: client_message: close window");
   } else if(hint_atom_frame_extents(event->type)) {
     hint_frame_extents_set(event->window);
@@ -376,29 +382,27 @@ void c_event_message(const xcb_generic_event_t *e) {
 }
 
 void c_event_map(const xcb_generic_event_t *e) {
-  const xcb_map_request_event_t *event = (const xcb_map_request_event_t*)e;
+  const xcb_map_request_event_t *event = (const xcb_map_request_event_t *)e;
   xcb_atom_t *atoms;
   rect_t rect;
   size_t atom_length = hint_atom_window_type(&atoms, event->window);
-  for(size_t i=0; i<atom_length; i++) {
+  for(size_t i = 0; i < atom_length; i++) {
     if(hint_atom_window_type_splash(atoms[i]) ||
        hint_atom_window_type_utility(atoms[i]) ||
        hint_atom_window_type_notification(atoms[i])) {
       hint_window_rect_set(event->window, &rect);
-      if(rect.x != (uint32_t)-1 && rect.y != (uint32_t)-1 &&
-         rect.w != 0 && rect.h != 0 &&
-         rect.w != (uint32_t)-1 && rect.h != (uint32_t)-1) {
-        xcb_configure_window(conn,
-                             event->window,
-                             XCB_CONFIG_WINDOW_X |
-                             XCB_CONFIG_WINDOW_Y |
-                             XCB_CONFIG_WINDOW_WIDTH |
-                             XCB_CONFIG_WINDOW_HEIGHT,
+      if(rect.x != (uint32_t)-1 && rect.y != (uint32_t)-1 && rect.w != 0 &&
+         rect.h != 0 && rect.w != (uint32_t)-1 && rect.h != (uint32_t)-1) {
+        xcb_configure_window(conn, event->window,
+                             XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y |
+                             XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
                              &rect);
       }
       xcb_map_window(conn, event->window);
       free(atoms);
-#define PRINT OUT(event->window); OUT_RECT(rect);
+#define PRINT         \
+  OUT(event->window); \
+  OUT_RECT(rect);
       LOG(TRACE, "event: map_request(splash/utility window)");
 #undef PRINT
       return;
@@ -420,9 +424,9 @@ void c_event_map_notify(const xcb_generic_event_t *e) {
   const bar_containers_t *bar_containers;
   window_t *win;
   size_t bar_container_count;
-  const xcb_map_notify_event_t *event = (const xcb_map_notify_event_t*)e;
+  const xcb_map_notify_event_t *event = (const xcb_map_notify_event_t *)e;
   bar_container_count = bar_get_containers(&bar_containers);
-  for(size_t i=0; i<bar_container_count; i++) {
+  for(size_t i = 0; i < bar_container_count; i++) {
     if(bar_containers->id[i] == event->window) {
       bar = true;
       break;
@@ -447,14 +451,16 @@ void c_event_map_notify(const xcb_generic_event_t *e) {
 void c_event_key_press(const xcb_generic_event_t *e) {
   char buff[10];
   size_t len;
-  const xcb_key_press_event_t *event = (const xcb_key_press_event_t*)e;
+  const xcb_key_press_event_t *event = (const xcb_key_press_event_t *)e;
   if(bar_launcher_window(event->event)) {
     if(!shortcut_handle(event->detail, SH_TYPE_LAUNCHER, event->state)) {
       len = shortcut_utf8(event->detail, buff, 10);
-      if(len > 0)
-        bar_launcher_append(buff, len);
+      if(len > 0) bar_launcher_append(buff, len);
     }
-#define PRINT OUT(event->detail); OUT(event->state); OUT(event->event);
+#define PRINT         \
+  OUT(event->detail); \
+  OUT(event->state);  \
+  OUT(event->event);
     LOG(TRACE, "event: key_press(launcher)");
 #undef PRINT
     return;
@@ -464,45 +470,57 @@ void c_event_key_press(const xcb_generic_event_t *e) {
   } else {
     shortcut_handle(event->detail, SH_TYPE_INSERT_MODE, event->state);
   }
-#define PRINT OUT(event->detail); OUT(event->state); OUT_MODE(mode);
+#define PRINT         \
+  OUT(event->detail); \
+  OUT(event->state);  \
+  OUT_MODE(mode);
   LOG(TRACE, "event: key_press");
 #undef PRINT
 }
 
 void c_event_key_release(const xcb_generic_event_t *e) {
-  const xcb_key_release_event_t *event = (const xcb_key_release_event_t*)e;
+  const xcb_key_release_event_t *event = (const xcb_key_release_event_t *)e;
   if(mode == MODE_NORMAL) {
     shortcut_handle(event->detail, SH_TYPE_NORMAL_MODE_RELEASE, event->state);
   }
-#define PRINT OUT(event->detail); OUT(event->state); OUT_MODE(mode);
+#define PRINT         \
+  OUT(event->detail); \
+  OUT(event->state);  \
+  OUT_MODE(mode);
   LOG(TRACE, "event: key_release");
 #undef PRINT
 }
 
 void c_event_button_press(const xcb_generic_event_t *e) {
-  const xcb_button_press_event_t *event = (const xcb_button_press_event_t*)e;
+  const xcb_button_press_event_t *event = (const xcb_button_press_event_t *)e;
   xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, XCB_CURRENT_TIME);
   layout_focus(layout_xwin2win(event->event));
   c_mode_set(MODE_INSERT);
-#define PRINT OUT(event->detail); OUT(event->state); OUT(event->event);
+#define PRINT         \
+  OUT(event->detail); \
+  OUT(event->state);  \
+  OUT(event->event);
   LOG(TRACE, "event: button_press");
 #undef PRINT
 }
 
 void c_event_button_release(const xcb_generic_event_t *e) {
-  const xcb_button_release_event_t *event = (const xcb_button_release_event_t*)e;
+  const xcb_button_release_event_t *event =
+  (const xcb_button_release_event_t *)e;
   xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, XCB_CURRENT_TIME);
-#define PRINT OUT(event->detail); OUT(event->state); OUT(event->event);
+#define PRINT         \
+  OUT(event->detail); \
+  OUT(event->state);  \
+  OUT(event->event);
   LOG(TRACE, "event: button_release");
 #undef PRINT
 }
 
 void c_event_create(const xcb_generic_event_t *e) {
-  const xcb_create_notify_event_t *event = (const xcb_create_notify_event_t*)e;
-  xcb_grab_button(conn, 1, event->window,
-                  XCB_EVENT_MASK_BUTTON_PRESS,
-                  XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE,
-                  XCB_NONE, XCB_BUTTON_INDEX_ANY, XCB_MOD_MASK_ANY);
+  const xcb_create_notify_event_t *event = (const xcb_create_notify_event_t *)e;
+  xcb_grab_button(conn, 1, event->window, XCB_EVENT_MASK_BUTTON_PRESS,
+                  XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE,
+                  XCB_BUTTON_INDEX_ANY, XCB_MOD_MASK_ANY);
   layout_event_create(event->window);
 #define PRINT OUT(event->window);
   LOG(TRACE, "event: create_notify");
@@ -510,27 +528,30 @@ void c_event_create(const xcb_generic_event_t *e) {
 }
 
 void c_event_destroy(const xcb_generic_event_t *e) {
-  const xcb_destroy_notify_event_t *event = (const xcb_destroy_notify_event_t*)e;
+  const xcb_destroy_notify_event_t *event =
+  (const xcb_destroy_notify_event_t *)e;
   WINDOW_STATE state_before_destroy = layout_event_destroy(event->window);
   if(state_before_destroy == -1) {
     c_bar_update_minimized();
   } else if(state_before_destroy >= 0) {
     c_bar_update_workspace(state_before_destroy);
   }
-#define PRINT OUT(event->window); OUT_WINDOW_STATE(state_before_destroy);
+#define PRINT         \
+  OUT(event->window); \
+  OUT_WINDOW_STATE(state_before_destroy);
   LOG(TRACE, "event: destroy_notify");
 #undef PRINT
 }
 
 void c_event_unmap(const xcb_generic_event_t *e) {
-  const xcb_unmap_notify_event_t *event = (const xcb_unmap_notify_event_t*)e;
+  const xcb_unmap_notify_event_t *event = (const xcb_unmap_notify_event_t *)e;
   bool bar = false;
   size_t workarea_count;
   WINDOW_STATE state;
   size_t bar_container_count;
   const bar_containers_t *bar_containers;
   bar_container_count = bar_get_containers(&bar_containers);
-  for(size_t i=0; i<bar_container_count; i++) {
+  for(size_t i = 0; i < bar_container_count; i++) {
     if(bar_containers->id[i] == event->window) {
       bar = true;
       break;
@@ -540,24 +561,25 @@ void c_event_unmap(const xcb_generic_event_t *e) {
     state = layout_event_unmap(event->window);
     workarea_count = layout_workareas(NULL);
     if(state >= 0 && (size_t)state == layout_workspace_focused()) {
-      for(size_t i=0; i<workarea_count; i++) {
+      for(size_t i = 0; i < workarea_count; i++) {
         bar_visibility(i, !layout_workspace_area_isfullscreen(state, i));
       }
       c_bar_update_minimized();
     }
   }
-#define PRINT OUT(event->window); OUT(bar);
+#define PRINT         \
+  OUT(event->window); \
+  OUT(bar);
   LOG(TRACE, "event: unmap_notify");
 #undef PRINT
 }
 
 void c_event_focus(const xcb_generic_event_t *e) {
-  const xcb_focus_in_event_t *event = (const xcb_focus_in_event_t*)e;
+  const xcb_focus_in_event_t *event = (const xcb_focus_in_event_t *)e;
   if(event->detail != XCB_NOTIFY_DETAIL_POINTER) {
-    xcb_grab_button(conn, 1, event->event,
-                    XCB_EVENT_MASK_BUTTON_PRESS,
-                    XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE,
-                    XCB_NONE, XCB_BUTTON_INDEX_ANY, XCB_MOD_MASK_ANY);
+    xcb_grab_button(conn, 1, event->event, XCB_EVENT_MASK_BUTTON_PRESS,
+                    XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE,
+                    XCB_BUTTON_INDEX_ANY, XCB_MOD_MASK_ANY);
     layout_event_focus(event->event);
     hint_window_focused_set(event->event);
 #define PRINT OUT(event->event);
@@ -567,18 +589,19 @@ void c_event_focus(const xcb_generic_event_t *e) {
 }
 
 void c_event_expose(const xcb_generic_event_t *e) {
-  const xcb_expose_event_t *event = (const xcb_expose_event_t*)e;
+  const xcb_expose_event_t *event = (const xcb_expose_event_t *)e;
   bar_redraw(event->window);
 }
 
 void c_event_xkb(const xcb_generic_event_t *e) {
-  shortcut_event_state((xcb_xkb_state_notify_event_t*)e);
+  shortcut_event_state((xcb_xkb_state_notify_event_t *)e);
 }
 
 void c_event_property(const xcb_generic_event_t *e) {
   uint32_t color;
   window_t *win = NULL;
-  const xcb_property_notify_event_t *event = (const xcb_property_notify_event_t*)e;
+  const xcb_property_notify_event_t *event =
+  (const xcb_property_notify_event_t *)e;
   if(hint_atom_urgent(event->atom)) {
     win = layout_xwin2win(event->window);
     bool state = hint_window_urgent(event->window, event->atom);
@@ -587,23 +610,27 @@ void c_event_property(const xcb_generic_event_t *e) {
     } else {
       color = border_normal;
     }
-    xcb_change_window_attributes(conn, event->window, XCB_CW_BORDER_PIXEL, &color);
+    xcb_change_window_attributes(conn, event->window, XCB_CW_BORDER_PIXEL,
+                                 &color);
     if(layout_urgency_set(win, state)) {
       if(win->state == WINDOW_ICONIC) {
         c_bar_update_minimized();
       } else if(win->state != (int)layout_workspace_focused()) {
         c_bar_update_workspace(win->state);
       }
-#define PRINT OUT(event->atom); OUT_WINDOW(win);
+#define PRINT       \
+  OUT(event->atom); \
+  OUT_WINDOW(win);
       LOG(TRACE, "event: property_notify(urgency)");
 #undef PRINT
     }
   }
   if(hint_atom_input(event->atom)) {
-    if(win == NULL)
-      win = layout_xwin2win(event->window);
+    if(win == NULL) win = layout_xwin2win(event->window);
     if(layout_input_set(win, hint_window_input(event->window))) {
-#define PRINT OUT(event->atom); OUT_WINDOW(win);
+#define PRINT       \
+  OUT(event->atom); \
+  OUT_WINDOW(win);
       LOG(TRACE, "event: property_notify(input)");
 #undef PRINT
     }
@@ -611,9 +638,10 @@ void c_event_property(const xcb_generic_event_t *e) {
 }
 
 void c_event_configure(const xcb_generic_event_t *e) {
-  const xcb_configure_request_event_t *event = (xcb_configure_request_event_t*)e;
+  const xcb_configure_request_event_t *event =
+  (xcb_configure_request_event_t *)e;
   uint32_t mask = XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT |
-    XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y;
+                  XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y;
   uint32_t value_list[4];
   size_t index = 0;
   window_t *win = layout_xwin2win(event->window);
@@ -630,8 +658,12 @@ void c_event_configure(const xcb_generic_event_t *e) {
     if(event->value_mask & XCB_CONFIG_WINDOW_HEIGHT) {
       value_list[index++] = event->height;
     }
-    xcb_configure_window(conn, event->window, event->value_mask&mask, value_list);
-#define PRINT OUT(event->window); OUT(event->value_mask&mask); OUT_ARR(value_list, index);
+    xcb_configure_window(conn, event->window, event->value_mask & mask,
+                         value_list);
+#define PRINT                   \
+  OUT(event->window);           \
+  OUT(event->value_mask &mask); \
+  OUT_ARR(value_list, index);
     LOG(TRACE, "event: configure_request");
 #undef PRINT
   } else {
@@ -644,16 +676,12 @@ void c_event_configure(const xcb_generic_event_t *e) {
 static void convert_shortcuts(SHORTCUT_TYPE type,
                               config_shortcut_t *conf_shortcuts, size_t len) {
   xcb_mod_mask_t mod_mask;
-  for(size_t i=0; i<len; i++) {
-    mod_mask=0;
-    if(conf_shortcuts[i].modifier & MOD_SHIFT)
-      mod_mask |= XCB_MOD_MASK_SHIFT;
-    if(conf_shortcuts[i].modifier & MOD_ALT)
-      mod_mask |= XCB_MOD_MASK_1;
-    if(conf_shortcuts[i].modifier & MOD_SUPER)
-      mod_mask |= XCB_MOD_MASK_4;
-    if(conf_shortcuts[i].modifier & MOD_CTRL)
-      mod_mask |= XCB_MOD_MASK_CONTROL;
+  for(size_t i = 0; i < len; i++) {
+    mod_mask = 0;
+    if(conf_shortcuts[i].modifier & MOD_SHIFT) mod_mask |= XCB_MOD_MASK_SHIFT;
+    if(conf_shortcuts[i].modifier & MOD_ALT) mod_mask |= XCB_MOD_MASK_1;
+    if(conf_shortcuts[i].modifier & MOD_SUPER) mod_mask |= XCB_MOD_MASK_4;
+    if(conf_shortcuts[i].modifier & MOD_CTRL) mod_mask |= XCB_MOD_MASK_CONTROL;
     shortcut_add(conf_shortcuts[i].keysym, type, mod_mask,
                  conf_shortcuts[i].function, conf_shortcuts[i].repeatable);
   }
@@ -661,60 +689,67 @@ static void convert_shortcuts(SHORTCUT_TYPE type,
 
 static void c_init_bar(rect_t *t_rect, const rect_t *monitors,
                        size_t monitor_count) {
-  for(size_t i=0; i<monitor_count; i++) {
+  for(size_t i = 0; i < monitor_count; i++) {
     t_rect[i].x = monitors[i].x;
     t_rect[i].y = monitors[i].y;
     t_rect[i].w = monitors[i].w;
     t_rect[i].h = CONFIG_BAR_HEIGHT;
   }
   bar_init_t binit = (bar_init_t){
-    conn, screen, visual_type, .bar_containers = t_rect,
-    .bar_container_count = monitor_count, layout_workspace_focused,
-    CONFIG_BAR_COMPONENT_PADDING,
-    CONFIG_BAR_COMPONENT_SEPARATOR, CONFIG_BAR_BACKGROUND, CONFIG_BAR_FONT,
-    COMMON_INIT(CONFIG_BAR_MODE, INSERT, NORMAL),
-    { CONFIG_BAR_WORKSPACE_MIN_WIDTH,
-      SETTINGS_INIT(CONFIG_BAR_WORKSPACE_UNFOCUSED),
-      SETTINGS_INIT(CONFIG_BAR_WORKSPACE_FOCUSED),
-      SETTINGS_INIT(CONFIG_BAR_WORKSPACE_URGENT),
-      layout_workspace_isempty, layout_workspace_isurgent },
-    { CONFIG_BAR_INFO_MIN_WIDTH,
-      SETTINGS_INIT(CONFIG_BAR_INFO_NORMAL),
-      SETTINGS_INIT(CONFIG_BAR_INFO_HIGHLIGHTED),
-      SETTINGS_INIT(CONFIG_BAR_INFO_URGENT),
-      (block_info_data_t[])CONFIG_BAR_INFO_BLOCKS,
-      LENGTH((block_info_data_t[])CONFIG_BAR_INFO_BLOCKS), system_sh_out },
-    { CONFIG_BAR_MINIMIZED_MIN_WIDTH,
-      SETTINGS_INIT(CONFIG_BAR_MINIMIZED_EVEN),
-      SETTINGS_INIT(CONFIG_BAR_MINIMIZED_ODD),
-      SETTINGS_INIT(CONFIG_BAR_MINIMIZED_URGENT),
-      (const plist_t *const*)layout_minimized(),
-      layout_window_lock(), offsetof(window_t, name),
-      offsetof(window_t, urgent) },
-    { CONFIG_BAR_LAUNCHER_PROMPT_MIN_WIDTH,
-      SETTINGS_INIT(CONFIG_BAR_LAUNCHER_PROMPT) },
-    COMMON_INIT(CONFIG_BAR_LAUNCHER_HINT, NORMAL, SELECTED)
-  };
+  conn,
+  screen,
+  visual_type,
+  .bar_containers = t_rect,
+  .bar_container_count = monitor_count,
+  layout_workspace_focused,
+  CONFIG_BAR_COMPONENT_PADDING,
+  CONFIG_BAR_COMPONENT_SEPARATOR,
+  CONFIG_BAR_BACKGROUND,
+  CONFIG_BAR_FONT,
+  COMMON_INIT(CONFIG_BAR_MODE, INSERT, NORMAL),
+  {CONFIG_BAR_WORKSPACE_MIN_WIDTH,
+   SETTINGS_INIT(CONFIG_BAR_WORKSPACE_UNFOCUSED),
+   SETTINGS_INIT(CONFIG_BAR_WORKSPACE_FOCUSED),
+   SETTINGS_INIT(CONFIG_BAR_WORKSPACE_URGENT), layout_workspace_isempty,
+   layout_workspace_isurgent},
+  {CONFIG_BAR_INFO_MIN_WIDTH, SETTINGS_INIT(CONFIG_BAR_INFO_NORMAL),
+   SETTINGS_INIT(CONFIG_BAR_INFO_HIGHLIGHTED),
+   SETTINGS_INIT(CONFIG_BAR_INFO_URGENT),
+   (block_info_data_t[])CONFIG_BAR_INFO_BLOCKS,
+   LENGTH((block_info_data_t[])CONFIG_BAR_INFO_BLOCKS), system_sh_out},
+  {CONFIG_BAR_MINIMIZED_MIN_WIDTH, SETTINGS_INIT(CONFIG_BAR_MINIMIZED_EVEN),
+   SETTINGS_INIT(CONFIG_BAR_MINIMIZED_ODD),
+   SETTINGS_INIT(CONFIG_BAR_MINIMIZED_URGENT),
+   (const plist_t *const *)layout_minimized(), layout_window_lock(),
+   offsetof(window_t, name), offsetof(window_t, urgent)},
+  {CONFIG_BAR_LAUNCHER_PROMPT_MIN_WIDTH,
+   SETTINGS_INIT(CONFIG_BAR_LAUNCHER_PROMPT)},
+  COMMON_INIT(CONFIG_BAR_LAUNCHER_HINT, NORMAL, SELECTED)};
   bar_init(&binit);
 }
 
 static void c_init_layout(rect_t *t_rect, const rect_t *monitors,
                           size_t monitor_count) {
-  for(size_t i=0; i<monitor_count; i++) {
+  for(size_t i = 0; i < monitor_count; i++) {
     t_rect[i].x = monitors[i].x;
     t_rect[i].y = monitors[i].y + CONFIG_BAR_HEIGHT;
     t_rect[i].w = monitors[i].w;
     t_rect[i].h = monitors[i].h - CONFIG_BAR_HEIGHT;
   }
-  layout_init_t linit = (layout_init_t) {
-    conn, screen, hint_window_class, .workareas = t_rect,
-    .window_state_changed = hint_window_update_state,
-    .workareas_fullscreen = monitors, .workarea_count = monitor_count,
-    .name_replacements = (const char *const [][2])CONFIG_BAR_MINIMIZED_NAME_REPLACEMENTS,
-    .name_replacements_length = LENGTH((char*[][2])CONFIG_BAR_MINIMIZED_NAME_REPLACEMENTS),
-    .grid_init = { CONFIG_GAPS, CONFIG_BORDERS,
-      (const size_t[])CONFIG_SPAWN_ORDER, LENGTH((size_t[])CONFIG_SPAWN_ORDER) }
-  };
+  layout_init_t linit = (layout_init_t){
+  conn,
+  screen,
+  hint_window_class,
+  .workareas = t_rect,
+  .window_state_changed = hint_window_update_state,
+  .workareas_fullscreen = monitors,
+  .workarea_count = monitor_count,
+  .name_replacements =
+  (const char *const[][2])CONFIG_BAR_MINIMIZED_NAME_REPLACEMENTS,
+  .name_replacements_length =
+  LENGTH((char *[][2])CONFIG_BAR_MINIMIZED_NAME_REPLACEMENTS),
+  .grid_init = {CONFIG_GAPS, CONFIG_BORDERS, (const size_t[])CONFIG_SPAWN_ORDER,
+                LENGTH((size_t[])CONFIG_SPAWN_ORDER)}};
   layout_init(&linit);
 }
 
@@ -722,9 +757,11 @@ static void c_init_shortcut(void) {
   config_shortcut_t insert_shortcuts[] = CONFIG_SHORTCUTS_INSERT_MODE;
   config_shortcut_t normal_shortcuts[] = CONFIG_SHORTCUTS_NORMAL_MODE;
   config_shortcut_t launcher_shortcuts[] = CONFIG_SHORTCUTS_LAUNCHER;
-  config_shortcut_t normal_release_shortcuts[] = CONFIG_SHORTCUTS_NORMAL_MODE_RELEASE;
+  config_shortcut_t normal_release_shortcuts[] =
+  CONFIG_SHORTCUTS_NORMAL_MODE_RELEASE;
   shortcut_init(conn);
-  convert_shortcuts(SH_TYPE_INSERT_MODE, insert_shortcuts, LENGTH(insert_shortcuts));
+  convert_shortcuts(SH_TYPE_INSERT_MODE, insert_shortcuts,
+                    LENGTH(insert_shortcuts));
   convert_shortcuts(SH_TYPE_NORMAL_MODE_RELEASE, normal_release_shortcuts,
                     LENGTH(normal_release_shortcuts));
   convert_shortcuts(SH_TYPE_NORMAL_MODE, normal_shortcuts,
@@ -734,10 +771,9 @@ static void c_init_shortcut(void) {
 }
 
 static void c_init_hint(void) {
-  hint_init(&(hint_init_t){conn, screen,
-            {layout_workspaces(NULL), layout_workspace_names()}});
+  hint_init(&(hint_init_t){
+  conn, screen, {layout_workspaces(NULL), layout_workspace_names()}});
 }
-
 
 void c_loop(void) {
   run = true;
@@ -759,15 +795,18 @@ void c_init(void) {
 
   system_init(c_sigterm_action);
   c_init_hint();
-  c_init_shortcut(); LOGE(DEBUG, "Shortcuts init");
+  c_init_shortcut();
+  LOGE(DEBUG, "Shortcuts init");
   system_monitors(&monitors, &monitor_count);
-  t_rect = malloc(monitor_count*sizeof(rect_t));
-  c_init_layout(t_rect, monitors, monitor_count); LOGE(DEBUG, "Layout init");
-  c_init_bar(t_rect, monitors, monitor_count); LOGE(DEBUG, "Bar init");
+  t_rect = malloc(monitor_count * sizeof(rect_t));
+  c_init_layout(t_rect, monitors, monitor_count);
+  LOGE(DEBUG, "Layout init");
+  c_init_bar(t_rect, monitors, monitor_count);
+  LOGE(DEBUG, "Bar init");
   free(monitors);
   free(t_rect);
   bar_count = bar_get_containers(&bars);
-  for(size_t i=0; i<bar_count; i++) {
+  for(size_t i = 0; i < bar_count; i++) {
     hint_window_hints_set(bars->id[i]);
   }
   c_workspace_switch(hint_saved_workspace_focused());

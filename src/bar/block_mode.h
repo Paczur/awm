@@ -1,8 +1,9 @@
 #ifndef H_BAR_BLOCK_MODE
 #define H_BAR_BLOCK_MODE
 
-#include "block.h"
 #include <stdbool.h>
+
+#include "block.h"
 
 extern block_geometry_t block_mode_geometry;
 

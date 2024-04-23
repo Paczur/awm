@@ -1,8 +1,9 @@
 #ifndef H_CONFIG
 #define H_CONFIG
-#include "user_config.h"
-#include <xcb/xcb.h>
 #include <stdbool.h>
+#include <xcb/xcb.h>
+
+#include "user_config.h"
 
 typedef enum {
   MOD_NONE = 0,
@@ -15,20 +16,21 @@ typedef enum {
 typedef struct config_shortcut_t {
   MODIFIER modifier;
   xcb_keysym_t keysym;
-  void (*function) (void);
+  void (*function)(void);
   bool repeatable;
 } config_shortcut_t;
 
 #define TIMES10(x) x(0) x(1) x(2) x(3) x(4) x(5) x(6) x(7) x(8) x(9)
 
 #define F_DEC(name) \
-  void name (void); void name ## _change (void)
+  void name(void);  \
+  void name##_change(void)
 
-#define n_def(n) \
-  F_DEC(layout_focus_ ## n); \
-  F_DEC(layout_swap_focused_ ## n); \
-  F_DEC(workspace_ ## n); \
-  F_DEC(show_ ## n);
+#define n_def(n)                  \
+  F_DEC(layout_focus_##n);        \
+  F_DEC(layout_swap_focused_##n); \
+  F_DEC(workspace_##n);           \
+  F_DEC(show_##n);
 
 TIMES10(n_def)
 #undef n_def

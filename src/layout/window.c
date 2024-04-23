@@ -1,20 +1,22 @@
 #include "window.h"
-#include "layout_types.h"
+
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 
-#define MIN(x,y) (((x)<=(y))?(x):(y))
+#include "layout_types.h"
+
+#define MIN(x, y) (((x) <= (y)) ? (x) : (y))
 
 static xcb_connection_t *conn;
 static char *(*classes)[2];
 static size_t classes_length;
-static xcb_get_property_reply_t* (*get_class)(xcb_window_t, size_t);
+static xcb_get_property_reply_t *(*get_class)(xcb_window_t, size_t);
 window_list_t *windows_minimized;
 window_t *windows;
 pthread_rwlock_t window_lock = PTHREAD_RWLOCK_INITIALIZER;
 
-//TODO: ref counting on global storage
+// TODO: ref counting on global storage
 static void window_set_name(window_t *window) {
   xcb_get_property_reply_t *reply = NULL;
   size_t length[2];
@@ -28,25 +30,26 @@ static void window_set_name(window_t *window) {
     strcpy(window->name, "?");
     goto window_set_name_cleanup;
   }
-  length[0] = strnlen(class, length[1])+1;
+  length[0] = strnlen(class, length[1]) + 1;
   length[1] -= length[0] + 1;
-  for(size_t i=0; i < classes_length; i++) {
-    if(!strcmp(class, classes[i][0]) || !strcmp(class+length[0], classes[i][0])) {
+  for(size_t i = 0; i < classes_length; i++) {
+    if(!strcmp(class, classes[i][0]) ||
+       !strcmp(class + length[0], classes[i][0])) {
       strcpy(window->name, classes[i][1]);
       goto window_set_name_cleanup;
     }
   }
-  memcpy(window->name, class+length[0], MIN(WINDOW_NAME_MAX_LENGTH,length[1]));
-  if(window->name[WINDOW_NAME_MAX_LENGTH-1] != 0)
-    memcpy(window->name+(WINDOW_NAME_MAX_LENGTH-4), "...", sizeof("..."));
-  if(window->name[0] == 0)
-    memcpy(window->name, "?", sizeof("?"));
+  memcpy(window->name, class + length[0],
+         MIN(WINDOW_NAME_MAX_LENGTH, length[1]));
+  if(window->name[WINDOW_NAME_MAX_LENGTH - 1] != 0)
+    memcpy(window->name + (WINDOW_NAME_MAX_LENGTH - 4), "...", sizeof("..."));
+  if(window->name[0] == 0) memcpy(window->name, "?", sizeof("?"));
 window_set_name_cleanup:
   pthread_rwlock_unlock(&window_lock);
   free(reply);
 }
 
-window_t* window_find(xcb_window_t w) {
+window_t *window_find(xcb_window_t w) {
   pthread_rwlock_rdlock(&window_lock);
   window_t *win = windows;
   while(win != NULL) {
@@ -71,7 +74,7 @@ window_t *window_minimized_nth(size_t n) {
     pthread_rwlock_unlock(&window_lock);
     return (min == NULL) ? NULL : min->window;
   }
-  for(size_t i=0; i<n; i++) {
+  for(size_t i = 0; i < n; i++) {
     if(min->next == NULL) {
       pthread_rwlock_unlock(&window_lock);
       return min->window;
@@ -81,7 +84,6 @@ window_t *window_minimized_nth(size_t n) {
   pthread_rwlock_unlock(&window_lock);
   return min->window;
 }
-
 
 bool window_set_urgency(window_t *window, bool state) {
   pthread_rwlock_wrlock(&window_lock);
@@ -119,8 +121,7 @@ void window_show(const window_t *window) {
     free(windows_minimized);
     windows_minimized = next;
   } else if(list->next != NULL) {
-    while(list->next != NULL &&
-          list->next->window != window) list = list->next;
+    while(list->next != NULL && list->next->window != window) list = list->next;
     if(list->next == NULL) {
       pthread_rwlock_unlock(&window_lock);
       return;
@@ -132,7 +133,7 @@ void window_show(const window_t *window) {
   pthread_rwlock_unlock(&window_lock);
 }
 
-//unmapping done before this function call
+// unmapping done before this function call
 void window_minimize_request(window_t *window) {
   pthread_rwlock_wrlock(&window_lock);
   window->minimize = true;
@@ -153,22 +154,21 @@ void window_minimize(window_t *window) {
   windows_minimized = min;
   min->window = window;
   pthread_rwlock_unlock(&window_lock);
-  if(window->name == NULL)
-    window_set_name(window);
+  if(window->name == NULL) window_set_name(window);
 }
 
-void window_init(xcb_connection_t *c, const char *const(*names)[2],
+void window_init(xcb_connection_t *c, const char *const (*names)[2],
                  size_t names_length,
                  xcb_get_property_reply_t *(*gc)(xcb_window_t, size_t)) {
   size_t len;
   conn = c;
   get_class = gc;
-  classes = malloc(names_length*sizeof(char*[2]));
-  for(size_t i=0; i<names_length; i++) {
-    len = strlen(names[i][0])+1;
+  classes = malloc(names_length * sizeof(char *[2]));
+  for(size_t i = 0; i < names_length; i++) {
+    len = strlen(names[i][0]) + 1;
     classes[i][0] = malloc(len);
     strncpy(classes[i][0], names[i][0], len);
-    len = strlen(names[i][1])+1;
+    len = strlen(names[i][1]) + 1;
     classes[i][1] = malloc(len);
     strncpy(classes[i][1], names[i][1], len);
   }
@@ -182,8 +182,7 @@ void window_deinit(void) {
   while(window != NULL) {
     t = window;
     window = window->next;
-    if(t->name != NULL)
-      free(t->name);
+    if(t->name != NULL) free(t->name);
     free(t);
   }
   windows = NULL;
@@ -197,13 +196,12 @@ void window_deinit(void) {
   }
   windows_minimized = NULL;
   pthread_rwlock_unlock(&window_lock);
-  for(size_t i=0; i<classes_length; i++) {
+  for(size_t i = 0; i < classes_length; i++) {
     free(classes[i][1]);
     free(classes[i][0]);
   }
   free(classes);
 }
-
 
 void window_event_destroy(window_t *win) {
   window_list_t *t;
@@ -222,8 +220,7 @@ void window_event_destroy(window_t *win) {
   if(win->next != NULL) {
     win->next->prev = win->prev;
   }
-  if(win->name != NULL)
-    free(win->name);
+  if(win->name != NULL) free(win->name);
   state = win->state;
 
   if(state == -1) {
@@ -231,8 +228,7 @@ void window_event_destroy(window_t *win) {
       windows_minimized = wlist->next;
       free(wlist);
     } else {
-      while(wlist->next->window != win)
-        wlist = wlist->next;
+      while(wlist->next->window != win) wlist = wlist->next;
       t = wlist->next;
       wlist->next = wlist->next->next;
       free(t);
@@ -246,8 +242,7 @@ void window_event_destroy(window_t *win) {
 window_t *window_event_create(xcb_window_t window) {
   pthread_rwlock_wrlock(&window_lock);
   window_t *w = malloc(sizeof(window_t));
-  if(windows != NULL)
-    windows->prev = w;
+  if(windows != NULL) windows->prev = w;
   w->id = window;
   w->name = NULL;
   w->state = WINDOW_WITHDRAWN;

@@ -3,8 +3,9 @@
 
 #define MAX_WORKSPACE_BLOCKS 10
 
-#include "block.h"
 #include <stdbool.h>
+
+#include "block.h"
 
 extern block_geometry_t block_workspace_geometry[MAX_WORKSPACE_BLOCKS];
 

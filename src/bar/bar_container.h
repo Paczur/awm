@@ -1,8 +1,9 @@
 #ifndef H_BAR_CONTAINER
 #define H_BAR_CONTAINER
 
-#include "bar_types.h"
 #include <xcb/xcb.h>
+
+#include "bar_types.h"
 
 extern bar_containers_t bar_containers;
 extern size_t bar_container_count;

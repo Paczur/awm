@@ -1,0 +1,1 @@
+*.c,*.h filter=clang-format-c

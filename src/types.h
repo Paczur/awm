@@ -6,7 +6,7 @@ typedef unsigned char uchar;
 #include <stdint.h>
 #include <string.h>
 
-#define LENGTH(x) (sizeof(x)/sizeof((x)[0]))
+#define LENGTH(x) (sizeof(x) / sizeof((x)[0]))
 
 typedef enum WINDOW_STATE {
   WINDOW_INVALID = -3,
@@ -36,91 +36,92 @@ typedef struct rect_t {
   uint32_t h;
 } rect_t;
 
-typedef enum {
-  MODE_NORMAL,
-  MODE_INSERT,
-  MODE_INVALID
-} MODE;
+typedef enum { MODE_NORMAL, MODE_INSERT, MODE_INVALID } MODE;
 
 #define OUT_PREFIX(val) printf("\t\"" #val "\": ")
 #define OUT_SUFFIX() puts(",")
-#define OUT_RAW(val) \
-  printf(\
-         _Generic((val), \
-                  bool:           (val)?"true":"false (%d)", \
-                  char:           "%c", \
-                  signed char:    "%d", \
-                  short:          "%d", \
-                  int:            "%d", \
-                  long:           "%ld", \
-                  unsigned char:  "%u", \
-                  unsigned short: "%u", \
-                  unsigned int:   "%u", \
-                  unsigned long:  "%lu", \
-                  char*:          "\"%s\"", \
-                  const char*:    "\"%s\"", \
-                  float:          "%f", \
-                  double:         "%lf", \
-                  default:        "%p"), (val));
-#define OUT(val) \
+#define OUT_RAW(val)                          \
+  printf(_Generic((val),                      \
+         bool: (val) ? "true" : "false (%d)", \
+         char: "%c",                          \
+         signed char: "%d",                   \
+         short: "%d",                         \
+         int: "%d",                           \
+         long: "%ld",                         \
+         unsigned char: "%u",                 \
+         unsigned short: "%u",                \
+         unsigned int: "%u",                  \
+         unsigned long: "%lu",                \
+         char *: "\"%s\"",                    \
+         const char *: "\"%s\"",              \
+         float: "%f",                         \
+         double: "%lf",                       \
+         default: "%p"),                      \
+         (val));
+#define OUT(val)   \
   OUT_PREFIX(val); \
-  OUT_RAW(val); \
+  OUT_RAW(val);    \
   OUT_SUFFIX();
 
 #define OUT_ARR_PREFIX(val, count) \
-  OUT_PREFIX(val); \
+  OUT_PREFIX(val);                 \
   printf("(\"" #count "\": %lu)[ ", (size_t)count);
-#define OUT_ARR_SUFFIX() printf(" ]"); OUT_SUFFIX()
+#define OUT_ARR_SUFFIX() \
+  printf(" ]");          \
+  OUT_SUFFIX()
 #define OUT_ARR_NEXT(val) printf(", ");
-#define OUT_ARR_GENERIC(val, count, out) \
-  do { \
-    OUT_ARR_PREFIX(val, count); \
-    if((count) > 0 && (val) != NULL) { \
-      for(size_t _i=0; _i<((size_t)(count)-1); _i++) { \
-        out((val)[_i]); \
-        OUT_ARR_NEXT((val)[_i]); \
-      } \
-      out((val)[(count)-1]); \
-    } \
-    OUT_ARR_SUFFIX(); \
+#define OUT_ARR_GENERIC(val, count, out)                     \
+  do {                                                       \
+    OUT_ARR_PREFIX(val, count);                              \
+    if((count) > 0 && (val) != NULL) {                       \
+      for(size_t _i = 0; _i < ((size_t)(count) - 1); _i++) { \
+        out((val)[_i]);                                      \
+        OUT_ARR_NEXT((val)[_i]);                             \
+      }                                                      \
+      out((val)[(count) - 1]);                               \
+    }                                                        \
+    OUT_ARR_SUFFIX();                                        \
   } while(0)
 #define OUT_ARR(val, count) OUT_ARR_GENERIC(val, count, OUT_RAW)
 
-#define OUT_MODE(mode) \
-  do { \
-    OUT_PREFIX(mode); \
-    puts((mode)==MODE_NORMAL?"normal":(mode==MODE_INSERT)?"insert":"invalid"); \
+#define OUT_MODE(mode)                         \
+  do {                                         \
+    OUT_PREFIX(mode);                          \
+    puts((mode) == MODE_NORMAL   ? "normal"    \
+         : (mode == MODE_INSERT) ? "insert"    \
+                                 : "invalid"); \
   } while(0)
 #define OUT_MODE_ARR(mode, count) OUT_ARR_GENERIC(mode, count, OUT_MODE)
 
-#define OUT_WINDOW_STATE(state) \
-  do { \
-    OUT_PREFIX(state); \
-      if((state)==WINDOW_WITHDRAWN) { \
-        puts("withdrawn"); \
-      } else if((state)==WINDOW_ICONIC) { \
-        puts("iconic"); \
-      } else if((state)==WINDOW_INVALID) { \
-        puts("invalid"); \
-      } else { \
-        printf("%d\n", state); \
-      } \
+#define OUT_WINDOW_STATE(state)            \
+  do {                                     \
+    OUT_PREFIX(state);                     \
+    if((state) == WINDOW_WITHDRAWN) {      \
+      puts("withdrawn");                   \
+    } else if((state) == WINDOW_ICONIC) {  \
+      puts("iconic");                      \
+    } else if((state) == WINDOW_INVALID) { \
+      puts("invalid");                     \
+    } else {                               \
+      printf("%d\n", state);               \
+    }                                      \
   } while(0)
-#define OUT_WINDOW_STATE_ARR(state, count) OUT_ARR_GENERIC(mode, count, OUT_MODE)
+#define OUT_WINDOW_STATE_ARR(state, count) \
+  OUT_ARR_GENERIC(mode, count, OUT_MODE)
 
 #define OUT_RECT(r) \
-  do { \
-    OUT(r.x); \
-    OUT(r.y); \
-    OUT(r.w); \
-    OUT(r.h); \
+  do {              \
+    OUT(r.x);       \
+    OUT(r.y);       \
+    OUT(r.w);       \
+    OUT(r.h);       \
   } while(0)
 #define OUT_RECTP(r) \
-  do { \
-    OUT(r->x); \
-    OUT(r->y); \
-    OUT(r->w); \
-    OUT(r->h); \
+  do {               \
+    OUT(r->x);       \
+    OUT(r->y);       \
+    OUT(r->w);       \
+    OUT(r->h);       \
   } while(0)
 #define OUT_RECT_ARR(r, count) OUT_ARR_GENERIC(r, count, OUT_RECT)
 
@@ -143,28 +144,33 @@ typedef enum {
 #define _STR(x) #x
 #define STR(x) _STR(x)
 
-#define _LOG(level, msg) \
-  do { \
-    if(level) { \
+#define _LOG(level, msg)     \
+  do {                       \
+    if(level) {              \
       printf("%s {\n", msg); \
-      PRINT \
-      puts("}"); \
-    } \
+      PRINT                  \
+      puts("}");             \
+    }                        \
   } while(0)
 
-#define _LOGF(level) \
-  do { \
-    if(level) { \
+#define _LOGF(level)              \
+  do {                            \
+    if(level) {                   \
       printf("%s {\n", __func__); \
-      PRINT \
-      puts("}"); \
-    } \
+      PRINT                       \
+      puts("}");                  \
+    }                             \
   } while(0)
 
-#define _LOGFE(level) do { if(level) printf("%s {}\n", __func__); } while(0)
+#define _LOGFE(level)                      \
+  do {                                     \
+    if(level) printf("%s {}\n", __func__); \
+  } while(0)
 
 #define _LOGE(level, text) \
-  do { if(level) puts(text); } while(0)
+  do {                     \
+    if(level) puts(text);  \
+  } while(0)
 
 #define LOG _LOG
 #define LOGF _LOGF

@@ -1,10 +1,11 @@
 #ifndef H_LAYOUT_WORKSPACE
 #define H_LAYOUT_WORKSPACE
 
-#include "layout_types.h"
-#include <xcb/xcb.h>
-#include <stddef.h>
 #include <stdbool.h>
+#include <stddef.h>
+#include <xcb/xcb.h>
+
+#include "layout_types.h"
 
 extern workspace_t workspaces[MAX_WORKSPACES];
 extern size_t workspace_focused;
@@ -19,8 +20,8 @@ void workspace_area_update(size_t, size_t);
 void workspace_update(size_t);
 void workspace_switch(size_t);
 
-void workspace_init(xcb_connection_t*);
+void workspace_init(xcb_connection_t *);
 void workspace_deinit(void);
 
-void workspace_event_unmap(const window_t*, WINDOW_STATE);
+void workspace_event_unmap(const window_t *, WINDOW_STATE);
 #endif

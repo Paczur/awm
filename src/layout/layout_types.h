@@ -2,9 +2,10 @@
 #define H_LAYOUT_TYPES
 
 #include <stdbool.h>
-#include <xcb/xcb.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <xcb/xcb.h>
+
 #include "../types.h"
 
 #define MAX_WORKSPACES 10
@@ -18,7 +19,7 @@ typedef struct window_t {
   struct window_t *next;
   struct window_t *prev;
   xcb_window_t id;
-  WINDOW_STATE state; //-2 withdrawn, -1 iconic, 0+ workspace
+  WINDOW_STATE state;  //-2 withdrawn, -1 iconic, 0+ workspace
   char *name;
   bool urgent;
   bool input;
@@ -60,58 +61,58 @@ typedef struct grid_init_t {
 typedef struct layout_init_t {
   xcb_connection_t *conn;
   const xcb_screen_t *screen;
-  xcb_get_property_reply_t*(*get_class)(xcb_window_t, size_t);
+  xcb_get_property_reply_t *(*get_class)(xcb_window_t, size_t);
   void (*window_state_changed)(xcb_window_t, WINDOW_STATE, WINDOW_STATE);
   const rect_t *workareas;
   const rect_t *workareas_fullscreen;
   size_t workarea_count;
-  const char *const(*name_replacements)[2];
+  const char *const (*name_replacements)[2];
   size_t name_replacements_length;
   grid_init_t grid_init;
 } layout_init_t;
 
-#define OUT_WINDOW(w) \
-  do { \
-    OUT(w); \
-    if((w)!=NULL) { \
-      OUT(w->next); \
-      OUT(w->prev); \
-      OUT(w->id); \
+#define OUT_WINDOW(w)             \
+  do {                            \
+    OUT(w);                       \
+    if((w) != NULL) {             \
+      OUT(w->next);               \
+      OUT(w->prev);               \
+      OUT(w->id);                 \
       OUT_WINDOW_STATE(w->state); \
-      OUT(w->name); \
-      OUT(w->urgent); \
-      OUT(w->input); \
-      OUT(w->minimize); \
-    } \
+      OUT(w->name);               \
+      OUT(w->urgent);             \
+      OUT(w->input);              \
+      OUT(w->minimize);           \
+    }                             \
   } while(0)
 #define OUT_WINDOW_ARR(w, count) OUT_ARR_GENERIC(w, count, OUT_WINDOW)
 
 #define OUT_WORKAREA(w) OUT_RECT(w)
 #define OUT_WORKAREA_ARR(w, count) OUT_RECT_ARR(w, count)
-#define OUT_GRID_CELL(c) \
-  do { \
-    OUT(c); \
-    if(c!=NULL) { \
+#define OUT_GRID_CELL(c)     \
+  do {                       \
+    OUT(c);                  \
+    if(c != NULL) {          \
       OUT_WINDOW(c->window); \
-      OUT(c->origin); \
-    } \
+      OUT(c->origin);        \
+    }                        \
   } while(0)
 #define OUT_GRID_CELL_RAW(c) \
-  do { \
-    OUT(&c); \
-    OUT_WINDOW(c.window); \
-    OUT(c.origin); \
+  do {                       \
+    OUT(&c);                 \
+    OUT_WINDOW(c.window);    \
+    OUT(c.origin);           \
   } while(0)
 #define OUT_GRID_CELL_ARR(c, count) OUT_ARR_GENERIC(c, count, OUT_GRID_CELL_RAW)
-#define OUT_WORKSPACE(w) \
-  do { \
-    OUT(w); \
-    if(w != NULL) { \
-      OUT(w->focus); \
-      OUT_ARR(w->cross, 2); \
-      OUT_ARR(w->update, workarea_count); \
+#define OUT_WORKSPACE(w)                      \
+  do {                                        \
+    OUT(w);                                   \
+    if(w != NULL) {                           \
+      OUT(w->focus);                          \
+      OUT_ARR(w->cross, 2);                   \
+      OUT_ARR(w->update, workarea_count);     \
       OUT_ARR(w->fullscreen, workarea_count); \
-    } \
+    }                                         \
   } while(0)
 #define OUT_WORKSPACE_ARR(w, count) OUT_ARR_GENERIC(w, count, OUT_WORKSPACE)
 

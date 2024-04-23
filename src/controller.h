@@ -1,10 +1,11 @@
 #ifndef H_CONTROLLER
 #define H_CONTROLLER
 
-#include "types.h"
+#include <stdbool.h>
 #include <stddef.h>
 #include <xcb/xcb.h>
-#include <stdbool.h>
+
+#include "types.h"
 
 void c_wm_shutdown(void);
 void c_workspace_switch(size_t);
