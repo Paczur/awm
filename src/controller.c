@@ -798,8 +798,8 @@ void c_init(void) {
   const bar_containers_t *bars;
   rect_t *t_rect;
   border_urgent[0] = c_hex2xcolor((color_t)CONFIG_BORDER_URGENT[0]);
-  border_normal[0] = c_hex2xcolor((color_t)CONFIG_BORDER_NORMAL[0]);
   border_urgent[1] = c_hex2xcolor((color_t)CONFIG_BORDER_URGENT[1]);
+  border_normal[0] = c_hex2xcolor((color_t)CONFIG_BORDER_NORMAL[0]);
   border_normal[1] = c_hex2xcolor((color_t)CONFIG_BORDER_NORMAL[1]);
 
   system_init(c_sigterm_action);

@@ -91,9 +91,9 @@
 #define DARK_GRAY \
   { "111111", "eeeeee" }
 #define GRAY \
-  { "333333", "cccccc" }
+  { "333333", "aaaaaa" }
 #define YELLOW \
-  { "f3f36e", "f3f36e" }
+  { "f3f36e", "b32d2e" }
 #define WHITE \
   { "f3f3f3", "000000" }
 
