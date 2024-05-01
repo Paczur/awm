@@ -24,7 +24,7 @@ typedef struct block_geometry_t {
   uint32_t text_y;
 } block_geometry_t;
 
-uint32_t block_background(const char *, size_t, size_t);
+void block_background(const color_t, xcolor_t *, size_t, size_t);
 
 void block_settings(block_settings_t *, const block_settings_init_t *);
 
@@ -72,6 +72,8 @@ void block_hide(block_t *, size_t);
 void block_show(block_t *, size_t);
 void block_hide_all(block_t *);
 void block_show_all(block_t *);
+
+void block_color(size_t);
 
 void block_destroy(block_t *);
 

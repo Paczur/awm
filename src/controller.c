@@ -19,8 +19,9 @@
 static bool run;
 static MODE mode;
 static MODE next_mode = MODE_INVALID;
-static uint32_t border_normal;
-static uint32_t border_urgent;
+static xcolor_t border_normal;
+static xcolor_t border_urgent;
+size_t c_wm_color_current = 0;
 #define LENGTH(x) (sizeof(x) / sizeof((x)[0]))
 #define MIN(x, y) ((x) <= (y) ? (x) : (y))
 
@@ -55,9 +56,9 @@ static uint32_t c_hex2xcolor(const char *hex) {
 
 static void c_window_init(xcb_window_t window) {
   const window_t *win;
-  int values[2] = {border_normal, XCB_EVENT_MASK_FOCUS_CHANGE |
-                                  XCB_EVENT_MASK_ENTER_WINDOW |
-                                  XCB_EVENT_MASK_PROPERTY_CHANGE};
+  int values[2] = {border_normal[c_wm_color_current],
+                   XCB_EVENT_MASK_FOCUS_CHANGE | XCB_EVENT_MASK_ENTER_WINDOW |
+                   XCB_EVENT_MASK_PROPERTY_CHANGE};
   xcb_change_window_attributes(conn, window,
                                XCB_CW_EVENT_MASK | XCB_CW_BORDER_PIXEL, values);
   xcb_grab_button(conn, 1, window, XCB_EVENT_MASK_BUTTON_PRESS,
@@ -97,6 +98,11 @@ static void c_sigterm_action(int a) {
 void c_wm_shutdown(void) {
   run = false;
   LOGE(DEBUG, "Shutdown initiated");
+}
+
+void c_wm_color(size_t index) {
+  c_wm_color_current = index;
+  bar_color(index);
 }
 
 void c_workspace_switch(size_t n) {
@@ -606,9 +612,9 @@ void c_event_property(const xcb_generic_event_t *e) {
     win = layout_xwin2win(event->window);
     bool state = hint_window_urgent(event->window, event->atom);
     if(state) {
-      color = border_urgent;
+      color = border_urgent[c_wm_color_current];
     } else {
-      color = border_normal;
+      color = border_normal[c_wm_color_current];
     }
     xcb_change_window_attributes(conn, event->window, XCB_CW_BORDER_PIXEL,
                                  &color);
@@ -788,10 +794,13 @@ void c_init(void) {
   rect_t *monitors;
   size_t monitor_count;
   size_t bar_count;
+  char color_out[10];
   const bar_containers_t *bars;
   rect_t *t_rect;
-  border_urgent = c_hex2xcolor(CONFIG_BORDER_URGENT);
-  border_normal = c_hex2xcolor(CONFIG_BORDER_NORMAL);
+  border_urgent[0] = c_hex2xcolor((color_t)CONFIG_BORDER_URGENT[0]);
+  border_normal[0] = c_hex2xcolor((color_t)CONFIG_BORDER_NORMAL[0]);
+  border_urgent[1] = c_hex2xcolor((color_t)CONFIG_BORDER_URGENT[1]);
+  border_normal[1] = c_hex2xcolor((color_t)CONFIG_BORDER_NORMAL[1]);
 
   system_init(c_sigterm_action);
   c_init_hint();
@@ -813,6 +822,8 @@ void c_init(void) {
   c_windows_adopt();
   layout_event_focus(hint_saved_window_focused());
 
+  system_sh_out("color", color_out, 10);
+  c_wm_color(strcmp("white\n", color_out) == 0);
   c_mode_set(MODE_NORMAL);
   event_listener_add(XCB_MAP_REQUEST, c_event_map);
   event_listener_add(XCB_MAP_NOTIFY, c_event_map_notify);

@@ -19,7 +19,7 @@ void launcher_container_hide(void) {
 
 void launcher_container_init(xcb_connection_t *c, const xcb_screen_t *screen) {
   uint32_t mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
-  uint32_t values[2] = {bar_containers.background, XCB_EVENT_MASK_EXPOSURE};
+  uint32_t values[2] = {bar_containers.background[0], XCB_EVENT_MASK_EXPOSURE};
   conn = c;
   bar_containers.launcher = malloc(bar_container_count * sizeof(xcb_window_t));
   for(size_t i = 0; i < bar_container_count; i++) {

@@ -36,6 +36,7 @@ TIMES10(n_def)
 #undef n_def
 
 F_DEC(shutdown);
+F_DEC(color_toggle);
 F_DEC(focus_window_down);
 F_DEC(focus_window_up);
 F_DEC(focus_window_left);

@@ -36,6 +36,9 @@ typedef struct rect_t {
   uint32_t h;
 } rect_t;
 
+typedef const char* color_t[2];
+typedef uint32_t xcolor_t[2];
+
 typedef enum { MODE_NORMAL, MODE_INSERT, MODE_INVALID } MODE;
 
 #define OUT_PREFIX(val) printf("\t\"" #val "\": ")

@@ -14,13 +14,22 @@ size_t bar_container_find(xcb_window_t window) {
   return -1;
 }
 
+void bar_container_color(size_t index) {
+  for(size_t i = 0; i < bar_container_count; i++) {
+    xcb_change_window_attributes(conn, bar_containers.id[i], XCB_CW_BACK_PIXEL,
+                                 &bar_containers.background[index]);
+    xcb_clear_area(conn, 0, bar_containers.id[i], 0, 0, bar_containers.w[i],
+                   bar_containers.h);
+  }
+}
+
 void bar_container_init(xcb_connection_t *c, const xcb_screen_t *screen,
                         bar_containers_t bcs, size_t count) {
   bar_containers = bcs;
   bar_container_count = count;
   conn = c;
   uint32_t mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
-  uint32_t values[2] = {bar_containers.background, XCB_EVENT_MASK_EXPOSURE};
+  uint32_t values[2] = {bar_containers.background[0], XCB_EVENT_MASK_EXPOSURE};
   bar_containers.id = malloc(count * sizeof(xcb_window_t));
   for(size_t i = 0; i < count; i++) {
     bar_containers.id[i] = xcb_generate_id(c);

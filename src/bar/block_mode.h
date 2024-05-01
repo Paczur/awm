@@ -7,7 +7,8 @@
 
 extern block_geometry_t block_mode_geometry;
 
-void block_mode_update(bool);
+void block_mode_update(void);
+void block_mode_set(bool);
 void block_mode_redraw(size_t);
 bool block_mode_find_redraw(xcb_window_t);
 

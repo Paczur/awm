@@ -13,7 +13,7 @@ typedef struct bar_containers_t {
   uint32_t *x;
   uint32_t *y;
   uint32_t *w;
-  uint32_t background;
+  xcolor_t background;
   uint32_t h;
   uint32_t padding;
   uint32_t separator;
@@ -21,13 +21,13 @@ typedef struct bar_containers_t {
 } bar_containers_t;
 
 typedef struct block_settings_t {
-  uint32_t background;
-  double foreground[4];
+  xcolor_t background;
+  double foreground[3][2];
 } block_settings_t;
 
 typedef struct block_settings_init_t {
-  const char *background;
-  const char *foreground;
+  const color_t background;
+  const color_t foreground;
 } block_settings_init_t;
 
 typedef struct block_info_data_t {
@@ -93,7 +93,7 @@ typedef struct bar_init_t {
 
   size_t block_padding;
   size_t block_separator;
-  char *bar_background;
+  color_t bar_background;
   const char *bar_font;
   bar_block_mode_init_t block_mode;
   bar_block_workspace_init_t block_workspace;

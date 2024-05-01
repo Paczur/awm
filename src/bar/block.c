@@ -7,6 +7,7 @@
 static xcb_connection_t *conn;
 static const xcb_screen_t *screen;
 static xcb_visualtype_t *visual_type;
+static size_t color_index = 0;
 
 static void block_geometry(const block_t *block, uint32_t min_width,
                            uint32_t *width, uint32_t *text_x,
@@ -42,27 +43,42 @@ static void block_geometry(const block_t *block, uint32_t min_width,
   }
 }
 
-uint32_t block_background(const char *str, size_t start, size_t end) {
+void block_background(const color_t color, xcolor_t *xcolor, size_t start,
+                      size_t end) {
   uint32_t mul = 1;
-  uint32_t ret = 0;
+  for(size_t i = 0; i < LENGTH(*xcolor); i++) (*xcolor)[i] = 0;
   while(end-- > start) {
-    if(str[end] >= 'a') {
-      ret += mul * (str[end] - 'a' + 10);
-    } else if(str[end] >= 'A') {
-      ret += mul * (str[end] - 'A' + 10);
+    if(color[0][end] >= 'a') {
+      (*xcolor)[0] += mul * (color[0][end] - 'a' + 10);
+    } else if(color[0][end] >= 'A') {
+      (*xcolor)[0] += mul * (color[0][end] - 'A' + 10);
     } else {
-      ret += mul * (str[end] - '0');
+      (*xcolor)[0] += mul * (color[0][end] - '0');
+    }
+    if(color[1][end] >= 'a') {
+      (*xcolor)[1] += mul * (color[1][end] - 'a' + 10);
+    } else if(color[1][end] >= 'A') {
+      (*xcolor)[1] += mul * (color[1][end] - 'A' + 10);
+    } else {
+      (*xcolor)[1] += mul * (color[1][end] - '0');
     }
     mul *= 16;
   }
-  return ret;
 }
 
 void block_settings(block_settings_t *bs, const block_settings_init_t *init) {
-  bs->background = block_background(init->background, 0, 6);
-  bs->foreground[0] = block_background(init->foreground, 0, 2) / 255.0;
-  bs->foreground[1] = block_background(init->foreground, 2, 4) / 255.0;
-  bs->foreground[2] = block_background(init->foreground, 4, 6) / 255.0;
+  xcolor_t color;
+  block_background(init->background, &color, 0, 6);
+  for(size_t i = 0; i < LENGTH(color); i++) bs->background[i] = color[i];
+  block_background(init->foreground, &color, 0, 2);
+  for(size_t i = 0; i < LENGTH(color); i++)
+    bs->foreground[0][i] = color[i] / 255.0;
+  block_background(init->foreground, &color, 2, 4);
+  for(size_t i = 0; i < LENGTH(color); i++)
+    bs->foreground[1][i] = color[i] / 255.0;
+  block_background(init->foreground, &color, 4, 6);
+  for(size_t i = 0; i < LENGTH(color); i++)
+    bs->foreground[2][i] = color[i] / 255.0;
 }
 
 uint32_t block_next_x(const block_geometry_t *geom) {
@@ -86,7 +102,7 @@ void block_update_batch(const block_t *blocks, size_t count,
     xcb_configure_window(conn, blocks[i].id[bar],
                          XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_WIDTH, vals);
     xcb_change_window_attributes(conn, blocks[i].id[bar], XCB_CW_BACK_PIXEL,
-                                 &settings->background);
+                                 &settings->background[color_index]);
     xcb_clear_area(conn, 0, blocks[i].id[bar], 0, 0, geom->w, bar_containers.h);
   }
   for(size_t i = 0; i < count; i++) {
@@ -94,8 +110,9 @@ void block_update_batch(const block_t *blocks, size_t count,
     cairo_xcb_surface_set_size(blocks[i].surface[bar], geom->w,
                                bar_containers.h);
     cairo_move_to(blocks[i].cairo[bar], geom->text_x, geom->text_y);
-    cairo_set_source_rgb(blocks[i].cairo[bar], settings->foreground[0],
-                         settings->foreground[1], settings->foreground[2]);
+    cairo_set_source_rgb(
+    blocks[i].cairo[bar], settings->foreground[0][color_index],
+    settings->foreground[1][color_index], settings->foreground[2][color_index]);
     pango_cairo_show_layout(blocks[i].cairo[bar], blocks[i].pango[bar]);
   }
 }
@@ -140,7 +157,7 @@ void block_update_batchf(const block_t *blocks, const block_geometry_t *geom,
     xcb_configure_window(conn, blocks[i].id[bar],
                          XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_WIDTH, vals);
     xcb_change_window_attributes(conn, blocks[i].id[bar], XCB_CW_BACK_PIXEL,
-                                 &settings(i)->background);
+                                 &settings(i)->background[color_index]);
     xcb_clear_area(conn, 0, blocks[i].id[bar], 0, 0, geom[i].w,
                    bar_containers.h);
   }
@@ -149,9 +166,10 @@ void block_update_batchf(const block_t *blocks, const block_geometry_t *geom,
     cairo_xcb_surface_set_size(blocks[i].surface[bar], geom[i].w,
                                bar_containers.h);
     cairo_move_to(blocks[i].cairo[bar], geom[i].text_x, geom[i].text_y);
-    cairo_set_source_rgb(blocks[i].cairo[bar], settings(i)->foreground[0],
-                         settings(i)->foreground[1],
-                         settings(i)->foreground[2]);
+    cairo_set_source_rgb(blocks[i].cairo[bar],
+                         settings(i)->foreground[0][color_index],
+                         settings(i)->foreground[1][color_index],
+                         settings(i)->foreground[2][color_index]);
     pango_cairo_show_layout(blocks[i].cairo[bar], blocks[i].pango[bar]);
   }
 }
@@ -162,12 +180,13 @@ void block_update(const block_t *block, const block_settings_t *settings,
   xcb_configure_window(conn, block->id[bar],
                        XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_WIDTH, vals);
   xcb_change_window_attributes(conn, block->id[bar], XCB_CW_BACK_PIXEL,
-                               &settings->background);
+                               &settings->background[color_index]);
   xcb_clear_area(conn, 0, block->id[bar], 0, 0, geom->w, bar_containers.h);
   cairo_xcb_surface_set_size(block->surface[bar], geom->w, bar_containers.h);
   cairo_move_to(block->cairo[bar], geom->text_x, geom->text_y);
-  cairo_set_source_rgb(block->cairo[bar], settings->foreground[0],
-                       settings->foreground[1], settings->foreground[2]);
+  cairo_set_source_rgb(block->cairo[bar], settings->foreground[0][color_index],
+                       settings->foreground[1][color_index],
+                       settings->foreground[2][color_index]);
   cairo_surface_flush(block->surface[bar]);
   pango_cairo_show_layout(block->cairo[bar], block->pango[bar]);
 }
@@ -179,12 +198,13 @@ void block_update_same(const block_t *block, const block_settings_t *settings,
     xcb_configure_window(conn, block->id[bar],
                          XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_WIDTH, vals);
     xcb_change_window_attributes(conn, block->id[bar], XCB_CW_BACK_PIXEL,
-                                 &settings->background);
+                                 &settings->background[color_index]);
     xcb_clear_area(conn, 0, block->id[bar], 0, 0, geom->w, bar_containers.h);
     cairo_xcb_surface_set_size(block->surface[bar], geom->w, bar_containers.h);
     cairo_move_to(block->cairo[bar], geom->text_x, geom->text_y);
-    cairo_set_source_rgb(block->cairo[bar], settings->foreground[0],
-                         settings->foreground[1], settings->foreground[2]);
+    cairo_set_source_rgb(
+    block->cairo[bar], settings->foreground[0][color_index],
+    settings->foreground[1][color_index], settings->foreground[2][color_index]);
     cairo_surface_flush(block->surface[bar]);
     pango_cairo_show_layout(block->cairo[bar], block->pango[bar]);
   }
@@ -228,7 +248,8 @@ void block_show_all(block_t *block) {
 
 void block_create(block_t *block, const PangoFontDescription *font) {
   uint32_t mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
-  uint32_t values[2] = {bar_containers.background, XCB_EVENT_MASK_EXPOSURE};
+  uint32_t values[2] = {bar_containers.background[color_index],
+                        XCB_EVENT_MASK_EXPOSURE};
 
   block->id = malloc(bar_container_count * sizeof(xcb_window_t));
   block->surface = malloc(bar_container_count * sizeof(cairo_surface_t *));
@@ -254,7 +275,8 @@ void block_create(block_t *block, const PangoFontDescription *font) {
 
 void block_launcher_create(block_t *block, const PangoFontDescription *font) {
   uint32_t mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
-  uint32_t values[2] = {bar_containers.background, XCB_EVENT_MASK_EXPOSURE};
+  uint32_t values[2] = {bar_containers.background[color_index],
+                        XCB_EVENT_MASK_EXPOSURE};
 
   block->id = malloc(bar_container_count * sizeof(xcb_window_t));
   block->surface = malloc(bar_container_count * sizeof(cairo_surface_t *));
@@ -370,6 +392,8 @@ void block_geometry_update_right(block_t *blocks, block_geometry_t *geom,
     block_update_batchf(blocks, geom, count, settings, i);
   }
 }
+
+void block_color(size_t index) { color_index = index; }
 
 void block_destroy(block_t *block) {
   for(size_t i = 0; i < bar_container_count; i++) {

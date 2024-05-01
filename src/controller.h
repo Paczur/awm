@@ -7,7 +7,10 @@
 
 #include "types.h"
 
+extern size_t c_wm_color_current;
+
 void c_wm_shutdown(void);
+void c_wm_color(size_t);
 void c_workspace_switch(size_t);
 void c_workspace_fullscreen(size_t, size_t);
 void c_workspace_focused_fullscreen(void);

@@ -130,6 +130,12 @@ void block_info_update_highlight(int n, int delay) {
   }
 }
 
+void block_info_update_all(void) {
+  pthread_rwlock_wrlock(block_info.locks + block_count - 1);
+  block_info.state[block_count - 1].countdown = 1;
+  pthread_rwlock_unlock(block_info.locks + block_count - 1);
+}
+
 void block_info_update(int n) {
   for(size_t i = 0; i < block_count; i++) {
     pthread_rwlock_rdlock(block_info.locks + i);

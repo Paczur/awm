@@ -9,6 +9,7 @@ extern uint32_t block_info_offset_right;
 
 void block_info_redraw(size_t);
 bool block_info_find_redraw(xcb_window_t);
+void block_info_update_all(void);
 void block_info_update_highlight(int n, int delay);
 void block_info_update(int n);
 

@@ -137,24 +137,43 @@ void bar_update_workspace(size_t n) {
 
 void bar_update_mode(MODE m) {
   size_t pos = block_next_x(&block_mode_geometry);
-  block_mode_update(m == MODE_NORMAL);
+  block_mode_set(m == MODE_NORMAL);
   if(block_next_x(&block_mode_geometry) != pos) bar_update_workspace(0);
 }
 
 void bar_redraw(xcb_window_t window) {
   size_t bar = bar_container_find(window);
   if(bar >= bar_container_count) {
-    if(!launcher_visible) {
-      if(block_mode_find_redraw(window)) return;
-      if(block_workspace_find_redraw(window)) return;
-      if(block_info_find_redraw(window)) return;
-      if(block_minimized_find_redraw(window)) return;
-    } else {
+    if(launcher_visible) {
       if(launcher_prompt_find_redraw(window)) return;
       if(launcher_hint_find_redraw(window)) return;
     }
+    if(block_mode_find_redraw(window)) return;
+    if(block_workspace_find_redraw(window)) return;
+    if(block_info_find_redraw(window)) return;
+    if(block_minimized_find_redraw(window)) return;
     return;
   }
+}
+
+void bar_redraw_all(void) {
+  for(size_t i = 0; i < bar_container_count; i++) {
+    if(launcher_visible) {
+      launcher_prompt_redraw(i);
+      launcher_hint_redraw(i);
+    }
+    block_mode_redraw(i);
+    block_workspace_redraw(i);
+    block_info_redraw(i);
+    block_minimized_redraw(i);
+  }
+}
+
+void bar_update_all(void) {
+  block_mode_update();
+  bar_update_workspace(1);
+  block_info_update_all();
+  bar_update_minimized();
 }
 
 void bar_update_info_highlight(int n, int delay) {
@@ -181,7 +200,14 @@ void bar_visibility(size_t bar, bool st) {
 #undef PRINT
 }
 
+void bar_color(size_t index) {
+  bar_container_color(index);
+  block_color(index);
+  bar_update_all();
+}
+
 void bar_init(const bar_init_t *init) {
+  xcolor_t color;
   conn = init->conn;
   screen = init->screen;
   PangoFontDescription *font;
@@ -191,7 +217,8 @@ void bar_init(const bar_init_t *init) {
   containers.y = malloc(init->bar_container_count * sizeof(uint32_t));
   containers.w = malloc(init->bar_container_count * sizeof(uint32_t));
   containers.h = init->bar_containers[0].h;
-  containers.background = block_background(init->bar_background, 0, 6);
+  block_background(init->bar_background, &color, 0, 6);
+  memcpy(containers.background, color, sizeof(xcolor_t));
   containers.padding = init->block_padding;
   containers.separator = init->block_separator;
   containers.launcher = NULL;

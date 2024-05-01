@@ -16,6 +16,7 @@ TIMES10(n_imp)
 #undef n_imp
 
 F_DEF(shutdown, c_wm_shutdown();)
+F_DEF(color_toggle, c_wm_color(!c_wm_color_current); c_run("color toggle");)
 F_DEF(focus_window_down, c_window_focus_down();)
 F_DEF(focus_window_up, c_window_focus_up();)
 F_DEF(focus_window_left, c_window_focus_left();)
