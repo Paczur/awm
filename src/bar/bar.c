@@ -201,6 +201,7 @@ void bar_visibility(size_t bar, bool st) {
 }
 
 void bar_color(size_t index) {
+  launcher_container_color(index);
   bar_container_color(index);
   block_color(index);
   bar_update_all();
