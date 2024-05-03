@@ -218,6 +218,8 @@ void bar_init(const bar_init_t *init) {
   containers.y = malloc(init->bar_container_count * sizeof(uint32_t));
   containers.w = malloc(init->bar_container_count * sizeof(uint32_t));
   containers.h = init->bar_containers[0].h;
+  containers.visibility = malloc(init->bar_container_count * sizeof(bool));
+  memset(containers.visibility, 1, init->bar_container_count * sizeof(bool));
   block_background(init->bar_background, &color, 0, 6);
   memcpy(containers.background, color, sizeof(xcolor_t));
   containers.padding = init->block_padding;
