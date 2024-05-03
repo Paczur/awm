@@ -110,9 +110,10 @@ void block_update_batch(const block_t *blocks, size_t count,
     cairo_xcb_surface_set_size(blocks[i].surface[bar], geom->w,
                                bar_containers.h);
     cairo_move_to(blocks[i].cairo[bar], geom->text_x, geom->text_y);
-    cairo_set_source_rgb(
-    blocks[i].cairo[bar], settings->foreground[0][color_index],
-    settings->foreground[1][color_index], settings->foreground[2][color_index]);
+    cairo_set_source_rgb(blocks[i].cairo[bar],
+                         settings->foreground[0][color_index],
+                         settings->foreground[1][color_index],
+                         settings->foreground[2][color_index]);
     pango_cairo_show_layout(blocks[i].cairo[bar], blocks[i].pango[bar]);
   }
 }
@@ -202,9 +203,10 @@ void block_update_same(const block_t *block, const block_settings_t *settings,
     xcb_clear_area(conn, 0, block->id[bar], 0, 0, geom->w, bar_containers.h);
     cairo_xcb_surface_set_size(block->surface[bar], geom->w, bar_containers.h);
     cairo_move_to(block->cairo[bar], geom->text_x, geom->text_y);
-    cairo_set_source_rgb(
-    block->cairo[bar], settings->foreground[0][color_index],
-    settings->foreground[1][color_index], settings->foreground[2][color_index]);
+    cairo_set_source_rgb(block->cairo[bar],
+                         settings->foreground[0][color_index],
+                         settings->foreground[1][color_index],
+                         settings->foreground[2][color_index]);
     cairo_surface_flush(block->surface[bar]);
     pango_cairo_show_layout(block->cairo[bar], block->pango[bar]);
   }
@@ -266,7 +268,7 @@ void block_create(block_t *block, const PangoFontDescription *font) {
   }
   for(size_t i = 0; i < bar_container_count; i++) {
     block->surface[i] = cairo_xcb_surface_create(
-    conn, block->id[i], visual_type, 1, bar_containers.h);
+      conn, block->id[i], visual_type, 1, bar_containers.h);
     block->cairo[i] = cairo_create(block->surface[i]);
     block->pango[i] = pango_cairo_create_layout(block->cairo[i]);
     pango_layout_set_font_description(block->pango[i], font);
@@ -293,7 +295,7 @@ void block_launcher_create(block_t *block, const PangoFontDescription *font) {
   }
   for(size_t i = 0; i < bar_container_count; i++) {
     block->surface[i] = cairo_xcb_surface_create(
-    conn, block->id[i], visual_type, 1, bar_containers.h);
+      conn, block->id[i], visual_type, 1, bar_containers.h);
     block->cairo[i] = cairo_create(block->surface[i]);
     block->pango[i] = pango_cairo_create_layout(block->cairo[i]);
     pango_layout_set_font_description(block->pango[i], font);

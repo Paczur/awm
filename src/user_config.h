@@ -6,31 +6,31 @@
   {mod, key, f, false}, { MOD_SUPER | mod, key, f##_change, false }
 #define BARE(mod, key, f) \
   { mod, key, f, false }
-#define CONFIG_NUMBER_PATTERN(mod, f)                           \
-  WITH_CHANGE(mod, XK_1, f##_0), WITH_CHANGE(mod, XK_2, f##_1), \
-  WITH_CHANGE(mod, XK_3, f##_2), WITH_CHANGE(mod, XK_4, f##_3), \
-  WITH_CHANGE(mod, XK_5, f##_4), WITH_CHANGE(mod, XK_6, f##_5), \
-  WITH_CHANGE(mod, XK_7, f##_6), WITH_CHANGE(mod, XK_8, f##_7), \
-  WITH_CHANGE(mod, XK_9, f##_8), WITH_CHANGE(mod, XK_0, f##_9)
-#define CONFIG_SHIFTED_NUMBER_PATTERN(mod, f)    \
-  WITH_CHANGE(MOD_SHIFT, XK_exclam, f##_0),      \
-  WITH_CHANGE(MOD_SHIFT, XK_at, f##_1),          \
-  WITH_CHANGE(MOD_SHIFT, XK_numbersign, f##_2),  \
-  WITH_CHANGE(MOD_SHIFT, XK_dollar, f##_3),      \
-  WITH_CHANGE(MOD_SHIFT, XK_percent, f##_4),     \
-  WITH_CHANGE(MOD_SHIFT, XK_asciicircum, f##_5), \
-  WITH_CHANGE(MOD_SHIFT, XK_ampersand, f##_6),   \
-  WITH_CHANGE(MOD_SHIFT, XK_asterisk, f##_7),    \
-  WITH_CHANGE(MOD_SHIFT, XK_parenleft, f##_8),   \
-  WITH_CHANGE(MOD_SHIFT, XK_parenright, f##_9)
+#define CONFIG_NUMBER_PATTERN(mod, f)                             \
+  WITH_CHANGE(mod, XK_1, f##_0), WITH_CHANGE(mod, XK_2, f##_1),   \
+    WITH_CHANGE(mod, XK_3, f##_2), WITH_CHANGE(mod, XK_4, f##_3), \
+    WITH_CHANGE(mod, XK_5, f##_4), WITH_CHANGE(mod, XK_6, f##_5), \
+    WITH_CHANGE(mod, XK_7, f##_6), WITH_CHANGE(mod, XK_8, f##_7), \
+    WITH_CHANGE(mod, XK_9, f##_8), WITH_CHANGE(mod, XK_0, f##_9)
+#define CONFIG_SHIFTED_NUMBER_PATTERN(mod, f)      \
+  WITH_CHANGE(MOD_SHIFT, XK_exclam, f##_0),        \
+    WITH_CHANGE(MOD_SHIFT, XK_at, f##_1),          \
+    WITH_CHANGE(MOD_SHIFT, XK_numbersign, f##_2),  \
+    WITH_CHANGE(MOD_SHIFT, XK_dollar, f##_3),      \
+    WITH_CHANGE(MOD_SHIFT, XK_percent, f##_4),     \
+    WITH_CHANGE(MOD_SHIFT, XK_asciicircum, f##_5), \
+    WITH_CHANGE(MOD_SHIFT, XK_ampersand, f##_6),   \
+    WITH_CHANGE(MOD_SHIFT, XK_asterisk, f##_7),    \
+    WITH_CHANGE(MOD_SHIFT, XK_parenleft, f##_8),   \
+    WITH_CHANGE(MOD_SHIFT, XK_parenright, f##_9)
 #define CONFIG_DIRECTION_PATTERN(mod, f)                              \
   WITH_CHANGE(mod, XK_h, f##_left), WITH_CHANGE(mod, XK_j, f##_down), \
-  WITH_CHANGE(mod, XK_k, f##_up), WITH_CHANGE(mod, XK_l, f##_right)
+    WITH_CHANGE(mod, XK_k, f##_up), WITH_CHANGE(mod, XK_l, f##_right)
 #define REPEATABLE_DIRECTION_PATTERN(mod, f) \
   REPEATABLE_CHANGE(mod, XK_h, f##_left),    \
-  REPEATABLE_CHANGE(mod, XK_j, f##_down),    \
-  REPEATABLE_CHANGE(mod, XK_k, f##_up),      \
-  REPEATABLE_CHANGE(mod, XK_l, f##_right)
+    REPEATABLE_CHANGE(mod, XK_j, f##_down),  \
+    REPEATABLE_CHANGE(mod, XK_k, f##_up),    \
+    REPEATABLE_CHANGE(mod, XK_l, f##_right)
 
 // clang-format off
 #define CONFIG_SHORTCUTS_NORMAL_MODE                                      \
@@ -73,14 +73,14 @@
   { BARE(MOD_SUPER, XK_Super_L, mode_force), }
 #define CONFIG_SHORTCUTS_INSERT_MODE \
   { BARE(MOD_NONE, XK_Super_L, normal_mode), }
-#define CONFIG_SHORTCUTS_LAUNCHER                  \
-  {                                                \
-    BARE(MOD_NONE, XK_Super_L, launcher_abort),    \
-    BARE(MOD_NONE, XK_Escape, launcher_abort),     \
-    BARE(MOD_NONE, XK_Return, launcher_confirm),   \
-    BARE(MOD_NONE, XK_Left, launcher_hint_left),   \
-    BARE(MOD_NONE, XK_Right, launcher_hint_right), \
-    BARE(MOD_NONE, XK_BackSpace, launcher_erase),  \
+#define CONFIG_SHORTCUTS_LAUNCHER                    \
+  {                                                  \
+    BARE(MOD_NONE, XK_Super_L, launcher_abort),      \
+      BARE(MOD_NONE, XK_Escape, launcher_abort),     \
+      BARE(MOD_NONE, XK_Return, launcher_confirm),   \
+      BARE(MOD_NONE, XK_Left, launcher_hint_left),   \
+      BARE(MOD_NONE, XK_Right, launcher_hint_right), \
+      BARE(MOD_NONE, XK_BackSpace, launcher_erase),  \
   }
 
 #define CONFIG_TERMINAL_CMD "mlterm"
@@ -151,17 +151,17 @@
 #define CONFIG_BAR_INFO_HIGHLIGHTED_FOREGROUND WHITE
 #define CONFIG_BAR_INFO_URGENT_BACKGROUND DARK_GRAY
 #define CONFIG_BAR_INFO_URGENT_FOREGROUND YELLOW
-#define CONFIG_BAR_INFO_BLOCKS                                   \
-  {                                                              \
-    {0, "/home/paczur/Projects/C/IdkWM/scripts/net", 60},        \
-    {1, "/home/paczur/Projects/C/IdkWM/scripts/volume", -1},     \
-    {2, "/home/paczur/Projects/C/IdkWM/scripts/dnd", -1},        \
-    {3, "/home/paczur/Projects/C/IdkWM/scripts/brightness", -1}, \
-    {4, "/home/paczur/Projects/C/IdkWM/scripts/battery", 60},    \
-    {8, "/home/paczur/Projects/C/IdkWM/scripts/gpu", 60},        \
-    {5, "/home/paczur/Projects/C/IdkWM/scripts/cpu", 5},         \
-    {6, "date '+󰃶 %a %d' && exit 1", 3600},                   \
-    {7, "date '+ %H:%M' && exit 1", 30},                      \
+#define CONFIG_BAR_INFO_BLOCKS                                     \
+  {                                                                \
+    {0, "/home/paczur/Projects/C/IdkWM/scripts/net", 60},          \
+      {1, "/home/paczur/Projects/C/IdkWM/scripts/volume", -1},     \
+      {2, "/home/paczur/Projects/C/IdkWM/scripts/dnd", -1},        \
+      {3, "/home/paczur/Projects/C/IdkWM/scripts/brightness", -1}, \
+      {4, "/home/paczur/Projects/C/IdkWM/scripts/battery", 60},    \
+      {8, "/home/paczur/Projects/C/IdkWM/scripts/gpu", 60},        \
+      {5, "/home/paczur/Projects/C/IdkWM/scripts/cpu", 5},         \
+      {6, "date '+󰃶 %a %d' && exit 1", 3600},                   \
+      {7, "date '+ %H:%M' && exit 1", 30},                      \
   }
 
 #define CONFIG_BAR_LAUNCHER_PROMPT_MIN_WIDTH 0

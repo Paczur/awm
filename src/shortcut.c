@@ -165,8 +165,8 @@ void shortcut_init(xcb_connection_t *c) {
   conn = c;
   ctx = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
   core_device = xkb_x11_get_core_keyboard_device_id(conn);
-  cookie =
-  xcb_xkb_per_client_flags(conn, XCB_XKB_ID_USE_CORE_KBD, mask, mask, 0, 0, 0);
+  cookie = xcb_xkb_per_client_flags(conn, XCB_XKB_ID_USE_CORE_KBD, mask, mask,
+                                    0, 0, 0);
   reply = xcb_xkb_per_client_flags_reply(conn, cookie, NULL);
   free(reply);
   shortcut_load_keymap();

@@ -62,4 +62,4 @@ F_DEF(screenshot, c_run("scrot -s -q 100 -e "
                         "%d-%m-%Y_%H-%M-%S_$wx$h.png");)
 
 const char *const config_bar_minimized_name_replacements[][2] =
-CONFIG_BAR_MINIMIZED_NAME_REPLACEMENTS;
+  CONFIG_BAR_MINIMIZED_NAME_REPLACEMENTS;

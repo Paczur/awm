@@ -39,7 +39,7 @@ void launcher_trie_gen_hints_sr(const launcher_trie_search_node_t *, char *,
 launcher_trie_search_node_t *launcher_trie_search(const launcher_trie_node_t *,
                                                   const char *, size_t);
 launcher_trie_search_node_t *launcher_trie_search_sr(
-const launcher_trie_search_node_t *, const char *, size_t);
+  const launcher_trie_search_node_t *, const char *, size_t);
 void launcher_trie_cleanup(launcher_trie_node_t *);
 void launcher_trie_clear(launcher_trie_node_t *);
 void launcher_trie_unmark(launcher_trie_node_t *);

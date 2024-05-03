@@ -2,11 +2,11 @@
 
 #include <stdlib.h>
 
-#define INTERN_COOKIE(_prefix)                                          \
-  xcb_intern_atom_cookie_t _prefix##_cookie;                            \
-  do {                                                                  \
-    _prefix##_cookie =                                                  \
-    xcb_intern_atom(conn, 0, sizeof(_prefix##_str) - 1, _prefix##_str); \
+#define INTERN_COOKIE(_prefix)                                            \
+  xcb_intern_atom_cookie_t _prefix##_cookie;                              \
+  do {                                                                    \
+    _prefix##_cookie =                                                    \
+      xcb_intern_atom(conn, 0, sizeof(_prefix##_str) - 1, _prefix##_str); \
   } while(0)
 #define INTERN_REPLY(_prefix)                                              \
   xcb_intern_atom_reply_t *_prefix##_reply;                                \

@@ -34,7 +34,7 @@ size_t c_wm_color_current = 0;
 #define COMMON_URGENT_INIT(x, n, h)                                \
   {                                                                \
     x##_MIN_WIDTH, SETTINGS_INIT(x##_##n), SETTINGS_INIT(x##_##h), \
-    SETTINGS_INIT(x##_URGENT)                                      \
+      SETTINGS_INIT(x##_URGENT)                                    \
   }
 
 static uint32_t c_hex2xcolor(const char *hex) {
@@ -58,7 +58,7 @@ static void c_window_init(xcb_window_t window) {
   const window_t *win;
   int values[2] = {border_normal[c_wm_color_current],
                    XCB_EVENT_MASK_FOCUS_CHANGE | XCB_EVENT_MASK_ENTER_WINDOW |
-                   XCB_EVENT_MASK_PROPERTY_CHANGE};
+                     XCB_EVENT_MASK_PROPERTY_CHANGE};
   xcb_change_window_attributes(conn, window,
                                XCB_CW_EVENT_MASK | XCB_CW_BORDER_PIXEL, values);
   xcb_grab_button(conn, 1, window, XCB_EVENT_MASK_BUTTON_PRESS,
@@ -337,7 +337,7 @@ void c_mode_force(void) {
 void c_mode_set(MODE new_mode) {
   MODE old_mode = mode;
   SHORTCUT_TYPE type =
-  (new_mode == MODE_INSERT) ? SH_TYPE_INSERT_MODE : SH_TYPE_NORMAL_MODE;
+    (new_mode == MODE_INSERT) ? SH_TYPE_INSERT_MODE : SH_TYPE_NORMAL_MODE;
   next_mode = MODE_INVALID;
   shortcut_enable(screen, type);
   mode = new_mode;
@@ -367,7 +367,7 @@ void c_bar_block_update_highlight(size_t n, int delay) {
 
 void c_event_message(const xcb_generic_event_t *e) {
   const xcb_client_message_event_t *event =
-  (const xcb_client_message_event_t *)e;
+    (const xcb_client_message_event_t *)e;
   if(hint_atom_wm_change_state(event->type) &&
      hint_state_iconic(event->data.data8[0])) {
     c_window_minimize(event->window);
@@ -401,7 +401,8 @@ void c_event_map(const xcb_generic_event_t *e) {
          rect.h != 0 && rect.w != (uint32_t)-1 && rect.h != (uint32_t)-1) {
         xcb_configure_window(conn, event->window,
                              XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y |
-                             XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
+                               XCB_CONFIG_WINDOW_WIDTH |
+                               XCB_CONFIG_WINDOW_HEIGHT,
                              &rect);
       }
       xcb_map_window(conn, event->window);
@@ -512,7 +513,7 @@ void c_event_button_press(const xcb_generic_event_t *e) {
 
 void c_event_button_release(const xcb_generic_event_t *e) {
   const xcb_button_release_event_t *event =
-  (const xcb_button_release_event_t *)e;
+    (const xcb_button_release_event_t *)e;
   xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, XCB_CURRENT_TIME);
 #define PRINT         \
   OUT(event->detail); \
@@ -535,7 +536,7 @@ void c_event_create(const xcb_generic_event_t *e) {
 
 void c_event_destroy(const xcb_generic_event_t *e) {
   const xcb_destroy_notify_event_t *event =
-  (const xcb_destroy_notify_event_t *)e;
+    (const xcb_destroy_notify_event_t *)e;
   WINDOW_STATE state_before_destroy = layout_event_destroy(event->window);
   if(state_before_destroy == -1) {
     c_bar_update_minimized();
@@ -607,7 +608,7 @@ void c_event_property(const xcb_generic_event_t *e) {
   uint32_t color;
   window_t *win = NULL;
   const xcb_property_notify_event_t *event =
-  (const xcb_property_notify_event_t *)e;
+    (const xcb_property_notify_event_t *)e;
   if(hint_atom_urgent(event->atom)) {
     win = layout_xwin2win(event->window);
     bool state = hint_window_urgent(event->window, event->atom);
@@ -645,7 +646,7 @@ void c_event_property(const xcb_generic_event_t *e) {
 
 void c_event_configure(const xcb_generic_event_t *e) {
   const xcb_configure_request_event_t *event =
-  (xcb_configure_request_event_t *)e;
+    (xcb_configure_request_event_t *)e;
   uint32_t mask = XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT |
                   XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y;
   uint32_t value_list[4];
@@ -702,35 +703,35 @@ static void c_init_bar(rect_t *t_rect, const rect_t *monitors,
     t_rect[i].h = CONFIG_BAR_HEIGHT;
   }
   bar_init_t binit = (bar_init_t){
-  conn,
-  screen,
-  visual_type,
-  .bar_containers = t_rect,
-  .bar_container_count = monitor_count,
-  layout_workspace_focused,
-  CONFIG_BAR_COMPONENT_PADDING,
-  CONFIG_BAR_COMPONENT_SEPARATOR,
-  CONFIG_BAR_BACKGROUND,
-  CONFIG_BAR_FONT,
-  COMMON_INIT(CONFIG_BAR_MODE, INSERT, NORMAL),
-  {CONFIG_BAR_WORKSPACE_MIN_WIDTH,
-   SETTINGS_INIT(CONFIG_BAR_WORKSPACE_UNFOCUSED),
-   SETTINGS_INIT(CONFIG_BAR_WORKSPACE_FOCUSED),
-   SETTINGS_INIT(CONFIG_BAR_WORKSPACE_URGENT), layout_workspace_isempty,
-   layout_workspace_isurgent},
-  {CONFIG_BAR_INFO_MIN_WIDTH, SETTINGS_INIT(CONFIG_BAR_INFO_NORMAL),
-   SETTINGS_INIT(CONFIG_BAR_INFO_HIGHLIGHTED),
-   SETTINGS_INIT(CONFIG_BAR_INFO_URGENT),
-   (block_info_data_t[])CONFIG_BAR_INFO_BLOCKS,
-   LENGTH((block_info_data_t[])CONFIG_BAR_INFO_BLOCKS), system_sh_out},
-  {CONFIG_BAR_MINIMIZED_MIN_WIDTH, SETTINGS_INIT(CONFIG_BAR_MINIMIZED_EVEN),
-   SETTINGS_INIT(CONFIG_BAR_MINIMIZED_ODD),
-   SETTINGS_INIT(CONFIG_BAR_MINIMIZED_URGENT),
-   (const plist_t *const *)layout_minimized(), layout_window_lock(),
-   offsetof(window_t, name), offsetof(window_t, urgent)},
-  {CONFIG_BAR_LAUNCHER_PROMPT_MIN_WIDTH,
-   SETTINGS_INIT(CONFIG_BAR_LAUNCHER_PROMPT)},
-  COMMON_INIT(CONFIG_BAR_LAUNCHER_HINT, NORMAL, SELECTED)};
+    conn,
+    screen,
+    visual_type,
+    .bar_containers = t_rect,
+    .bar_container_count = monitor_count,
+    layout_workspace_focused,
+    CONFIG_BAR_COMPONENT_PADDING,
+    CONFIG_BAR_COMPONENT_SEPARATOR,
+    CONFIG_BAR_BACKGROUND,
+    CONFIG_BAR_FONT,
+    COMMON_INIT(CONFIG_BAR_MODE, INSERT, NORMAL),
+    {CONFIG_BAR_WORKSPACE_MIN_WIDTH,
+     SETTINGS_INIT(CONFIG_BAR_WORKSPACE_UNFOCUSED),
+     SETTINGS_INIT(CONFIG_BAR_WORKSPACE_FOCUSED),
+     SETTINGS_INIT(CONFIG_BAR_WORKSPACE_URGENT), layout_workspace_isempty,
+     layout_workspace_isurgent},
+    {CONFIG_BAR_INFO_MIN_WIDTH, SETTINGS_INIT(CONFIG_BAR_INFO_NORMAL),
+     SETTINGS_INIT(CONFIG_BAR_INFO_HIGHLIGHTED),
+     SETTINGS_INIT(CONFIG_BAR_INFO_URGENT),
+     (block_info_data_t[])CONFIG_BAR_INFO_BLOCKS,
+     LENGTH((block_info_data_t[])CONFIG_BAR_INFO_BLOCKS), system_sh_out},
+    {CONFIG_BAR_MINIMIZED_MIN_WIDTH, SETTINGS_INIT(CONFIG_BAR_MINIMIZED_EVEN),
+     SETTINGS_INIT(CONFIG_BAR_MINIMIZED_ODD),
+     SETTINGS_INIT(CONFIG_BAR_MINIMIZED_URGENT),
+     (const plist_t *const *)layout_minimized(), layout_window_lock(),
+     offsetof(window_t, name), offsetof(window_t, urgent)},
+    {CONFIG_BAR_LAUNCHER_PROMPT_MIN_WIDTH,
+     SETTINGS_INIT(CONFIG_BAR_LAUNCHER_PROMPT)},
+    COMMON_INIT(CONFIG_BAR_LAUNCHER_HINT, NORMAL, SELECTED)};
   bar_init(&binit);
 }
 
@@ -743,19 +744,20 @@ static void c_init_layout(rect_t *t_rect, const rect_t *monitors,
     t_rect[i].h = monitors[i].h - CONFIG_BAR_HEIGHT;
   }
   layout_init_t linit = (layout_init_t){
-  conn,
-  screen,
-  hint_window_class,
-  .workareas = t_rect,
-  .window_state_changed = hint_window_update_state,
-  .workareas_fullscreen = monitors,
-  .workarea_count = monitor_count,
-  .name_replacements =
-  (const char *const[][2])CONFIG_BAR_MINIMIZED_NAME_REPLACEMENTS,
-  .name_replacements_length =
-  LENGTH((char *[][2])CONFIG_BAR_MINIMIZED_NAME_REPLACEMENTS),
-  .grid_init = {CONFIG_GAPS, CONFIG_BORDERS, (const size_t[])CONFIG_SPAWN_ORDER,
-                LENGTH((size_t[])CONFIG_SPAWN_ORDER)}};
+    conn,
+    screen,
+    hint_window_class,
+    .workareas = t_rect,
+    .window_state_changed = hint_window_update_state,
+    .workareas_fullscreen = monitors,
+    .workarea_count = monitor_count,
+    .name_replacements =
+      (const char *const[][2])CONFIG_BAR_MINIMIZED_NAME_REPLACEMENTS,
+    .name_replacements_length =
+      LENGTH((char *[][2])CONFIG_BAR_MINIMIZED_NAME_REPLACEMENTS),
+    .grid_init = {CONFIG_GAPS, CONFIG_BORDERS,
+                  (const size_t[])CONFIG_SPAWN_ORDER,
+                  LENGTH((size_t[])CONFIG_SPAWN_ORDER)}};
   layout_init(&linit);
 }
 
@@ -764,7 +766,7 @@ static void c_init_shortcut(void) {
   config_shortcut_t normal_shortcuts[] = CONFIG_SHORTCUTS_NORMAL_MODE;
   config_shortcut_t launcher_shortcuts[] = CONFIG_SHORTCUTS_LAUNCHER;
   config_shortcut_t normal_release_shortcuts[] =
-  CONFIG_SHORTCUTS_NORMAL_MODE_RELEASE;
+    CONFIG_SHORTCUTS_NORMAL_MODE_RELEASE;
   shortcut_init(conn);
   convert_shortcuts(SH_TYPE_INSERT_MODE, insert_shortcuts,
                     LENGTH(insert_shortcuts));
@@ -778,7 +780,7 @@ static void c_init_shortcut(void) {
 
 static void c_init_hint(void) {
   hint_init(&(hint_init_t){
-  conn, screen, {layout_workspaces(NULL), layout_workspace_names()}});
+    conn, screen, {layout_workspaces(NULL), layout_workspace_names()}});
 }
 
 void c_loop(void) {

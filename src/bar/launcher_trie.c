@@ -86,8 +86,8 @@ void launcher_trie_add(launcher_trie_node_t **tree, const char *word,
       if(curr->length - j <= LAUNCHER_TRIE_NODE_ARRAY_SIZE) {
         memcpy(curr->next->value.array,
                (curr->length <= LAUNCHER_TRIE_NODE_ARRAY_SIZE)
-               ? curr->value.array + j
-               : curr->value.pointer + j,
+                 ? curr->value.array + j
+                 : curr->value.pointer + j,
                (curr->length - j) * sizeof(char));
       } else {
         curr->next->value.pointer = malloc((curr->length - j) * sizeof(char));
@@ -246,8 +246,8 @@ void launcher_trie_print(const launcher_trie_node_t *node) {
   } else {
     printf("%20.*s", (int)node->adjacent->length,
            (node->adjacent->length <= LAUNCHER_TRIE_NODE_ARRAY_SIZE)
-           ? node->adjacent->value.array
-           : node->adjacent->value.pointer);
+             ? node->adjacent->value.array
+             : node->adjacent->value.pointer);
   }
   printf(" ");
   if(node->next == NULL) {
@@ -255,8 +255,8 @@ void launcher_trie_print(const launcher_trie_node_t *node) {
   } else {
     printf("%20.*s", (int)node->next->length,
            (node->next->length <= LAUNCHER_TRIE_NODE_ARRAY_SIZE)
-           ? node->next->value.array
-           : node->next->value.pointer);
+             ? node->next->value.array
+             : node->next->value.pointer);
   }
   puts("");
   if(node->adjacent != NULL) {
@@ -269,7 +269,7 @@ void launcher_trie_print(const launcher_trie_node_t *node) {
 }
 
 launcher_trie_search_node_t *launcher_trie_search(
-const launcher_trie_node_t *tree, const char *word, size_t length) {
+  const launcher_trie_node_t *tree, const char *word, size_t length) {
   launcher_trie_search_node_t *search;
   const launcher_trie_node_t *curr = tree;
   size_t j;
@@ -303,7 +303,7 @@ const launcher_trie_node_t *tree, const char *word, size_t length) {
 }
 
 launcher_trie_search_node_t *launcher_trie_search_sr(
-const launcher_trie_search_node_t *node, const char *word, size_t length) {
+  const launcher_trie_search_node_t *node, const char *word, size_t length) {
   const launcher_trie_node_t *curr = node->node;
   launcher_trie_search_node_t *search;
   size_t j;
@@ -334,9 +334,9 @@ void launcher_trie_new_shortest(const char *buff, char length) {
     if(lengths[i] > length) {
       memmove(lengths + i + 1, lengths + i,
               (LENGTH(lengths) - (i + 1)) * sizeof(lengths[0]));
-      memmove(
-      launcher_trie_hints + i + 1, launcher_trie_hints + i,
-      (LENGTH(launcher_trie_hints) - (i + 1)) * sizeof(launcher_trie_hints[0]));
+      memmove(launcher_trie_hints + i + 1, launcher_trie_hints + i,
+              (LENGTH(launcher_trie_hints) - (i + 1)) *
+                sizeof(launcher_trie_hints[0]));
       memcpy(launcher_trie_hints + i, buff, length * sizeof(buff[0]));
       lengths[i] = length;
       break;

@@ -32,7 +32,7 @@ void launcher_prompt_append(const char *str, size_t len) {
   launcher_prompt_search_length += len;
   launcher_prompt_search[launcher_prompt_search_length] = 0;
   launcher_prompt_search_char_sizes[launcher_prompt_search_char_sizes_index++] =
-  len;
+    len;
   launcher_prompt_update();
   if(!launcher_prompt.block.state[0]) {
     block_show_all(&launcher_prompt.block);
@@ -41,8 +41,8 @@ void launcher_prompt_append(const char *str, size_t len) {
 
 void launcher_prompt_erase(void) {
   if(launcher_prompt_search_char_sizes_index == 0) return;
-  launcher_prompt_search_length -=
-  launcher_prompt_search_char_sizes[--launcher_prompt_search_char_sizes_index];
+  launcher_prompt_search_length -= launcher_prompt_search_char_sizes
+    [--launcher_prompt_search_char_sizes_index];
   launcher_prompt_search[launcher_prompt_search_length] = 0;
   launcher_prompt_update();
   if(launcher_prompt.block.state[0] &&

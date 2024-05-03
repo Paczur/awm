@@ -51,9 +51,9 @@ static const block_settings_t *block_info_get_settings(size_t n) {
 static void *block_info_update_periodic(void *) {
   int max;
   struct timespec ts =
-  (struct timespec){.tv_nsec = (CLOCK_STEPS_PER_SECOND == 1)
-                               ? 999999999
-                               : 1000000000 / CLOCK_STEPS_PER_SECOND};
+    (struct timespec){.tv_nsec = (CLOCK_STEPS_PER_SECOND == 1)
+                                   ? 999999999
+                                   : 1000000000 / CLOCK_STEPS_PER_SECOND};
   for(size_t i = 0; i < block_count; i++) {
     if(block_info.data[i].cmd == NULL) {
       pthread_rwlock_wrlock(block_info.locks + i);
@@ -78,10 +78,10 @@ static void *block_info_update_periodic(void *) {
         pthread_rwlock_unlock(block_info.locks + i);
         pthread_rwlock_wrlock(block_info.locks + i);
         block_info.state[i].status =
-        get_output(block_info.data[i].cmd, block_info.state[i].text,
-                   INFO_BLOCK_TEXT_LENGTH);
+          get_output(block_info.data[i].cmd, block_info.state[i].text,
+                     INFO_BLOCK_TEXT_LENGTH);
         block_info.state[i].countdown =
-        block_info.data[i].timer * CLOCK_STEPS_PER_SECOND;
+          block_info.data[i].timer * CLOCK_STEPS_PER_SECOND;
         max = MAX(i, max);
       } else if(block_info.state[i].countdown > 0) {
         pthread_rwlock_unlock(block_info.locks + i);
@@ -97,14 +97,14 @@ static void *block_info_update_periodic(void *) {
           block_set_text(block_info.blocks + i, block_info.state[i].text);
         }
         block_geometry_update_right(
-        block_info.blocks, block_info_geometry, max + 1,
-        ((size_t)max + 1 == block_count)
-        ? 0
-        : block_combined_width(block_info_geometry + max + 1,
-                               block_count - max - 1),
-        block_info_get_settings, block_info.min_width);
+          block_info.blocks, block_info_geometry, max + 1,
+          ((size_t)max + 1 == block_count)
+            ? 0
+            : block_combined_width(block_info_geometry + max + 1,
+                                   block_count - max - 1),
+          block_info_get_settings, block_info.min_width);
         block_info_offset_right =
-        block_combined_width(block_info_geometry, block_count);
+          block_combined_width(block_info_geometry, block_count);
         for(int i = 0; i < max + 1; i++) {
           pthread_rwlock_unlock(block_info.locks + i);
         }

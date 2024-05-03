@@ -100,7 +100,7 @@ void workspace_init(xcb_connection_t *c) {
   conn = c;
   for(size_t i = 0; i < MAX_WORKSPACES; i++) {
     workspaces[i].grid =
-    calloc(CELLS_PER_WORKAREA * workarea_count, sizeof(grid_cell_t));
+      calloc(CELLS_PER_WORKAREA * workarea_count, sizeof(grid_cell_t));
     workspaces[i].cross = calloc(GRID_AXIS * workarea_count, sizeof(int));
     for(size_t j = 0; j < CELLS_PER_WORKAREA; j++) {
       workspaces[i].grid[j].origin = -1;

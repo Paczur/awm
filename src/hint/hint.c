@@ -107,7 +107,7 @@ static void hint_window_update_net_client_list(xcb_window_t window,
     if(client_list_length == client_list_capacity) {
       client_list_capacity += CLIENT_LIST_STARTING_CAPACITY;
       client_list =
-      realloc(client_list, client_list_capacity * sizeof(xcb_window_t));
+        realloc(client_list, client_list_capacity * sizeof(xcb_window_t));
     }
     client_list[client_list_length++] = window;
     xcb_change_property(conn, XCB_PROP_MODE_APPEND, screen->root,
@@ -152,9 +152,9 @@ static void hint_window_update_net_wm_state(xcb_window_t window,
   if((prev == WINDOW_ICONIC) == (state == WINDOW_ICONIC)) return;
   if(prev == WINDOW_ICONIC) {
     xcb_get_property_cookie_t cookie = xcb_get_property(
-    conn, 0, window, _NET_WM_STATE, XCB_ATOM_ATOM, 0, MAX_WINDOW_STATE_ATOMS);
+      conn, 0, window, _NET_WM_STATE, XCB_ATOM_ATOM, 0, MAX_WINDOW_STATE_ATOMS);
     xcb_get_property_reply_t *reply =
-    xcb_get_property_reply(conn, cookie, NULL);
+      xcb_get_property_reply(conn, cookie, NULL);
     xcb_atom_t *atoms = xcb_get_property_value(reply);
     size_t size = xcb_get_property_value_length(reply) / sizeof(xcb_window_t);
     for(size_t i = 0; i < size; i++) {
@@ -182,14 +182,14 @@ bool hint_window_delete(xcb_window_t window) {
   size_t count;
   xcb_icccm_get_wm_protocols_reply_t protocols;
   xcb_client_message_event_t message = {
-  // sequence???
-  XCB_CLIENT_MESSAGE,
-  32,
-  .window = window,
-  WM_PROTOCOLS,
-  {.data32[0] = WM_DELETE_WINDOW, .data32[1] = XCB_CURRENT_TIME}};
+    // sequence???
+    XCB_CLIENT_MESSAGE,
+    32,
+    .window = window,
+    WM_PROTOCOLS,
+    {.data32[0] = WM_DELETE_WINDOW, .data32[1] = XCB_CURRENT_TIME}};
   xcb_get_property_cookie_t cookie =
-  xcb_icccm_get_wm_protocols(conn, window, WM_PROTOCOLS);
+    xcb_icccm_get_wm_protocols(conn, window, WM_PROTOCOLS);
   if(xcb_icccm_get_wm_protocols_reply(conn, cookie, &protocols, NULL)) {
     count = protocols.atoms_len;
     for(size_t i = 0; i < count; i++) {
@@ -229,7 +229,7 @@ bool hint_initial_state_normal(xcb_window_t window) {
 xcb_get_property_reply_t *hint_window_class(xcb_window_t window,
                                             size_t max_length) {
   xcb_get_property_cookie_t cookie =
-  xcb_get_property(conn, 0, window, WM_CLASS, XCB_ATOM_STRING, 0, max_length);
+    xcb_get_property(conn, 0, window, WM_CLASS, XCB_ATOM_STRING, 0, max_length);
   return xcb_get_property_reply(conn, cookie, NULL);
 }
 
@@ -264,8 +264,8 @@ bool hint_atom_input(xcb_atom_t atom) { return atom == WM_HINTS; }
 size_t hint_atom_window_type(xcb_atom_t **atoms, xcb_window_t window) {
   size_t ret;
   xcb_get_property_cookie_t cookie =
-  xcb_get_property(conn, 0, window, _NET_WM_WINDOW_TYPE, XCB_ATOM_ATOM, 0,
-                   MAX_WINDOW_TYPE_ATOMS);
+    xcb_get_property(conn, 0, window, _NET_WM_WINDOW_TYPE, XCB_ATOM_ATOM, 0,
+                     MAX_WINDOW_TYPE_ATOMS);
   xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, cookie, NULL);
   ret = xcb_get_property_value_length(reply) / sizeof(xcb_atom_t);
   *atoms = malloc(ret * sizeof(xcb_atom_t));
@@ -351,8 +351,8 @@ bool hint_window_input(xcb_window_t win) {
 size_t hint_saved_windows(xcb_window_t **windows) {
   size_t len;
   xcb_get_property_cookie_t cookie =
-  xcb_get_property(conn, 0, screen->root, _NET_CLIENT_LIST, XCB_ATOM_WINDOW, 0,
-                   MAX_RESTORE_CLIENT_LIST);
+    xcb_get_property(conn, 0, screen->root, _NET_CLIENT_LIST, XCB_ATOM_WINDOW,
+                     0, MAX_RESTORE_CLIENT_LIST);
   xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, cookie, NULL);
   len = xcb_get_property_value_length(reply) / sizeof(xcb_window_t);
   *windows = malloc(len * sizeof(xcb_window_t));
@@ -368,11 +368,11 @@ size_t hint_saved_windows(xcb_window_t **windows) {
 size_t hint_saved_window_workspace(xcb_window_t window) {
   uint32_t workspace;
   xcb_get_property_cookie_t cookie =
-  xcb_get_property(conn, 0, window, _NET_WM_DESKTOP, XCB_ATOM_CARDINAL, 0, 1);
+    xcb_get_property(conn, 0, window, _NET_WM_DESKTOP, XCB_ATOM_CARDINAL, 0, 1);
   xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, cookie, NULL);
   while(reply == NULL) {
-    cookie =
-    xcb_get_property(conn, 0, window, _NET_WM_DESKTOP, XCB_ATOM_CARDINAL, 0, 1);
+    cookie = xcb_get_property(conn, 0, window, _NET_WM_DESKTOP,
+                              XCB_ATOM_CARDINAL, 0, 1);
     reply = xcb_get_property_reply(conn, cookie, NULL);
   }
   if(xcb_get_property_value_length(reply) > 0) {
@@ -392,7 +392,7 @@ size_t hint_saved_window_workspace(xcb_window_t window) {
 size_t hint_saved_workspace_focused(void) {
   uint32_t workspace;
   xcb_get_property_cookie_t cookie = xcb_get_property(
-  conn, 0, screen->root, _NET_CURRENT_DESKTOP, XCB_ATOM_CARDINAL, 0, 1);
+    conn, 0, screen->root, _NET_CURRENT_DESKTOP, XCB_ATOM_CARDINAL, 0, 1);
   xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, cookie, NULL);
   while(reply == NULL) {
     cookie = xcb_get_property(conn, 0, screen->root, _NET_CURRENT_DESKTOP,
@@ -414,7 +414,7 @@ size_t hint_saved_workspace_focused(void) {
 xcb_window_t hint_saved_window_focused(void) {
   xcb_window_t window;
   xcb_get_property_cookie_t cookie = xcb_get_property(
-  conn, 0, screen->root, _NET_ACTIVE_WINDOW, XCB_ATOM_WINDOW, 0, 1);
+    conn, 0, screen->root, _NET_ACTIVE_WINDOW, XCB_ATOM_WINDOW, 0, 1);
   xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, cookie, NULL);
   while(reply == NULL) {
     cookie = xcb_get_property(conn, 0, screen->root, _NET_ACTIVE_WINDOW,
@@ -455,7 +455,7 @@ void hint_window_rect_set(xcb_window_t window, rect_t *rect) {
   };
   struct size_hints_t hints = {0};
   xcb_get_property_cookie_t cookie =
-  xcb_get_property(conn, 0, window, WM_NORMAL_HINTS, WM_SIZE_HINTS, 0, 17);
+    xcb_get_property(conn, 0, window, WM_NORMAL_HINTS, WM_SIZE_HINTS, 0, 17);
   xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, cookie, NULL);
   len = xcb_get_property_value_length(reply) / sizeof(uint32_t);
   memcpy(&hints, xcb_get_property_value(reply), len * sizeof(uint32_t));

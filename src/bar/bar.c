@@ -90,7 +90,7 @@ void bar_launcher_erase(void) {
 void bar_launcher_select_left(void) {
   if(launcher_visible) {
     launcher_hint_selected =
-    (launcher_hint_selected + launcher_hint_count - 1) % launcher_hint_count;
+      (launcher_hint_selected + launcher_hint_count - 1) % launcher_hint_count;
     launcher_hint_update(block_next_x(&launcher_prompt_geometry));
   }
 }
@@ -122,13 +122,13 @@ bool bar_launcher_window(xcb_window_t window) {
 
 void bar_update_minimized(void) {
   block_minimized_update(
-  block_next_x(block_workspace_geometry + MAX_WORKSPACE_BLOCKS - 1),
-  block_info_offset_right);
+    block_next_x(block_workspace_geometry + MAX_WORKSPACE_BLOCKS - 1),
+    block_info_offset_right);
 }
 
 void bar_update_workspace(size_t n) {
   size_t pos =
-  block_next_x(block_workspace_geometry + (MAX_WORKSPACE_BLOCKS - 1));
+    block_next_x(block_workspace_geometry + (MAX_WORKSPACE_BLOCKS - 1));
   bool update = (pos == block_minimized_geometry[0].x);
   block_workspace_update(focused_workspace(),
                          block_next_x(&block_mode_geometry), n);
