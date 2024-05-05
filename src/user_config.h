@@ -35,10 +35,10 @@
 // clang-format off
 #define CONFIG_SHORTCUTS_NORMAL_MODE                                      \
   {                                                                       \
-    CONFIG_NUMBER_PATTERN(MOD_NONE,         layout_focus),        \
+    CONFIG_NUMBER_PATTERN(MOD_NONE,         workspace),           \
     CONFIG_SHIFTED_NUMBER_PATTERN(MOD_NONE, layout_swap_focused), \
-    CONFIG_NUMBER_PATTERN(MOD_ALT,          workspace),           \
-    CONFIG_NUMBER_PATTERN(MOD_CTRL,         show),                \
+    CONFIG_NUMBER_PATTERN(MOD_CTRL,         workspace),           \
+    CONFIG_NUMBER_PATTERN(MOD_ALT,          show),                \
     CONFIG_DIRECTION_PATTERN(MOD_NONE,      focus_window),        \
     CONFIG_DIRECTION_PATTERN(MOD_SHIFT,     swap_window),         \
     REPEATABLE_DIRECTION_PATTERN(MOD_ALT,   enlarge),             \
@@ -68,11 +68,12 @@
     BARE(MOD_NONE,         XK_r,                     launch),          \
     BARE(MOD_NONE,         XK_c,                     color_toggle),    \
   }
-// clang-format on
 #define CONFIG_SHORTCUTS_NORMAL_MODE_RELEASE \
   { BARE(MOD_SUPER, XK_Super_L, mode_force), }
 #define CONFIG_SHORTCUTS_INSERT_MODE \
-  { BARE(MOD_NONE, XK_Super_L, normal_mode), }
+{ \
+  BARE(MOD_NONE, XK_Super_L, normal_mode), \
+}
 #define CONFIG_SHORTCUTS_LAUNCHER                    \
   {                                                  \
     BARE(MOD_NONE, XK_Super_L, launcher_abort),      \
@@ -82,6 +83,7 @@
       BARE(MOD_NONE, XK_Right, launcher_hint_right), \
       BARE(MOD_NONE, XK_BackSpace, launcher_erase),  \
   }
+// clang-format on
 
 #define CONFIG_TERMINAL_CMD "mlterm"
 #define CONFIG_RESIZE_STEP 10
