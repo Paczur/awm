@@ -593,6 +593,7 @@ void c_event_focus(const xcb_generic_event_t *e) {
     LOG(TRACE, "event: focus_in");
 #undef PRINT
   }
+  bar_focus(event->event);
 }
 
 void c_event_expose(const xcb_generic_event_t *e) {

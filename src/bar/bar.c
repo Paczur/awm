@@ -207,6 +207,12 @@ void bar_color(size_t index) {
   bar_update_all();
 }
 
+void bar_focus(xcb_window_t win) {
+  if(launcher_visible && !bar_launcher_window(win)) {
+    bar_launcher_hide();
+  }
+}
+
 void bar_init(const bar_init_t *init) {
   xcolor_t color;
   conn = init->conn;

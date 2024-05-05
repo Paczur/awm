@@ -25,6 +25,7 @@ void bar_visibility(size_t, bool);
 void bar_redraw(xcb_window_t);
 
 void bar_color(size_t);
+void bar_focus(xcb_window_t win);
 
 void bar_init(const bar_init_t *);
 void bar_deinit(void);
