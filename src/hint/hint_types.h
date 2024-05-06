@@ -6,15 +6,11 @@
 
 #include "../types.h"
 
-typedef struct hint_init_root_t {
-  size_t workspace_number;
-  char *workspace_names;
-} hint_init_root_t;
-
 typedef struct hint_init_t {
   xcb_connection_t *conn;
   const xcb_screen_t *screen;
-  hint_init_root_t root;
+  const char *(*workspace_names)(void);
+  size_t workspace_number;
 } hint_init_t;
 
 #ifdef HINT_DEBUG

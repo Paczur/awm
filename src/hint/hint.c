@@ -28,8 +28,19 @@ static xcb_window_t supporting_wm_window;
 
 static size_t workspace_focused;
 static size_t workspace_number;
+static const char *(*workspace_names)(void);
 
-static void hint_set_root(const hint_init_root_t *init) {
+static void hint_desktop_names(void) {
+  size_t len = 0;
+  const char *names = workspace_names();
+  for(size_t i = 0; i < workspace_number; i++) {
+    len += strlen(names + len) + 1;
+  }
+  xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root,
+                      _NET_DESKTOP_NAMES, UTF8_STRING, 8, len, names);
+}
+
+static void hint_set_root(void) {
   xcb_atom_t supported[] = {_NET_CLIENT_LIST,
                             _NET_NUMBER_OF_DESKTOPS,
                             _NET_CURRENT_DESKTOP,
@@ -59,9 +70,7 @@ static void hint_set_root(const hint_init_root_t *init) {
   xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root,
                       _NET_NUMBER_OF_DESKTOPS, XCB_ATOM_CARDINAL, 32, 1,
                       &workspace_number);
-  xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root,
-                      _NET_DESKTOP_NAMES, UTF8_STRING, 8,
-                      init->workspace_number * 2, init->workspace_names);
+  hint_desktop_names();
   xcb_create_window(conn, screen->root_depth, supporting_wm_window,
                     screen->root, 0, 0, 1, 1, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT,
                     screen->root_visual, 0, NULL);
@@ -72,7 +81,6 @@ static void hint_set_root(const hint_init_root_t *init) {
                       _NET_SUPPORTING_WM_CHECK, XCB_ATOM_WINDOW, 32, 1,
                       &supporting_wm_window);
   hint_window_hints_set(supporting_wm_window);
-  free(init->workspace_names);
   LOGFE(HINT_TRACE);
 }
 
@@ -97,6 +105,14 @@ static void hint_window_update_net_wm_desktop(xcb_window_t window,
   } else {
     xcb_delete_property(conn, window, _NET_WM_DESKTOP);
   }
+}
+
+static void hint_window_update_net_wm_desktop_names(xcb_window_t window,
+                                                    WINDOW_STATE prev,
+                                                    WINDOW_STATE state) {
+  (void)window;
+  if((prev < 0 && state < 0) || prev == state) return;
+  hint_desktop_names();
 }
 
 static void hint_window_update_net_client_list(xcb_window_t window,
@@ -516,6 +532,7 @@ void hint_window_update_state(xcb_window_t window, WINDOW_STATE prev,
   if(prev == WINDOW_INVALID || state == WINDOW_INVALID) return;
   hint_window_update_wm_state(window, prev, state);
   hint_window_update_net_wm_desktop(window, prev, state);
+  hint_window_update_net_wm_desktop_names(window, prev, state);
   hint_window_update_net_client_list(window, prev, state);
   hint_window_update_net_wm_allowed_actions(window, prev, state);
   hint_window_update_net_wm_state(window, prev, state);
@@ -549,11 +566,12 @@ void hint_window_hints_set(xcb_window_t window) {
 void hint_init(const hint_init_t *init) {
   conn = init->conn;
   screen = init->screen;
-  workspace_number = init->root.workspace_number;
+  workspace_number = init->workspace_number;
+  workspace_names = init->workspace_names;
   gethostname(hostname, MAX_HOSTNAME_LENGTH);
   hostname_length = strlen(hostname);
   atom_init(conn);
-  hint_set_root(&init->root);
+  hint_set_root();
   client_list_capacity = CLIENT_LIST_STARTING_CAPACITY;
   client_list = malloc(CLIENT_LIST_STARTING_CAPACITY * sizeof(xcb_window_t));
 #define PRINT OUT_ARR(hostname, hostname_length);

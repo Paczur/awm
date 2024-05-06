@@ -138,7 +138,7 @@ void bar_update_workspace(size_t n) {
 void bar_update_mode(MODE m) {
   size_t pos = block_next_x(&block_mode_geometry);
   block_mode_set(m == MODE_NORMAL);
-  if(block_next_x(&block_mode_geometry) != pos) bar_update_workspace(0);
+  if(block_next_x(&block_mode_geometry) == pos) bar_update_workspace(0);
 }
 
 void bar_redraw(xcb_window_t window) {

@@ -71,9 +71,14 @@ static void c_window_init(xcb_window_t window) {
   layout_input_set(layout_xwin2win(window), hint_window_input(window));
 }
 
-static void c_bar_update_minimized(void) { bar_update_minimized(); }
-
 static void c_bar_update_workspace(size_t n) { bar_update_workspace(n); }
+
+static void c_bar_update_minimized(void) {
+  bar_update_minimized();
+  if(!CONFIG_WORKSPACE_NUMBERS_ONLY) {
+    c_bar_update_workspace(0);
+  }
+}
 
 static void c_bar_update_mode(void) { bar_update_mode(mode); }
 
@@ -419,6 +424,8 @@ void c_event_map(const xcb_generic_event_t *e) {
   if(!layout_event_map(event->window,
                        !hint_initial_state_normal(event->window))) {
     c_bar_update_minimized();
+  } else if(!CONFIG_WORKSPACE_NUMBERS_ONLY) {
+    bar_update_workspace(layout_workspace_focused());
   }
 #define PRINT OUT(event->window)
   LOG(TRACE, "event: map_request");
@@ -542,6 +549,8 @@ void c_event_destroy(const xcb_generic_event_t *e) {
     c_bar_update_minimized();
   } else if(state_before_destroy >= 0) {
     c_bar_update_workspace(state_before_destroy);
+  } else {
+    c_bar_update_minimized();
   }
 #define PRINT         \
   OUT(event->window); \
@@ -574,6 +583,7 @@ void c_event_unmap(const xcb_generic_event_t *e) {
       c_bar_update_minimized();
     }
   }
+
 #define PRINT         \
   OUT(event->window); \
   OUT(bar);
@@ -715,11 +725,11 @@ static void c_init_bar(rect_t *t_rect, const rect_t *monitors,
     CONFIG_BAR_BACKGROUND,
     CONFIG_BAR_FONT,
     COMMON_INIT(CONFIG_BAR_MODE, INSERT, NORMAL),
-    {CONFIG_BAR_WORKSPACE_MIN_WIDTH,
+    {CONFIG_BAR_WORKSPACE_MIN_WIDTH, CONFIG_BAR_WORKSPACE_FOLD,
      SETTINGS_INIT(CONFIG_BAR_WORKSPACE_UNFOCUSED),
      SETTINGS_INIT(CONFIG_BAR_WORKSPACE_FOCUSED),
      SETTINGS_INIT(CONFIG_BAR_WORKSPACE_URGENT), layout_workspace_isempty,
-     layout_workspace_isurgent},
+     layout_workspace_isurgent, layout_workspace_name},
     {CONFIG_BAR_INFO_MIN_WIDTH, SETTINGS_INIT(CONFIG_BAR_INFO_NORMAL),
      SETTINGS_INIT(CONFIG_BAR_INFO_HIGHLIGHTED),
      SETTINGS_INIT(CONFIG_BAR_INFO_URGENT),
@@ -750,6 +760,7 @@ static void c_init_layout(rect_t *t_rect, const rect_t *monitors,
     hint_window_class,
     .workareas = t_rect,
     .window_state_changed = hint_window_update_state,
+    CONFIG_WORKSPACE_NUMBERS_ONLY,
     .workareas_fullscreen = monitors,
     .workarea_count = monitor_count,
     .name_replacements =
@@ -780,8 +791,8 @@ static void c_init_shortcut(void) {
 }
 
 static void c_init_hint(void) {
-  hint_init(&(hint_init_t){
-    conn, screen, {layout_workspaces(NULL), layout_workspace_names()}});
+  hint_init(&(hint_init_t){conn, screen, layout_workspace_names,
+                           layout_workspaces(NULL)});
 }
 
 void c_loop(void) {

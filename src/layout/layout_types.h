@@ -14,6 +14,7 @@
 #define VERT_CELLS_PER_WORKAREA 2
 #define CELLS_PER_WORKAREA 4
 #define GRID_AXIS 2
+#define MAX_WORKSPACE_NAME_SIZE 10
 
 typedef struct window_t {
   struct window_t *next;
@@ -63,6 +64,7 @@ typedef struct layout_init_t {
   const xcb_screen_t *screen;
   xcb_get_property_reply_t *(*get_class)(xcb_window_t, size_t);
   void (*window_state_changed)(xcb_window_t, WINDOW_STATE, WINDOW_STATE);
+  const bool workspace_numbers_only;
   const rect_t *workareas;
   const rect_t *workareas_fullscreen;
   size_t workarea_count;

@@ -18,6 +18,15 @@ bool workspace_area_empty(size_t n, size_t m) {
   return !workspaces[n].grid[m * CELLS_PER_WORKAREA].window;
 }
 
+size_t workspace_window_count(size_t n) {
+  size_t counter = 0;
+  workspace_t *workspace = workspaces + n;
+  for(size_t i = 0; i < CELLS_PER_WORKAREA * workarea_count; i++) {
+    if(workspace->grid[i].origin == i) counter++;
+  }
+  return counter;
+}
+
 bool workspace_empty(size_t n) {
   for(size_t i = 0; i < workarea_count; i++) {
     if(!workspace_area_empty(n, i)) return false;

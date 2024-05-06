@@ -14,6 +14,7 @@ bool workspace_area_fullscreen_toggle(size_t, size_t);
 bool workspace_area_fullscreen_set(size_t, size_t, bool);
 workspace_t *workspace_focusedw(void);
 bool workspace_area_empty(size_t, size_t);
+size_t workspace_window_count(size_t);
 bool workspace_empty(size_t);
 bool workspace_urgent(size_t);
 void workspace_area_update(size_t, size_t);

@@ -76,11 +76,13 @@ typedef struct bar_block_mode_init_t {
 
 typedef struct bar_block_workspace_init_t {
   uint32_t min_width;
+  bool fold;
   const block_settings_init_t unfocused;
   const block_settings_init_t focused;
   const block_settings_init_t urgent;
   bool (*workspace_empty)(size_t);
   bool (*workspace_urgent)(size_t);
+  const char *(*workspace_name)(size_t);
 } bar_block_workspace_init_t;
 
 typedef struct bar_init_t {

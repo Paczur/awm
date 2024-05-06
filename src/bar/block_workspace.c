@@ -6,11 +6,13 @@ typedef struct block_workspace_t {
   block_settings_t unfocused;
   block_settings_t urgent;
   uint32_t min_width;
+  bool fold;
 } block_workspace_t;
 
 static block_workspace_t block_workspace;
 static bool (*workspace_empty)(size_t);
 static bool (*workspace_urgent)(size_t);
+static const char *(*workspace_name)(size_t);
 block_geometry_t block_workspace_geometry[MAX_WORKSPACE_BLOCKS];
 
 void block_workspace_redraw(size_t bar) {
@@ -23,8 +25,8 @@ bool block_workspace_find_redraw(xcb_window_t window) {
 }
 
 void block_workspace_update(size_t focused, size_t offset_left, size_t start) {
-  char text[2] = "1";
-  bool t;
+  const char *text;
+  bool empty;
   block_settings_t *settings = NULL;
   size_t prev_workspace = 0;
   if(start == 0) {
@@ -48,19 +50,17 @@ void block_workspace_update(size_t focused, size_t offset_left, size_t start) {
         block_show_all(block_workspace.blocks + i);
       }
     } else {
-      t = workspace_empty(i);
-      if(!t) {
-        settings = (workspace_urgent(i)) ? &block_workspace.urgent
-                                         : &block_workspace.unfocused;
-      }
-      if(!t && !block_workspace.blocks[i].state[0]) {
+      empty = workspace_empty(i);
+      settings = (workspace_urgent(i)) ? &block_workspace.urgent
+                                       : &block_workspace.unfocused;
+      if(!empty && !block_workspace.blocks[i].state[0]) {
         block_show_all(block_workspace.blocks + i);
-      } else if(t && block_workspace.blocks[i].state[0]) {
+      } else if(empty && block_workspace.blocks[i].state[0]) {
         block_hide_all(block_workspace.blocks + i);
       }
     }
-    if(block_workspace.blocks[i].state[0]) {
-      text[0] = (i + 1) % 10 + '0';
+    if(!block_workspace.fold || block_workspace.blocks[i].state[0]) {
+      text = workspace_name(i);
       block_set_text(block_workspace.blocks + i, text);
       block_geometry_left(block_workspace.blocks + i, block_workspace.min_width,
                           block_workspace_geometry + prev_workspace,
@@ -83,6 +83,8 @@ void block_workspace_init(const PangoFontDescription *font,
   workspace_empty = init->workspace_empty;
   workspace_urgent = init->workspace_urgent;
   block_workspace.min_width = init->min_width;
+  block_workspace.fold = init->fold;
+  workspace_name = init->workspace_name;
   block_workspace.blocks = malloc(MAX_WORKSPACE_BLOCKS * sizeof(block_t));
   for(size_t i = 0; i < MAX_WORKSPACE_BLOCKS; i++) {
     block_create(block_workspace.blocks + i, font);

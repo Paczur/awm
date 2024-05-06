@@ -10,7 +10,9 @@
 
 static xcb_connection_t *conn;
 static const xcb_screen_t *screen;
+static bool workspace_numbers_only;
 static void (*window_state_changed)(xcb_window_t, WINDOW_STATE, WINDOW_STATE);
+static char workspace_names[MAX_WORKSPACES * (MAX_WORKSPACE_NAME_SIZE + 1)];
 
 size_t layout_workareas(const workarea_t **w) {
   if(w) *w = workareas;
@@ -39,17 +41,39 @@ void layout_workspace_switch(size_t w) {
 #undef PRINT
 }
 
-char *layout_workspace_names(void) {
-  char *workspace_names = malloc(2 * MAX_WORKSPACES * sizeof(char *));
+static void layout_workspace_names_init(void) {
   for(size_t i = 0; i < MAX_WORKSPACES; i++) {
     workspace_names[i * 2] = (i + 1) % 10 + '0';
     workspace_names[i * 2 + 1] = 0;
   }
+}
+
+static void layout_workspace_names_update(void) {
+  char *p = workspace_names;
+  for(size_t i = 0; i < MAX_WORKSPACES; i++) {
+    if(workspace_window_count(i) == 1) {
+      p =
+        stpncpy(p, workspaces[i].grid[0].window->name, MAX_WORKSPACE_NAME_SIZE);
+      p++;
+    } else {
+      *(p++) = (i + 1) % 10 + '0';
+      *(p++) = 0;
+    }
+  }
 #define PRINT OUT_ARR(workspace_names, MAX_WORKSPACES * 2);
   LOGF(LAYOUT_TRACE);
 #undef PRINT
-  return workspace_names;
 }
+
+const char *layout_workspace_name(size_t n) {
+  char *pos = workspace_names;
+  for(size_t i = 0; i < n; i++) {
+    pos += strlen(pos) + 1;
+  }
+  return pos;
+}
+
+const char *layout_workspace_names(void) { return workspace_names; }
 
 bool layout_workspace_area_fullscreen_toggle(size_t w, size_t m) {
   bool ret = workspace_area_fullscreen_toggle(w, m);
@@ -207,6 +231,7 @@ void layout_show(size_t p) {
   } else {
     win->state = workspace_focused;
     window_state_changed(win->id, WINDOW_ICONIC, workspace_focused);
+    layout_workspace_names_update();
     layout_focus(win);
   }
 #define PRINT \
@@ -228,6 +253,7 @@ WINDOW_STATE layout_minimize(window_t *win) {
     window_minimize(win);
     grid_unmark(win);
   }
+  layout_workspace_names_update();
 #define PRINT      \
   OUT_WINDOW(win); \
   OUT_WINDOW_STATE(old_state);
@@ -266,6 +292,7 @@ void layout_restore(xcb_window_t window, size_t workspace) {
   if(workspace != workspace_focused) {
     workspace_update(workspace);
   }
+  layout_workspace_names_update();
 #define PRINT      \
   OUT_WINDOW(win); \
   OUT(workspace);  \
@@ -282,6 +309,8 @@ void layout_init(const layout_init_t *init) {
   conn = init->conn;
   screen = init->screen;
   window_state_changed = init->window_state_changed;
+  workspace_numbers_only = init->workspace_numbers_only;
+  layout_workspace_names_init();
   workarea_init((workarea_t *)init->workareas,
                 (workarea_t *)init->workareas_fullscreen, init->workarea_count);
   window_init(init->conn, init->name_replacements,
@@ -317,6 +346,7 @@ bool layout_event_map(xcb_window_t window, bool iconic) {
   win->state = workspace_focused;
   window_state_changed(window, old_state, win->state);
   layout_focus(win);
+  layout_workspace_names_update();
 #define PRINT      \
   OUT_WINDOW(win); \
   OUT_WINDOW_STATE(old_state);
@@ -371,6 +401,7 @@ WINDOW_STATE layout_event_unmap(xcb_window_t window) {
   } else if(old_state >= 0 && workspace_focused == (size_t)old_state) {
     win->state = WINDOW_WITHDRAWN;
   }
+  layout_workspace_names_update();
   window_state_changed(window, old_state, win->state);
   if(!layout_focus_restore()) {
     xcb_send_event(conn, 0, window, XCB_EVENT_MASK_FOCUS_CHANGE,

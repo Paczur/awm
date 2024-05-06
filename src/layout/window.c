@@ -154,7 +154,6 @@ void window_minimize(window_t *window) {
   windows_minimized = min;
   min->window = window;
   pthread_rwlock_unlock(&window_lock);
-  if(window->name == NULL) window_set_name(window);
 }
 
 void window_init(xcb_connection_t *c, const char *const (*names)[2],
@@ -253,5 +252,6 @@ window_t *window_event_create(xcb_window_t window) {
   w->input = false;
   windows = w;
   pthread_rwlock_unlock(&window_lock);
+  window_set_name(w);
   return w;
 }
