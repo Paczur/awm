@@ -50,17 +50,25 @@ static void layout_workspace_names_init(void) {
 
 static void layout_workspace_names_update(void) {
   char *p = workspace_names;
+  char *np;
   for(size_t i = 0; i < MAX_WORKSPACES; i++) {
     if(workspace_window_count(i) == 1) {
-      p =
+      np =
         stpncpy(p, workspaces[i].grid[0].window->name, MAX_WORKSPACE_NAME_SIZE);
-      p++;
+      if(np - p == MAX_WORKSPACE_NAME_SIZE) {
+        *(p++) = (i + 1) % 10 + '0';
+        *(p++) = 0;
+      } else {
+        p = np;
+        *(p++) = 0;
+      }
     } else {
       *(p++) = (i + 1) % 10 + '0';
       *(p++) = 0;
     }
   }
-#define PRINT OUT_ARR(workspace_names, MAX_WORKSPACES * 2);
+#define PRINT \
+  OUT_ARR(workspace_names, MAX_WORKSPACES *(MAX_WORKSPACE_NAME_SIZE + 1));
   LOGF(LAYOUT_TRACE);
 #undef PRINT
 }

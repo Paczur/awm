@@ -111,7 +111,7 @@ static void hint_window_update_net_wm_desktop_names(xcb_window_t window,
                                                     WINDOW_STATE prev,
                                                     WINDOW_STATE state) {
   (void)window;
-  if((prev < 0 && state < 0) || prev == state) return;
+  if(prev == state) return;
   hint_desktop_names();
 }
 
