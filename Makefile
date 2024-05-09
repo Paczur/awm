@@ -2,6 +2,7 @@ BIN=bin
 BUILD=build
 DIRS=$(BIN) $(BUILD)
 SRC=src
+ETC=/etc/awm
 
 WARN=-Wall -Wextra
 VERBOSITY=-D DEBUG -D HINT_DEBUG -D LAYOUT_TRACE -D SYSTEM_DEBUG -D LAYOUT_GRID_TRACE
@@ -31,9 +32,8 @@ MAKEFLAGS := --jobs=$(shell nproc)
 MAKEFLAGS += --output-sync=target
 $(VERBOSE).SILENT:
 
-install: $(BIN)/awm
+install: $(BIN)/awm | $(ETC)
 	cp $(BIN)/awm /usr/bin
-	mkdir /etc/awm
 	cp -r scripts /etc/awm
 
 uninstall:
@@ -58,9 +58,6 @@ clean_all:
 
 binaries: $(BIN)/awm
 
-$(BIN):
-	mkdir -p $(BIN)
-
 $(BIN)/awm: $(OBJECTS) | $(BIN)
 	$(CC) $(CFLAGS) -o $@ $^
 
@@ -69,3 +66,9 @@ $(BUILD):
 
 $(BUILD)/%.o: $(SRC)/%.c | $(BUILD)
 	$(CC) $(CFLAGS) -MMD -MP -c -o $@ $<
+
+$(BIN):
+	mkdir -p $(BIN)
+
+$(ETC):
+	mkdir -p $(ETC)
