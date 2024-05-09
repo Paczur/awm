@@ -34,3 +34,7 @@ don't expect it to just work. It will probably be changed many times.
 - Probably some config changes
 - Even more stability improvements
 - More universal default settings and install location
+
+## Build && Installation
+`make release` should create bin/awm, to install it just copy it to any dir
+in your path.

@@ -31,7 +31,6 @@ MAKEFLAGS := --jobs=$(shell nproc)
 MAKEFLAGS += --output-sync=target
 $(VERBOSE).SILENT:
 
-
 install: $(BIN)/awm
 	cp $(BIN)/awm /home/paczur/Scripts/programs
 
