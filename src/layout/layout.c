@@ -51,21 +51,28 @@ static void layout_workspace_names_init(void) {
 static void layout_workspace_names_update(void) {
   char *p = workspace_names;
   char *np;
+  const char *name;
+  size_t count;
   for(size_t i = 0; i < MAX_WORKSPACES; i++) {
-    if(workspace_window_count(i) == 1) {
-      np =
-        stpncpy(p, workspaces[i].grid[0].window->name, MAX_WORKSPACE_NAME_SIZE);
-      if(np - p == MAX_WORKSPACE_NAME_SIZE) {
-        *(p++) = (i + 1) % 10 + '0';
-        *(p++) = 0;
-      } else {
+    count = workspace_window_count(i);
+    if(count > 0) {
+      name = workspaces[i].grid[0].window->name;
+      for(size_t j = 0; j < CELLS_PER_WORKAREA * workarea_count; j++) {
+        if(workspaces[i].grid[j].origin == j &&
+           strcmp(workspaces[i].grid[j].window->name, name)) {
+          goto failed;
+        }
+      }
+      np = stpncpy(p, name, MAX_WORKSPACE_NAME_SIZE);
+      if(np - p != MAX_WORKSPACE_NAME_SIZE) {
         p = np;
         *(p++) = 0;
+        continue;
       }
-    } else {
-      *(p++) = (i + 1) % 10 + '0';
-      *(p++) = 0;
     }
+  failed:
+    *(p++) = (i + 1) % 10 + '0';
+    *(p++) = 0;
   }
 #define PRINT \
   OUT_ARR(workspace_names, MAX_WORKSPACES *(MAX_WORKSPACE_NAME_SIZE + 1));
