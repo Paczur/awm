@@ -39,7 +39,7 @@ don't expect it to just work. It will probably be changed many times.
 awm uses Makefiles for compilation so simple `make && make install` should work.
 Keep in mind user_config.h has some setup specific settings so they require changing
 to work with your configuration.
-Scripts used are coppied to /etc/awm/scripts.
+Scripts used are copied to /etc/awm/scripts.
 
 ## Source structure
 Made of a lot of modules which are all orchestrated by controller.
