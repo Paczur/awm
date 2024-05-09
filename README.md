@@ -14,6 +14,7 @@ don't expect it to just work. It will probably be changed many times.
 
 ## Features
 - status bar with builtin launcher
+- minimize windows
 - simple configuration using user_config.h and config.h
 - extensibility by editing source code
 - performance and low memmory footprint
