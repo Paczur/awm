@@ -21,7 +21,7 @@ DEPENDS=$(patsubst $(SRC)/%.c,$(BUILD)/%.d,$(SOURCES))
 export CCACHE_DIR := ccache
 CC=ccache gcc
 
-all: re install
+all: release
 
 $(shell mkdir -p $(dir $(DEPENDS)))
 -include $(DEPENDS)
@@ -32,10 +32,13 @@ MAKEFLAGS += --output-sync=target
 $(VERBOSE).SILENT:
 
 install: $(BIN)/awm
-	cp $(BIN)/awm /home/paczur/Scripts/programs
+	cp $(BIN)/awm /usr/bin
+	mkdir /etc/awm
+	cp -r scripts /etc/awm
 
 uninstall:
-	rm /home/paczur/Scripts/programs/awm
+	rm /usr/bin/awm
+	rm -r /etc/awm
 
 re: re_clean debug
 re_clean:

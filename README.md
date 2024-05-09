@@ -33,8 +33,10 @@ don't expect it to just work. It will probably be changed many times.
 - Clickable status bar
 - Probably some config changes
 - Even more stability improvements
-- More universal default settings and install location
+- More universal default settings
 
 ## Build && Installation
-`make release` should create bin/awm, to install it just copy it to any dir
-in your path.
+awm uses Makefiles for compilation so simple `make && make install` should work.
+Keep in mind user_config.h has some setup specific settings so they require changing
+to work with your configuration.
+Scripts used are coppied to /etc/awm/scripts.
