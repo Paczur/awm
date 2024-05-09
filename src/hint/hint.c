@@ -549,7 +549,7 @@ void hint_window_update_state(xcb_window_t window, WINDOW_STATE prev,
 void hint_window_hints_set(xcb_window_t window) {
   // Workaround for Java Swing, required because it expects reparenting WM
   const char wm_name[] = "LG3D";
-  const char wm_class[] = "idkwm\0IdkWM";
+  const char wm_class[] = "awm\0awm";
   xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window, WM_CLIENT_MACHINE,
                       XCB_ATOM_STRING, 8, hostname_length, hostname);
   xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window, WM_NAME,

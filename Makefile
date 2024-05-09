@@ -2,7 +2,6 @@ BIN=bin
 BUILD=build
 DIRS=$(BIN) $(BUILD)
 SRC=src
-TOOLS=tools
 
 WARN=-Wall -Wextra
 VERBOSITY=-D DEBUG -D HINT_DEBUG -D LAYOUT_TRACE -D SYSTEM_DEBUG -D LAYOUT_GRID_TRACE
@@ -22,20 +21,26 @@ DEPENDS=$(patsubst $(SRC)/%.c,$(BUILD)/%.d,$(SOURCES))
 export CCACHE_DIR := ccache
 CC=ccache gcc
 
-all: test
+all: re install
 
 $(shell mkdir -p $(dir $(DEPENDS)))
 -include $(DEPENDS)
 
-.PHONY: all release debug test test_clean clean
+.PHONY: all install uninstall release debug re re_clean clean
 MAKEFLAGS := --jobs=$(shell nproc)
 MAKEFLAGS += --output-sync=target
 $(VERBOSE).SILENT:
 
 
-test_clean:
+install: $(BIN)/awm
+	cp $(BIN)/awm /home/paczur/Scripts/programs
+
+uninstall:
+	rm /home/paczur/Scripts/programs/awm
+
+re: re_clean debug
+re_clean:
 	rm -rf $(BIN)/out
-test: test_clean debug
 
 release: CFLAGS += $(RELEASE)
 release: binaries
@@ -49,17 +54,12 @@ clean:
 clean_all:
 	rm -rf $(BIN) $(BUILD) $(CCACHE_DIR)
 
-binaries: $(BIN)/idkwm tools
+binaries: $(BIN)/awm
 
 $(BIN):
 	mkdir -p $(BIN)
 
-tools: $(BIN)/idkmsg
-
-$(BIN)/idkmsg: $(TOOLS)/idkmsg.c | $(BIN)
-	$(CC) $(CFLAGS) -o $@ $^
-
-$(BIN)/idkwm: $(OBJECTS) | $(BIN)
+$(BIN)/awm: $(OBJECTS) | $(BIN)
 	$(CC) $(CFLAGS) -o $@ $^
 
 $(BUILD):

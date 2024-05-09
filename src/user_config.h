@@ -155,17 +155,17 @@
 #define CONFIG_BAR_INFO_HIGHLIGHTED_FOREGROUND WHITE
 #define CONFIG_BAR_INFO_URGENT_BACKGROUND DARK_GRAY
 #define CONFIG_BAR_INFO_URGENT_FOREGROUND YELLOW
-#define CONFIG_BAR_INFO_BLOCKS                                     \
-  {                                                                \
-    {0, "/home/paczur/Projects/C/IdkWM/scripts/net", 60},          \
-      {1, "/home/paczur/Projects/C/IdkWM/scripts/volume", -1},     \
-      {2, "/home/paczur/Projects/C/IdkWM/scripts/dnd", -1},        \
-      {3, "/home/paczur/Projects/C/IdkWM/scripts/brightness", -1}, \
-      {4, "/home/paczur/Projects/C/IdkWM/scripts/battery", 60},    \
-      {8, "/home/paczur/Projects/C/IdkWM/scripts/gpu", 60},        \
-      {5, "/home/paczur/Projects/C/IdkWM/scripts/cpu", 5},         \
-      {6, "date '+󰃶 %a %d' && exit 1", 3600},                   \
-      {7, "date '+ %H:%M' && exit 1", 30},                      \
+#define CONFIG_BAR_INFO_BLOCKS                                   \
+  {                                                              \
+    {0, "/home/paczur/Projects/C/awm/scripts/net", 60},          \
+      {1, "/home/paczur/Projects/C/awm/scripts/volume", -1},     \
+      {2, "/home/paczur/Projects/C/awm/scripts/dnd", -1},        \
+      {3, "/home/paczur/Projects/C/awm/scripts/brightness", -1}, \
+      {4, "/home/paczur/Projects/C/awm/scripts/battery", 60},    \
+      {8, "/home/paczur/Projects/C/awm/scripts/gpu", 60},        \
+      {5, "/home/paczur/Projects/C/awm/scripts/cpu", 5},         \
+      {6, "date '+󰃶 %a %d' && exit 1", 3600},                 \
+      {7, "date '+ %H:%M' && exit 1", 30},                    \
   }
 
 #define CONFIG_BAR_LAUNCHER_PROMPT_MIN_WIDTH 0
