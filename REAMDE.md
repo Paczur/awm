@@ -9,6 +9,8 @@ complete experience.
 ##Disclaimer
 As it is pre-alpha software, functionality is not finnished and bugs are to be
 expected.
+Whole project configuration and installation is made for my personal machine
+don't expect it to just work. It will probably be changed many times.
 
 ##Features
 - status bar with builtin launcher
@@ -30,3 +32,4 @@ expected.
 - Clickable status bar
 - Probably some config changes
 - Even more stability improvements
+- More universal default settings and install location
