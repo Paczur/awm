@@ -104,39 +104,37 @@ static void grid_expand_vertically(size_t m, uint32_t *values, size_t offset) {
   }
 }
 
-static const workarea_t *grid_workareas(size_t m) {
-  if(workspace_focusedw()->fullscreen[m]) return workareas_fullscreen;
-  return workareas;
+static const workarea_t *grid_workarea(size_t m) {
+  if(workspace_focusedw()->fullscreen[m]) return workareas_fullscreen + m;
+  return workareas + m;
 }
 
 static void grid_calculate(size_t m, uint32_t *values, size_t offset) {
   const workspace_t *workspace = workspace_focusedw();
   size_t p;
   size_t t;
-  const workarea_t *workareas = grid_workareas(m);
+  const workarea_t *workarea = grid_workarea(m);
   for(size_t i = 0; i < CELLS_PER_WORKAREA; i++) {
     p = grid_area2pos(m) + i;
     if(grid_pos2origin(p) != p) grid_pos2cell(p)->window = NULL;
 
     values[offset + i * CONF_ATOMS + 0] =
-      workareas[m].x + gap_size +
-      (X(i) == 0 ? 0
-                 : (workareas[m].w / 2 + workspace->cross[m * GRID_AXIS + 0]));
+      workarea->x + gap_size +
+      (X(i) == 0 ? 0 : (workarea->w / 2 + workspace->cross[m * GRID_AXIS + 0]));
     values[offset + i * CONF_ATOMS + 1] =
-      workareas[m].y + gap_size +
-      (Y(i) == 0 ? 0
-                 : (workareas[m].h / 2 + workspace->cross[m * GRID_AXIS + 1]));
+      workarea->y + gap_size +
+      (Y(i) == 0 ? 0 : (workarea->h / 2 + workspace->cross[m * GRID_AXIS + 1]));
     values[offset + i * CONF_ATOMS + 2] =
-      workareas[m].w / 2 - gap_size * 2 - border_size * 2 +
+      workarea->w / 2 - gap_size * 2 - border_size * 2 +
       (X(i) == 0 ? workspace->cross[m * GRID_AXIS + 0]
                  : -workspace->cross[m * GRID_AXIS + 0]);
     values[offset + i * CONF_ATOMS + 3] =
-      workareas[m].h / 2 - gap_size * 2 - border_size * 2 +
+      workarea->h / 2 - gap_size * 2 - border_size * 2 +
       (Y(i) == 0 ? workspace->cross[m * GRID_AXIS + 1]
                  : -workspace->cross[m * GRID_AXIS + 1]);
     values[offset + i * CONF_ATOMS + 4] = border_size;
   }
-  if(workareas[m].w < workareas[m].h) {
+  if(workarea->w < workarea->h) {
     grid_expand_horizontally(m, values, offset);
     grid_expand_vertically(m, values, offset);
   } else {
@@ -471,7 +469,7 @@ void grid_reset_sizes(size_t m) {
 
 bool grid_resize_h(size_t m, int h) {
   const workspace_t *workspace = workspace_focusedw();
-  size_t ph = grid_workareas(m)[m].h / 2 - gap_size * 2 - border_size * 2 -
+  size_t ph = grid_workarea(m)->h / 2 - gap_size * 2 - border_size * 2 -
               workspace->cross[m * GRID_AXIS + 1];
   if((h > 0 && (ph - h > ph || ph - h == 0)) ||
      (h < 0 && (ph + workspace->cross[m * GRID_AXIS + 1] * 2 + h >
@@ -492,7 +490,7 @@ bool grid_resize_h(size_t m, int h) {
 
 bool grid_resize_w(size_t m, int w) {
   const workspace_t *workspace = workspace_focusedw();
-  size_t pw = grid_workareas(m)[m].w / 2 - gap_size * 2 - border_size * 2 -
+  size_t pw = grid_workarea(m)->w / 2 - gap_size * 2 - border_size * 2 -
               workspace->cross[m * GRID_AXIS + 0];
   if((w > 0 && (pw - w > pw || pw - w == 0)) ||
      (w < 0 && (pw + workspace->cross[m * GRID_AXIS + 0] * 2 + w >
