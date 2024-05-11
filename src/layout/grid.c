@@ -276,16 +276,16 @@ void grid_update(size_t m) {
            sizeof(newstate));
     return;
   }
-  if(grid_pos2win(m * CELLS_PER_WORKAREA + COMB(0, 0)) ==
-       grid_pos2win(m * CELLS_PER_WORKAREA + COMB(0, 1)) &&
-     grid_pos2win(m * CELLS_PER_WORKAREA + COMB(1, 0)) ==
-       grid_pos2win(m * CELLS_PER_WORKAREA + COMB(1, 1))) {
+  if(grid_pos2win(grid_area2pos(m) + COMB(0, 0)) ==
+       grid_pos2win(grid_area2pos(m) + COMB(0, 1)) &&
+     grid_pos2win(grid_area2pos(m) + COMB(1, 0)) ==
+       grid_pos2win(grid_area2pos(m) + COMB(1, 1))) {
     workspace->cross[m * GRID_AXIS + 1] = 0;
   }
-  if(grid_pos2win(m * CELLS_PER_WORKAREA + COMB(0, 0)) ==
-       grid_pos2win(m * CELLS_PER_WORKAREA + COMB(1, 0)) &&
-     grid_pos2win(m * CELLS_PER_WORKAREA + COMB(0, 1)) ==
-       grid_pos2win(m * CELLS_PER_WORKAREA + COMB(1, 1))) {
+  if(grid_pos2win(grid_area2pos(m) + COMB(0, 0)) ==
+       grid_pos2win(grid_area2pos(m) + COMB(1, 0)) &&
+     grid_pos2win(grid_area2pos(m) + COMB(0, 1)) ==
+       grid_pos2win(grid_area2pos(m) + COMB(1, 1))) {
     workspace->cross[m * GRID_AXIS + 0] = 0;
   }
   for(size_t i = 0; i < CELLS_PER_WORKAREA; i++) {
