@@ -271,19 +271,21 @@ void grid_update(size_t m) {
   uint32_t newstate[CONF_ATOMS * CELLS_PER_WORKAREA];
   grid_calculate(m, newstate, 0);
   if(grid_area_empty(m)) {
-    for(size_t i = 0; i < GRID_AXIS; i++) {
-      workspace->cross[m * GRID_AXIS + i] = 0;
-    }
+    memset(workspace->cross + (m * GRID_AXIS), 0, GRID_AXIS * sizeof(int));
     memcpy(confstate + m * CONF_ATOMS * CELLS_PER_WORKAREA, newstate,
            sizeof(newstate));
     return;
   }
-  if(grid_pos2win(COMB(0, 0)) == grid_pos2win(COMB(0, 1)) &&
-     grid_pos2win(COMB(1, 0)) == grid_pos2win(COMB(1, 1))) {
+  if(grid_pos2win(m * CELLS_PER_WORKAREA + COMB(0, 0)) ==
+       grid_pos2win(m * CELLS_PER_WORKAREA + COMB(0, 1)) &&
+     grid_pos2win(m * CELLS_PER_WORKAREA + COMB(1, 0)) ==
+       grid_pos2win(m * CELLS_PER_WORKAREA + COMB(1, 1))) {
     workspace->cross[m * GRID_AXIS + 1] = 0;
   }
-  if(grid_pos2win(COMB(0, 0)) == grid_pos2win(COMB(1, 0)) &&
-     grid_pos2win(COMB(0, 1)) == grid_pos2win(COMB(1, 1))) {
+  if(grid_pos2win(m * CELLS_PER_WORKAREA + COMB(0, 0)) ==
+       grid_pos2win(m * CELLS_PER_WORKAREA + COMB(1, 0)) &&
+     grid_pos2win(m * CELLS_PER_WORKAREA + COMB(0, 1)) ==
+       grid_pos2win(m * CELLS_PER_WORKAREA + COMB(1, 1))) {
     workspace->cross[m * GRID_AXIS + 0] = 0;
   }
   for(size_t i = 0; i < CELLS_PER_WORKAREA; i++) {
@@ -467,7 +469,7 @@ void grid_reset_sizes(size_t m) {
   grid_update(m);
 }
 
-void grid_resize_h(size_t m, int h) {
+bool grid_resize_h(size_t m, int h) {
   const workspace_t *workspace = workspace_focusedw();
   size_t ph = grid_workareas(m)[m].h / 2 - gap_size * 2 - border_size * 2 -
               workspace->cross[m * GRID_AXIS + 1];
@@ -475,12 +477,20 @@ void grid_resize_h(size_t m, int h) {
      (h < 0 && (ph + workspace->cross[m * GRID_AXIS + 1] * 2 + h >
                   ph + workspace->cross[m * GRID_AXIS + 1] * 2 ||
                 ph + workspace->cross[m * GRID_AXIS + 1] * 2 + h == 0)))
-    return;
-  workspace->cross[m * 2 + 1] += h;
+    return false;
+  workspace->cross[m * GRID_AXIS + 1] += h;
   grid_update(m);
+#define PRINT \
+  OUT(m);     \
+  OUT(h);     \
+  OUT(ph);    \
+  OUT(workspace->cross[m * GRID_AXIS + 1]);
+  LOGF(LAYOUT_GRID_TRACE);
+#undef PRINT
+  return true;
 }
 
-void grid_resize_w(size_t m, int w) {
+bool grid_resize_w(size_t m, int w) {
   const workspace_t *workspace = workspace_focusedw();
   size_t pw = grid_workareas(m)[m].w / 2 - gap_size * 2 - border_size * 2 -
               workspace->cross[m * GRID_AXIS + 0];
@@ -488,9 +498,17 @@ void grid_resize_w(size_t m, int w) {
      (w < 0 && (pw + workspace->cross[m * GRID_AXIS + 0] * 2 + w >
                   pw + workspace->cross[m * GRID_AXIS + 0] * 2 ||
                 pw + workspace->cross[m * GRID_AXIS + 0] * 2 + w == 0)))
-    return;
+    return false;
   workspace->cross[m * GRID_AXIS + 0] += w;
   grid_update(m);
+#define PRINT \
+  OUT(m);     \
+  OUT(w);     \
+  OUT(pw);    \
+  OUT(workspace->cross[m * GRID_AXIS + 1]);
+  LOGF(LAYOUT_GRID_TRACE);
+#undef PRINT
+  return true;
 }
 
 bool grid_show(window_t *window) {

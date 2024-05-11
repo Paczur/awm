@@ -214,12 +214,13 @@ void layout_reset_sizes(const window_t *win) {
 void layout_resize_w(const window_t *win, int n) {
   size_t pos = grid_win2pos(win);
   size_t area = grid_pos2area(pos);
-  grid_resize_w(area, n);
+  bool status = grid_resize_w(area, n);
 #define PRINT      \
   OUT_WINDOW(win); \
   OUT(n);          \
   OUT(pos);        \
-  OUT(area);
+  OUT(area);       \
+  OUT(status);
   LOGF(LAYOUT_TRACE);
 #undef PRINT
 }
@@ -227,12 +228,13 @@ void layout_resize_w(const window_t *win, int n) {
 void layout_resize_h(const window_t *win, int n) {
   size_t pos = grid_win2pos(win);
   size_t area = grid_pos2area(pos);
-  grid_resize_h(area, n);
+  bool status = grid_resize_h(area, n);
 #define PRINT      \
   OUT_WINDOW(win); \
   OUT(n);          \
   OUT(pos);        \
-  OUT(area);
+  OUT(area);       \
+  OUT(status);
   LOGF(LAYOUT_TRACE);
 #undef PRINT
 }
