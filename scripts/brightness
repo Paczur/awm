@@ -1,7 +1,12 @@
-#!/bin/env bash
-old="${full_text}"
-value=$(xbacklight -get)
-if [ -n "$value" ]; then
-  value="${value%.*}%"
-  echo " $value"
+#!/bin/env dash
+dir="/sys/class/backlight/$(ls /sys/class/backlight/ -1 | head -n1)"
+current="$(cat "$dir/brightness")"
+max="$(cat "$dir/max_brightness")"
+curr_percent="$(echo "$current*100/$max" | bc)"
+percent="$(echo "$max/100" | bc)"
+if [ -n "$1" ]; then
+  curr_percent="$(echo "$curr_percent+$1" | bc)"
+  current="$(echo "$curr_percent*$percent" | bc)"
+  sudo dash -c "echo $current > $dir/brightness"
 fi
+echo " $curr_percent%"

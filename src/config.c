@@ -39,9 +39,9 @@ F_DEF(launch, c_launcher_show();)
 F_DEF(volume_mute, c_run("volume m"); c_bar_block_update(1);)
 F_DEF(volume_up, c_run("volume +"); c_bar_block_update(1);)
 F_DEF(volume_down, c_run("volume -"); c_bar_block_update(1);)
-F_DEF(brightness_down, c_run("xbacklight -dec 2");
+F_DEF(brightness_down, c_run("/etc/awm/scripts/brightness -2");
       c_bar_block_update_highlight(3, 1);)
-F_DEF(brightness_up, c_run("xbacklight -inc 2");
+F_DEF(brightness_up, c_run("/etc/awm/scripts/brightness 2");
       c_bar_block_update_highlight(3, 1);)
 F_DEF(system_suspend, c_run("sudo suspend");)
 F_DEF(system_shutdown, c_run("notify-send 'Shutting down'; sudo shutdown");)
