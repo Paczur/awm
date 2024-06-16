@@ -540,7 +540,9 @@ size_t grid_below(void) {
 size_t grid_above(void) { return grid_below(); }
 
 size_t grid_to_right(void) {
-  window_t *next = grid_focusedc()->window;
+  grid_cell_t *focused = grid_focusedc();
+  if(!focused) return -1;
+  window_t *next = focused->window;
   size_t t = grid_focused();
   size_t i = 0;
   while(grid_focusedc()->window == next &&
@@ -559,8 +561,10 @@ size_t grid_to_right(void) {
 }
 
 size_t grid_to_left(void) {
+  grid_cell_t *focused = grid_focusedc();
+  if(!focused) return -1;
+  window_t *next = focused->window;
   workspace_t *workspace = workspace_focusedw();
-  window_t *next = grid_focusedc()->window;
   size_t t = workspace->focus;
   size_t i = 0;
   while(grid_focusedc()->window == next &&
