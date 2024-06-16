@@ -114,6 +114,7 @@ static void grid_calculate(size_t m, uint32_t *values, size_t offset) {
   size_t p;
   size_t t;
   const workarea_t *workarea = grid_workarea(m);
+  if(workspace_area_empty(workspace_focused, m)) return;
   for(size_t i = 0; i < CELLS_PER_WORKAREA; i++) {
     p = grid_area2pos(m) + i;
     if(grid_pos2origin(p) != p) grid_pos2cell(p)->window = NULL;
