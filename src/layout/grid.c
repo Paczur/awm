@@ -529,6 +529,9 @@ bool grid_minimize(size_t n) {
 void grid_destroy(size_t n) {
   grid_cell_t *cell = grid_pos2cell(n);
   if(cell == NULL || cell->window == NULL) return;
+#define PRINT OUT_GRID_CELL(cell);
+  LOGF(LAYOUT_GRID_TRACE);
+#undef PRINT
   xcb_kill_client(conn, cell->window->id);
 }
 
