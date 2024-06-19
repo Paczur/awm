@@ -25,17 +25,14 @@ size_t c_wm_color_current = 0;
 #define LENGTH(x) (sizeof(x) / sizeof((x)[0]))
 #define MIN(x, y) ((x) <= (y) ? (x) : (y))
 
-#define SETTINGS_INIT(x) \
-  { x##_BACKGROUND, x##_FOREGROUND }
+#define SETTINGS_INIT(x) {x##_BACKGROUND, x##_FOREGROUND}
 
 #define COMMON_INIT(x, n, h) \
-  { x##_MIN_WIDTH, SETTINGS_INIT(x##_##n), SETTINGS_INIT(x##_##h) }
+  {x##_MIN_WIDTH, SETTINGS_INIT(x##_##n), SETTINGS_INIT(x##_##h)}
 
-#define COMMON_URGENT_INIT(x, n, h)                                \
-  {                                                                \
-    x##_MIN_WIDTH, SETTINGS_INIT(x##_##n), SETTINGS_INIT(x##_##h), \
-      SETTINGS_INIT(x##_URGENT)                                    \
-  }
+#define COMMON_URGENT_INIT(x, n, h)                               \
+  {x##_MIN_WIDTH, SETTINGS_INIT(x##_##n), SETTINGS_INIT(x##_##h), \
+   SETTINGS_INIT(x##_URGENT)}
 
 static uint32_t c_hex2xcolor(const char *hex) {
   uint32_t mul = 1;
@@ -284,7 +281,8 @@ void c_run(const char *cmd) {
 }
 
 void c_window_focused_destroy(bool force) {
-  c_window_destroy(layout_win2xwin(layout_focused()), force);
+  if(layout_focused())
+    c_window_destroy(layout_win2xwin(layout_focused()), force);
 }
 
 void c_window_focused_minimize(void) {
