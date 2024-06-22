@@ -280,7 +280,7 @@ WINDOW_STATE layout_minimize(window_t *win) {
 }
 
 void layout_destroy(xcb_window_t window) {
-  size_t pos = grid_xwin2pos(window);
+  size_t pos = grid_xwin2pos(window, workspace_focused);
   grid_destroy(pos);
 #define PRINT  \
   OUT(window); \
@@ -401,7 +401,7 @@ WINDOW_STATE layout_event_destroy(xcb_window_t window) {
   LOGF(LAYOUT_TRACE);
 #undef PRINT
   window_event_destroy(win);
-  if(old_state >= 0) {
+  if(old_state != WINDOW_ICONIC) {
     grid_unmark(win);
   }
   return old_state;

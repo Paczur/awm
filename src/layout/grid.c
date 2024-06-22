@@ -189,9 +189,34 @@ size_t grid_ord2pos(size_t n) {
   return -1;
 }
 
-size_t grid_xwin2pos(xcb_window_t window) {
+size_t grid_xwin2pos(xcb_window_t window, size_t w) {
   for(size_t i = 0; i < workarea_count * CELLS_PER_WORKAREA; i++) {
-    if(grid_pos2win(i) != NULL && grid_pos2win(i)->id == window) return i;
+    if(workspaces[w].grid[i].window != NULL &&
+       workspaces[w].grid[i].window->id == window)
+      return i;
+  }
+  return -1;
+}
+
+size_t grid_xwin2w(xcb_window_t window) {
+  for(size_t i = 0; i < workarea_count * CELLS_PER_WORKAREA; i++) {
+    if(workspaces[workspace_focused].grid[i].window != NULL &&
+       workspaces[workspace_focused].grid[i].window->id == window)
+      return workspace_focused;
+  }
+  for(size_t j = 0; j < workspace_focused; j++) {
+    for(size_t i = 0; i < workarea_count * CELLS_PER_WORKAREA; i++) {
+      if(workspaces[j].grid[i].window != NULL &&
+         workspaces[j].grid[i].window->id == window)
+        return j;
+    }
+  }
+  for(size_t j = workspace_focused + 1; j < MAX_WORKSPACES; j++) {
+    for(size_t i = 0; i < workarea_count * CELLS_PER_WORKAREA; i++) {
+      if(workspaces[j].grid[i].window != NULL &&
+         workspaces[j].grid[i].window->id == window)
+        return j;
+    }
   }
   return -1;
 }
@@ -249,11 +274,10 @@ void grid_unmark(window_t *w) {
   for(size_t j = 0; j < MAX_WORKSPACES; j++) {
     workspace = workspaces + j;
     for(size_t i = 0; i < workarea_count * CELLS_PER_WORKAREA; i++) {
-      if(workspace->grid[i].origin == i && workspace->grid[i].window == w) {
-        workspace->grid[workspace->grid[i].origin].window = NULL;
-        workspace->grid[workspace->grid[i].origin].origin = -1;
+      if(workspace->grid[i].window == w) {
+        workspace->grid[i].window = NULL;
+        workspace->grid[i].origin = -1;
         workspace->update[grid_pos2area(i)] = true;
-        return;
       }
     }
   }
@@ -660,7 +684,7 @@ void grid_deinit(void) {
 
 void grid_event_focus(xcb_window_t window) {
   size_t grid_i = grid_focused();
-  size_t in = grid_xwin2pos(window);
+  size_t in = grid_xwin2pos(window, workspace_focused);
   if(grid_pos_invalid(in)) return;
   size_t temp = grid_pos2origin(in);
   if(!grid_pos_invalid(grid_i) && !grid_pos_invalid(temp) &&
@@ -699,11 +723,15 @@ bool grid_event_map(window_t *window) {
 }
 
 void grid_event_unmap(xcb_window_t window) {
-  size_t pos = grid_xwin2pos(window);
+  grid_cell_t *cell;
+  size_t w = grid_xwin2w(window);
+  if(w != workspace_focused) return;
+  size_t pos = grid_xwin2pos(window, w);
   if(grid_pos_invalid(pos)) return;
-  pos = grid_pos2origin(pos);
-  grid_pos2cell(pos)->window = NULL;
-  grid_pos2cell(pos)->origin = -1;
+  pos = workspaces[w].grid[pos].origin;
+  cell = workspaces[w].grid + pos;
+  cell->window = NULL;
+  cell->origin = -1;
   grid_update(grid_pos2area(pos));
   grid_adjust_pos();
   grid_update(grid_pos2area(pos));

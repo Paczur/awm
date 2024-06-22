@@ -45,7 +45,7 @@ typedef enum { MODE_NORMAL, MODE_INSERT, MODE_INVALID } MODE;
 #define OUT_SUFFIX() puts(",")
 #define OUT_RAW(val)                          \
   printf(_Generic((val),                      \
-         bool: (val) ? "true" : "false (%d)", \
+         bool: (val) ? "true (%d)" : "false", \
          char: "%c",                          \
          signed char: "%d",                   \
          short: "%d",                         \
