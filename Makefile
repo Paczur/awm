@@ -4,7 +4,7 @@ DIRS=$(BIN) $(BUILD)
 SRC=src
 ETC=/etc/awm
 
-WARN=-Wall -Wextra
+WARN=-Wall -Wextra -Wvla
 VERBOSITY=-D DEBUG -D HINT_DEBUG -D LAYOUT_TRACE -D SYSTEM_DEBUG -D LAYOUT_GRID_TRACE
 MEMORY_DEBUG=-fsanitize=address -fsanitize=pointer-compare -fsanitize=pointer-subtract
 DEBUG=$(VERBOSITY) -Og -ggdb3  -fsanitize=undefined \
