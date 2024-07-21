@@ -171,6 +171,9 @@ void system_monitors(rect_t **monitors, size_t *monitor_count) {
     if(randr_crtcs[i]->width == 0) {
       *monitor_count = i;
       break;
+    } else {
+      printf("%u %u %u\n", randr_crtcs[i]->width, randr_crtcs[i]->height,
+             randr_crtcs[i]->status);
     }
   }
 

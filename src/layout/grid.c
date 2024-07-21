@@ -538,6 +538,11 @@ bool grid_show(window_t *window) {
   size_t pos = grid_next_pos();
   if(grid_pos_invalid(pos)) return false;
   grid_place_window(window, pos, false);
+#define PRINT         \
+  OUT_WINDOW(window); \
+  OUT(pos);
+  LOGF(LAYOUT_GRID_TRACE);
+#undef PRINT
   return true;
 }
 
@@ -719,7 +724,13 @@ void grid_event_focus(xcb_window_t window) {
 
 bool grid_event_map(window_t *window) {
   if(window->state >= WINDOW_WORKSPACE_START) return true;
-  return grid_show(window);
+  bool ret = grid_show(window);
+#define PRINT         \
+  OUT_WINDOW(window); \
+  OUT(ret);
+  LOGF(LAYOUT_GRID_TRACE);
+#undef PRINT
+  return ret;
 }
 
 void grid_event_unmap(xcb_window_t window) {
