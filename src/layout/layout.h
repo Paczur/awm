@@ -26,6 +26,7 @@ size_t layout_area_focused(void);
 xcb_window_t layout_focused_xwin(void);
 bool layout_focus_restore(void);
 bool layout_focus(const window_t *);
+void layout_focus_lose(void);
 window_t *layout_above(void);
 window_t *layout_below(void);
 window_t *layout_to_right(void);

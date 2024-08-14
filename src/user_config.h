@@ -1,11 +1,9 @@
-#define REPEATABLE(mod, key, f) \
-  { mod, key, f, true }
+#define REPEATABLE(mod, key, f) {mod, key, f, true}
 #define REPEATABLE_CHANGE(mod, key, f) \
   {mod, key, f, true}, { MOD_SUPER | mod, key, f##_change, false }
 #define WITH_CHANGE(mod, key, f) \
   {mod, key, f, false}, { MOD_SUPER | mod, key, f##_change, false }
-#define BARE(mod, key, f) \
-  { mod, key, f, false }
+#define BARE(mod, key, f) {mod, key, f, false}
 #define CONFIG_NUMBER_PATTERN(mod, f)                             \
   WITH_CHANGE(mod, XK_1, f##_0), WITH_CHANGE(mod, XK_2, f##_1),   \
     WITH_CHANGE(mod, XK_3, f##_2), WITH_CHANGE(mod, XK_4, f##_3), \
@@ -88,19 +86,13 @@
 #define CONFIG_TERMINAL_CMD "mlterm"
 #define CONFIG_RESIZE_STEP 10
 
-#define BLACK \
-  { "000000", "f3f3f3" }
-#define DARK_GRAY \
-  { "111111", "eeeeee" }
-#define GRAY \
-  { "333333", "aaaaaa" }
-#define YELLOW \
-  { "f3f36e", "b32d2e" }
-#define WHITE \
-  { "f3f3f3", "000000" }
+#define BLACK {"000000", "f3f3f3"}
+#define DARK_GRAY {"111111", "eeeeee"}
+#define GRAY {"333333", "aaaaaa"}
+#define YELLOW {"f3f36e", "b32d2e"}
+#define WHITE {"f3f3f3", "000000"}
 
-#define CONFIG_SPAWN_ORDER \
-  { 0, 4, 6, 1, 7, 3, 5, 2 }
+#define CONFIG_SPAWN_ORDER {0, 4, 6, 1, 7, 3, 5, 2}
 #define CONFIG_GAPS 15
 #define CONFIG_BORDERS 5
 #define CONFIG_BORDER_NORMAL GRAY
@@ -141,6 +133,7 @@
   {                                                            \
     {"mlterm",           "󰆍"}, \
     {"librewolf",        ""}, \
+    {"LibreWolf",        ""}, \
     {"gimp",             ""}, \
     {"telegram-desktop", ""}, \
     {"mpv",              ""}, \

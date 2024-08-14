@@ -5,7 +5,10 @@
 
 #include "bar_types.h"
 
+extern bool bar_launcher_visible;
+
 size_t bar_get_containers(const bar_containers_t **);
+void bar_launcher_focus_restore(void);
 void bar_launcher_show(void);
 void bar_launcher_hide(void);
 bool bar_launcher_window(xcb_window_t);
@@ -23,6 +26,7 @@ void bar_update_info(int);
 void bar_visibility(size_t, bool);
 
 void bar_redraw(xcb_window_t);
+void bar_redraw_all(void);
 
 void bar_color(size_t);
 void bar_focus(xcb_window_t win);

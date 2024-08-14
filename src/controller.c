@@ -51,6 +51,15 @@ static uint32_t c_hex2xcolor(const char *hex) {
   return ret;
 }
 
+static void c_focus_restore(void) {
+  if(!bar_launcher_visible) {
+    layout_focus_restore();
+  } else {
+    layout_focus_lose();
+    bar_launcher_focus_restore();
+  }
+}
+
 static void c_window_init(xcb_window_t window) {
   const window_t *win;
   int values[2] = {border_normal[c_wm_color_current],
@@ -66,6 +75,7 @@ static void c_window_init(xcb_window_t window) {
     win = layout_create(window);
   }
   layout_input_set(layout_xwin2win(window), hint_window_input(window));
+  c_focus_restore();
 }
 
 static void c_bar_update_workspace(size_t n) { bar_update_workspace(n); }
@@ -293,12 +303,13 @@ void c_window_focused_minimize(void) {
 
 void c_launcher_show(void) {
   bar_launcher_show();
+  c_focus_restore();
   LOGFE(TRACE);
 }
 
 void c_launcher_cancel(void) {
   bar_launcher_hide();
-  layout_focus_restore();
+  c_focus_restore();
   c_mode_set(MODE_NORMAL);
   LOGFE(TRACE);
 }
@@ -306,6 +317,7 @@ void c_launcher_cancel(void) {
 void c_launcher_run(void) {
   c_run(bar_launcher_return());
   c_mode_set(MODE_NORMAL);
+  c_focus_restore();
   LOGFE(TRACE);
 }
 
@@ -425,6 +437,7 @@ void c_event_map(const xcb_generic_event_t *e) {
   } else if(!CONFIG_WORKSPACE_NUMBERS_ONLY) {
     bar_update_workspace(layout_workspace_focused());
   }
+  c_focus_restore();
 #define PRINT OUT(event->window)
   LOG(TRACE, "event: map_request");
 #undef PRINT
@@ -448,6 +461,7 @@ void c_event_map_notify(const xcb_generic_event_t *e) {
     win = layout_xwin2win(event->window);
     layout_input_set(win, hint_window_input(event->window));
     layout_event_map_notify(event->window);
+    c_focus_restore();
     if(TRACE && win != NULL) {
 #define PRINT OUT_WINDOW(win);
       LOG(TRACE, "event: map_notify");
@@ -581,6 +595,7 @@ void c_event_unmap(const xcb_generic_event_t *e) {
       c_bar_update_minimized();
     }
   }
+  c_focus_restore();
 
 #define PRINT         \
   OUT(event->window); \
