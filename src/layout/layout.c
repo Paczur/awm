@@ -146,6 +146,11 @@ bool layout_focus_restore(void) {
   return true;
 }
 
+void layout_focus_lose(void) {
+  grid_focus_lose();
+  LOGFE(LAYOUT_TRACE);
+}
+
 window_t *layout_above(void) { return grid_pos2win(grid_above()); }
 
 window_t *layout_below(void) { return grid_pos2win(grid_below()); }
@@ -171,8 +176,9 @@ bool layout_urgency_set(window_t *win, bool state) {
 bool layout_input_set(window_t *win, bool state) {
   if(!win) return false;
   bool ret = window_set_input(win, state);
-  if(ret && state == false && win->state == (int)workspace_focused)
-    layout_focus_restore();
+  // TODO: check why this
+  // if(ret && state == false && win->state == (int)workspace_focused)
+  //   layout_focus_restore();
   if(ret) {
 #define PRINT      \
   OUT_WINDOW(win); \
@@ -249,7 +255,7 @@ void layout_show(size_t p) {
     win->state = workspace_focused;
     window_state_changed(win->id, WINDOW_ICONIC, workspace_focused);
     layout_workspace_names_update();
-    layout_focus(win);
+    // layout_focus(win);
   }
 #define PRINT \
   OUT(p);     \
@@ -362,7 +368,6 @@ bool layout_event_map(xcb_window_t window, bool iconic) {
   }
   win->state = workspace_focused;
   window_state_changed(window, old_state, win->state);
-  layout_focus(win);
   layout_workspace_names_update();
 #define PRINT      \
   OUT_WINDOW(win); \
@@ -420,10 +425,11 @@ WINDOW_STATE layout_event_unmap(xcb_window_t window) {
   }
   layout_workspace_names_update();
   window_state_changed(window, old_state, win->state);
-  if(!layout_focus_restore()) {
-    xcb_send_event(conn, 0, window, XCB_EVENT_MASK_FOCUS_CHANGE,
-                   (char *)&fallback);
-  }
+  // TODO: check this
+  // if(!layout_focus_restore()) {
+  //   xcb_send_event(conn, 0, window, XCB_EVENT_MASK_FOCUS_CHANGE,
+  //                  (char *)&fallback);
+  // }
   workspace_event_unmap(win, old_state);
 #define PRINT      \
   OUT_WINDOW(win); \

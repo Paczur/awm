@@ -410,6 +410,13 @@ bool grid_focus_restore(void) {
   return grid_focus_pick();
 }
 
+void grid_focus_lose(void) {
+  workspace_focusedw()->focus = -1;
+  for(size_t i = 0; i < workarea_count; i++) {
+    grid_update(i);
+  }
+}
+
 void grid_place_windowwo(window_t *window, size_t grid_i, bool assume_map,
                          size_t wo) {
   size_t m = grid_pos2area(grid_i);
