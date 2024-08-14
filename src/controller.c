@@ -107,6 +107,13 @@ static void c_sigterm_action(int a) {
   c_wm_shutdown();
 }
 
+void c_focus_xwindow(xcb_window_t xwin) {
+  window_t *win = layout_xwin2win(xwin);
+  if(win) {
+    layout_focus(win);
+  }
+}
+
 void c_wm_shutdown(void) {
   run = false;
   LOGE(DEBUG, "Shutdown initiated");
@@ -308,7 +315,7 @@ void c_launcher_show(void) {
 }
 
 void c_launcher_cancel(void) {
-  bar_launcher_hide();
+  if(bar_launcher_visible) bar_launcher_hide();
   c_focus_restore();
   c_mode_set(MODE_NORMAL);
   LOGFE(TRACE);
@@ -352,7 +359,7 @@ void c_mode_force(void) {
 void c_mode_set(MODE new_mode) {
   MODE old_mode = mode;
   SHORTCUT_TYPE type =
-    (new_mode == MODE_INSERT) ? SH_TYPE_INSERT_MODE : SH_TYPE_NORMAL_MODE;
+    (new_mode == MODE_INSERT) ? SH_TYPE_INSERT : SH_TYPE_NORMAL;
   next_mode = MODE_INVALID;
   shortcut_enable(screen, type);
   mode = new_mode;
@@ -475,14 +482,9 @@ void c_event_map_notify(const xcb_generic_event_t *e) {
 }
 
 void c_event_key_press(const xcb_generic_event_t *e) {
-  char buff[10];
-  size_t len;
   const xcb_key_press_event_t *event = (const xcb_key_press_event_t *)e;
   if(bar_launcher_window(event->event)) {
-    if(!shortcut_handle(event->detail, SH_TYPE_LAUNCHER, event->state)) {
-      len = shortcut_utf8(event->detail, buff, 10);
-      if(len > 0) bar_launcher_append(buff, len);
-    }
+    shortcut_handle(event, SH_TYPE_LAUNCHER);
 #define PRINT         \
   OUT(event->detail); \
   OUT(event->state);  \
@@ -492,9 +494,9 @@ void c_event_key_press(const xcb_generic_event_t *e) {
     return;
   }
   if(mode == MODE_NORMAL) {
-    shortcut_handle(event->detail, SH_TYPE_NORMAL_MODE, event->state);
+    shortcut_handle(event, SH_TYPE_NORMAL);
   } else {
-    shortcut_handle(event->detail, SH_TYPE_INSERT_MODE, event->state);
+    shortcut_handle(event, SH_TYPE_INSERT);
   }
 #define PRINT         \
   OUT(event->detail); \
@@ -506,8 +508,25 @@ void c_event_key_press(const xcb_generic_event_t *e) {
 
 void c_event_key_release(const xcb_generic_event_t *e) {
   const xcb_key_release_event_t *event = (const xcb_key_release_event_t *)e;
+  char buff[10];
+  size_t len;
+  if(bar_launcher_window(event->event)) {
+    if(!shortcut_handle(event, SH_TYPE_LAUNCHER_RELEASE)) {
+      len = shortcut_utf8(event->detail, buff, 10);
+      if(len > 0) bar_launcher_append(buff, len);
+    }
+#define PRINT         \
+  OUT(event->detail); \
+  OUT(event->state);  \
+  OUT(event->event);
+    LOG(TRACE, "event: key_release(launcher)");
+#undef PRINT
+    return;
+  }
   if(mode == MODE_NORMAL) {
-    shortcut_handle(event->detail, SH_TYPE_NORMAL_MODE_RELEASE, event->state);
+    shortcut_handle(event, SH_TYPE_NORMAL_RELEASE);
+  } else {
+    shortcut_handle(event, SH_TYPE_INSERT_RELEASE);
   }
 #define PRINT         \
   OUT(event->detail); \
@@ -519,9 +538,11 @@ void c_event_key_release(const xcb_generic_event_t *e) {
 
 void c_event_button_press(const xcb_generic_event_t *e) {
   const xcb_button_press_event_t *event = (const xcb_button_press_event_t *)e;
+  if(mode != MODE_INSERT && (event->detail < 4 || event->detail > 7)) {
+    c_focus_xwindow(event->event);
+    c_mode_set(MODE_INSERT);
+  }
   xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, XCB_CURRENT_TIME);
-  layout_focus(layout_xwin2win(event->event));
-  c_mode_set(MODE_INSERT);
 #define PRINT         \
   OUT(event->detail); \
   OUT(event->state);  \
@@ -789,18 +810,28 @@ static void c_init_layout(rect_t *t_rect, const rect_t *monitors,
 static void c_init_shortcut(void) {
   config_shortcut_t insert_shortcuts[] = CONFIG_SHORTCUTS_INSERT_MODE;
   config_shortcut_t normal_shortcuts[] = CONFIG_SHORTCUTS_NORMAL_MODE;
-  config_shortcut_t launcher_shortcuts[] = CONFIG_SHORTCUTS_LAUNCHER;
+  config_shortcut_t launcher_shortcuts[] = CONFIG_SHORTCUTS_LAUNCHER_MODE;
   config_shortcut_t normal_release_shortcuts[] =
     CONFIG_SHORTCUTS_NORMAL_MODE_RELEASE;
+  config_shortcut_t insert_release_shortcuts[] =
+    CONFIG_SHORTCUTS_INSERT_MODE_RELEASE;
+  config_shortcut_t launcher_release_shortcuts[] =
+    CONFIG_SHORTCUTS_LAUNCHER_MODE_RELEASE;
+
   shortcut_init(conn);
-  convert_shortcuts(SH_TYPE_INSERT_MODE, insert_shortcuts,
-                    LENGTH(insert_shortcuts));
-  convert_shortcuts(SH_TYPE_NORMAL_MODE_RELEASE, normal_release_shortcuts,
+  convert_shortcuts(SH_TYPE_NORMAL, normal_shortcuts, LENGTH(normal_shortcuts));
+  convert_shortcuts(SH_TYPE_NORMAL_RELEASE, normal_release_shortcuts,
                     LENGTH(normal_release_shortcuts));
-  convert_shortcuts(SH_TYPE_NORMAL_MODE, normal_shortcuts,
-                    LENGTH(normal_shortcuts));
+  convert_shortcuts(SH_TYPE_INSERT, insert_shortcuts, LENGTH(insert_shortcuts));
+  convert_shortcuts(SH_TYPE_INSERT_RELEASE, insert_release_shortcuts,
+                    LENGTH(insert_release_shortcuts));
   convert_shortcuts(SH_TYPE_LAUNCHER, launcher_shortcuts,
                     LENGTH(launcher_shortcuts));
+  convert_shortcuts(SH_TYPE_LAUNCHER_RELEASE, launcher_release_shortcuts,
+                    LENGTH(launcher_release_shortcuts));
+  convert_shortcuts(SH_TYPE_NORMAL, normal_shortcuts, LENGTH(normal_shortcuts));
+  convert_shortcuts(SH_TYPE_NORMAL_RELEASE, normal_release_shortcuts,
+                    LENGTH(normal_release_shortcuts));
 }
 
 static void c_init_hint(void) {

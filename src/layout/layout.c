@@ -413,7 +413,6 @@ WINDOW_STATE layout_event_destroy(xcb_window_t window) {
 }
 
 WINDOW_STATE layout_event_unmap(xcb_window_t window) {
-  xcb_focus_out_event_t fallback = {XCB_FOCUS_OUT, .event = window};
   window_t *win = window_find(window);
   if(!win) return WINDOW_INVALID;
   WINDOW_STATE old_state = win->state;
@@ -425,11 +424,6 @@ WINDOW_STATE layout_event_unmap(xcb_window_t window) {
   }
   layout_workspace_names_update();
   window_state_changed(window, old_state, win->state);
-  // TODO: check this
-  // if(!layout_focus_restore()) {
-  //   xcb_send_event(conn, 0, window, XCB_EVENT_MASK_FOCUS_CHANGE,
-  //                  (char *)&fallback);
-  // }
   workspace_event_unmap(win, old_state);
 #define PRINT      \
   OUT_WINDOW(win); \
