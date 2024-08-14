@@ -14,10 +14,12 @@ typedef struct shortcut_t {
 } shortcut_t;
 
 typedef enum SHORTCUT_TYPE {
-  SH_TYPE_INSERT_MODE,
-  SH_TYPE_NORMAL_MODE,
-  SH_TYPE_NORMAL_MODE_RELEASE,
+  SH_TYPE_INSERT,
+  SH_TYPE_INSERT_RELEASE,
+  SH_TYPE_NORMAL,
+  SH_TYPE_NORMAL_RELEASE,
   SH_TYPE_LAUNCHER,
+  SH_TYPE_LAUNCHER_RELEASE,
   SH_TYPE_LENGTH
 } SHORTCUT_TYPE;
 
@@ -27,7 +29,7 @@ typedef struct shortcut_node_t {
 } shortcut_node_t;
 
 void shortcuts_print(void);
-bool shortcut_handle(xcb_keycode_t, SHORTCUT_TYPE, uint16_t);
+bool shortcut_handle(const xcb_key_press_event_t *, SHORTCUT_TYPE);
 void shortcut_enable(const xcb_screen_t *, SHORTCUT_TYPE);
 void shortcut_add(xcb_keysym_t, SHORTCUT_TYPE, uint16_t, void (*)(void), bool);
 void shortcut_event_state(const xcb_xkb_state_notify_event_t *);

@@ -28,9 +28,11 @@ static void shortcut_load_keymap(void) {
   xkbstate = xkb_x11_state_new_from_device(keymap, conn, core_device);
 }
 
-bool shortcut_handle(xcb_keycode_t keycode, SHORTCUT_TYPE type,
-                     uint16_t state) {
+bool shortcut_handle(const xcb_key_press_event_t *event, SHORTCUT_TYPE type) {
   const xkb_keysym_t *syms;
+  xcb_keycode_t keycode = event->detail;
+  uint16_t state = event->state;
+
   uint32_t full_state = (type << 16) | state;
   full_state &= ~(XCB_MOD_MASK_2 | XCB_MOD_MASK_3 | XCB_MOD_MASK_5);
   shortcut_t *t;
@@ -100,7 +102,7 @@ void shortcut_enable(const xcb_screen_t *screen, SHORTCUT_TYPE type) {
   xkb_keycode_t max = xkb_keymap_max_keycode(keymap);
 
   xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, XCB_MOD_MASK_ANY);
-  if(type == SH_TYPE_NORMAL_MODE || type == SH_TYPE_NORMAL_MODE_RELEASE) {
+  if(type == SH_TYPE_NORMAL || type == SH_TYPE_NORMAL_RELEASE) {
     xcb_grab_key(conn, 1, screen->root, XCB_MOD_MASK_ANY, XCB_GRAB_ANY,
                  XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
     return;

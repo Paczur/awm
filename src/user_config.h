@@ -72,7 +72,8 @@
 { \
   BARE(MOD_NONE, XK_Super_L, normal_mode), \
 }
-#define CONFIG_SHORTCUTS_LAUNCHER                    \
+#define CONFIG_SHORTCUTS_INSERT_MODE_RELEASE { }
+#define CONFIG_SHORTCUTS_LAUNCHER_MODE               \
   {                                                  \
     BARE(MOD_NONE, XK_Super_L, launcher_abort),      \
       BARE(MOD_NONE, XK_Escape, launcher_abort),     \
@@ -81,6 +82,7 @@
       BARE(MOD_NONE, XK_Right, launcher_hint_right), \
       BARE(MOD_NONE, XK_BackSpace, launcher_erase),  \
   }
+#define CONFIG_SHORTCUTS_LAUNCHER_MODE_RELEASE { }
 // clang-format on
 
 #define CONFIG_TERMINAL_CMD "mlterm"
