@@ -483,8 +483,13 @@ void c_event_map_notify(const xcb_generic_event_t *e) {
 
 void c_event_key_press(const xcb_generic_event_t *e) {
   const xcb_key_press_event_t *event = (const xcb_key_press_event_t *)e;
+  char buff[10];
+  size_t len;
   if(bar_launcher_window(event->event)) {
-    shortcut_handle(event, SH_TYPE_LAUNCHER);
+    if(!shortcut_handle(event, SH_TYPE_LAUNCHER)) {
+      len = shortcut_utf8(event->detail, buff, 10);
+      if(len > 0) bar_launcher_append(buff, len);
+    }
 #define PRINT         \
   OUT(event->detail); \
   OUT(event->state);  \
@@ -508,13 +513,9 @@ void c_event_key_press(const xcb_generic_event_t *e) {
 
 void c_event_key_release(const xcb_generic_event_t *e) {
   const xcb_key_release_event_t *event = (const xcb_key_release_event_t *)e;
-  char buff[10];
-  size_t len;
+
   if(bar_launcher_window(event->event)) {
-    if(!shortcut_handle(event, SH_TYPE_LAUNCHER_RELEASE)) {
-      len = shortcut_utf8(event->detail, buff, 10);
-      if(len > 0) bar_launcher_append(buff, len);
-    }
+    shortcut_handle(event, SH_TYPE_LAUNCHER_RELEASE);
 #define PRINT         \
   OUT(event->detail); \
   OUT(event->state);  \
