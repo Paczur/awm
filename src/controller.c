@@ -539,11 +539,11 @@ void c_event_key_release(const xcb_generic_event_t *e) {
 
 void c_event_button_press(const xcb_generic_event_t *e) {
   const xcb_button_press_event_t *event = (const xcb_button_press_event_t *)e;
-  if(mode != MODE_INSERT && (event->detail < 4 || event->detail > 7)) {
+  xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, XCB_CURRENT_TIME);
+  if(event->detail < 4 || event->detail > 7) {
     c_focus_xwindow(event->event);
     c_mode_set(MODE_INSERT);
   }
-  xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, XCB_CURRENT_TIME);
 #define PRINT         \
   OUT(event->detail); \
   OUT(event->state);  \
