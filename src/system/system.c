@@ -10,6 +10,7 @@
 #include <xcb/xkb.h>
 
 static uint8_t xkb_event = -1;
+static uint8_t randr_event = -1;
 
 // XCB
 xcb_visualtype_t *visual_type;
@@ -103,10 +104,9 @@ static void system_setup_visual(void) {
   LOGFE(SYSTEM_TRACE);
 }
 
-static void system_setup_wm(void) {
+static void system_setup_root(void) {
   uint32_t values;
 
-  conn = xcb_connect(NULL, NULL);
   setup = xcb_get_setup(conn);
   screen = xcb_setup_roots_iterator(setup).data;
 
@@ -136,6 +136,21 @@ static void system_setup_xkb(void) {
         XCB_XKB_EVENT_TYPE_NEW_KEYBOARD_NOTIFY,
       0xff, 0xff, NULL);
     xkb_event = extreply->first_event;
+  }
+#define PRINT OUT(extreply);
+  LOGF(SYSTEM_TRACE);
+#undef PRINT
+}
+
+static void system_setup_randr(void) {
+  const xcb_query_extension_reply_t *extreply = NULL;
+  extreply = xcb_get_extension_data(conn, &xcb_randr_id);
+  while(extreply == NULL)
+    extreply = xcb_get_extension_data(conn, &xcb_randr_id);
+  if(extreply->present) {
+    randr_event = extreply->first_event;
+    xcb_randr_select_input(conn, screen->root,
+                           XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE);
   }
 #define PRINT OUT(extreply);
   LOGF(SYSTEM_TRACE);
@@ -179,10 +194,10 @@ void system_monitors(rect_t **monitors, size_t *monitor_count) {
 
   *monitors = malloc(sizeof(rect_t) * *monitor_count);
   for(size_t i = 0; i < *monitor_count; i++) {
-    (*monitors)[i].w = randr_crtcs[i]->width;
-    (*monitors)[i].h = randr_crtcs[i]->height;
     (*monitors)[i].x = randr_crtcs[i]->x;
     (*monitors)[i].y = randr_crtcs[i]->y;
+    (*monitors)[i].w = randr_crtcs[i]->width;
+    (*monitors)[i].h = randr_crtcs[i]->height;
     free(randr_crtcs[i]);
   }
   for(size_t i = *monitor_count; i < length; i++) {
@@ -196,14 +211,18 @@ void system_monitors(rect_t **monitors, size_t *monitor_count) {
 
 uint8_t system_xkb(void) { return xkb_event; }
 
+uint8_t system_randr(void) { return randr_event; }
+
 void system_init(void (*term_action)(int)) {
   struct sigaction action = {.sa_handler = term_action};
   sigaction(SIGTERM, &action, NULL);
 
-  system_setup_wm();
+  conn = xcb_connect(NULL, NULL);
   system_setup_prefetch();
+  system_setup_root();
   system_setup_visual();
   system_setup_xkb();
+  system_setup_randr();
   LOGFE(SYSTEM_DEBUG);
 }
 

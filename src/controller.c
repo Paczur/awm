@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <xcb/randr.h>
 
 #include "bar/bar.h"
 #include "config.h"
@@ -33,6 +34,26 @@ size_t c_wm_color_current = 0;
 #define COMMON_URGENT_INIT(x, n, h)                               \
   {x##_MIN_WIDTH, SETTINGS_INIT(x##_##n), SETTINGS_INIT(x##_##h), \
    SETTINGS_INIT(x##_URGENT)}
+
+static void c_calc_layout(rect_t *t_rect, const rect_t *monitors,
+                          size_t monitor_count) {
+  for(size_t i = 0; i < monitor_count; i++) {
+    t_rect[i].x = monitors[i].x;
+    t_rect[i].y = monitors[i].y + CONFIG_BAR_HEIGHT;
+    t_rect[i].w = monitors[i].w;
+    t_rect[i].h = monitors[i].h - CONFIG_BAR_HEIGHT;
+  }
+}
+
+static void c_calc_bar(rect_t *t_rect, const rect_t *monitors,
+                       size_t monitor_count) {
+  for(size_t i = 0; i < monitor_count; i++) {
+    t_rect[i].x = monitors[i].x;
+    t_rect[i].y = monitors[i].y;
+    t_rect[i].w = monitors[i].w;
+    t_rect[i].h = CONFIG_BAR_HEIGHT;
+  }
+}
 
 static uint32_t c_hex2xcolor(const char *hex) {
   uint32_t mul = 1;
@@ -726,6 +747,21 @@ void c_event_configure(const xcb_generic_event_t *e) {
   }
 }
 
+void c_event_randr(const xcb_generic_event_t *e) {
+  rect_t *t_rect;
+  rect_t *monitors;
+  size_t monitor_count;
+  system_monitors(&monitors, &monitor_count);
+  t_rect = malloc(monitor_count * sizeof(rect_t));
+  c_calc_layout(t_rect, monitors, monitor_count);
+  layout_workareas_update(t_rect, monitors, monitor_count);
+  c_calc_bar(t_rect, monitors, monitor_count);
+  bar_containers_update(t_rect, monitor_count);
+  free(t_rect);
+  free(monitors);
+  fflush(stdout);
+}
+
 static void convert_shortcuts(SHORTCUT_TYPE type,
                               config_shortcut_t *conf_shortcuts, size_t len) {
   xcb_mod_mask_t mod_mask;
@@ -742,12 +778,7 @@ static void convert_shortcuts(SHORTCUT_TYPE type,
 
 static void c_init_bar(rect_t *t_rect, const rect_t *monitors,
                        size_t monitor_count) {
-  for(size_t i = 0; i < monitor_count; i++) {
-    t_rect[i].x = monitors[i].x;
-    t_rect[i].y = monitors[i].y;
-    t_rect[i].w = monitors[i].w;
-    t_rect[i].h = CONFIG_BAR_HEIGHT;
-  }
+  c_calc_bar(t_rect, monitors, monitor_count);
   bar_init_t binit = (bar_init_t){
     conn,
     screen,
@@ -783,12 +814,7 @@ static void c_init_bar(rect_t *t_rect, const rect_t *monitors,
 
 static void c_init_layout(rect_t *t_rect, const rect_t *monitors,
                           size_t monitor_count) {
-  for(size_t i = 0; i < monitor_count; i++) {
-    t_rect[i].x = monitors[i].x;
-    t_rect[i].y = monitors[i].y + CONFIG_BAR_HEIGHT;
-    t_rect[i].w = monitors[i].w;
-    t_rect[i].h = monitors[i].h - CONFIG_BAR_HEIGHT;
-  }
+  c_calc_layout(t_rect, monitors, monitor_count);
   layout_init_t linit = (layout_init_t){
     conn,
     screen,
@@ -897,6 +923,7 @@ void c_init(void) {
   event_listener_add(XCB_CLIENT_MESSAGE, c_event_message);
   event_listener_add(XCB_PROPERTY_NOTIFY, c_event_property);
   event_listener_add(system_xkb(), c_event_xkb);
+  event_listener_add(system_randr(), c_event_randr);
   event_listener_add(XCB_CONFIGURE_REQUEST, c_event_configure);
   xcb_flush(conn);
   fflush(stdout);

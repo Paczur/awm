@@ -9,10 +9,20 @@
 #include "workspace.h"
 
 static xcb_connection_t *conn;
-static const xcb_screen_t *screen;
 static bool workspace_numbers_only;
 static void (*window_state_changed)(xcb_window_t, WINDOW_STATE, WINDOW_STATE);
 static char workspace_names[MAX_WORKSPACES * (MAX_WORKSPACE_NAME_SIZE + 1)];
+
+void layout_workareas_update(const rect_t *ws, const rect_t *full,
+                             size_t count) {
+  workarea_update((const workarea_t *)ws, (const workarea_t *)full, count);
+  for(size_t i = 0; i < MAX_WORKSPACES; i++) {
+    workspace_update(i);
+  }
+  for(size_t i = 0; i < count; i++) {
+    grid_update(i);
+  }
+}
 
 size_t layout_workareas(const workarea_t **w) {
   if(w) *w = workareas;
@@ -330,12 +340,12 @@ window_t *layout_create(xcb_window_t window) {
 
 void layout_init(const layout_init_t *init) {
   conn = init->conn;
-  screen = init->screen;
   window_state_changed = init->window_state_changed;
   workspace_numbers_only = init->workspace_numbers_only;
   layout_workspace_names_init();
-  workarea_init((workarea_t *)init->workareas,
-                (workarea_t *)init->workareas_fullscreen, init->workarea_count);
+  workarea_init((const workarea_t *)init->workareas,
+                (const workarea_t *)init->workareas_fullscreen,
+                init->workarea_count);
   window_init(init->conn, init->name_replacements,
               init->name_replacements_length, init->get_class);
   workspace_init(init->conn);

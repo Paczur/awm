@@ -4,6 +4,7 @@
 #include "layout_types.h"
 
 size_t layout_workareas(const workarea_t **);
+void layout_workareas_update(const rect_t *, const rect_t *, size_t);
 
 size_t layout_workspaces(const workspace_t **);
 size_t layout_workspace_focused(void);

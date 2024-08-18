@@ -33,6 +33,8 @@ void event_next(xcb_connection_t* conn) {
   type = event->response_type & 0x7F;  // Mask highbit - synthetic
   if(type < event_dispatch_length && event_dispatch[type] != NULL) {
     event_dispatch[type](event);
+  } else {
+    printf("UNKNOWN EVENT: %d\n", type);
   }
   free(event);
 }
