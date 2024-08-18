@@ -7,7 +7,7 @@ ETC=/etc/awm
 WARN=-Wall -Wextra -Wvla
 VERBOSITY=-D DEBUG -D HINT_DEBUG -D LAYOUT_TRACE -D SYSTEM_DEBUG -D LAYOUT_GRID_TRACE
 MEMORY_DEBUG=-fsanitize=address -fsanitize=pointer-compare -fsanitize=pointer-subtract
-DEBUG=$(VERBOSITY) -Og -ggdb3  -fsanitize=undefined \
+DEBUG=$(MEMORY_DEBUG) $(VERBOSITY) -Og -ggdb3  -fsanitize=undefined \
 			-fsanitize-address-use-after-scope -fstack-check -fno-stack-clash-protection
 TEXT=$(shell pkg-config --cflags --libs pangocairo fontconfig)
 X=$(shell pkg-config --cflags --libs xcb xcb-randr xcb-xkb xkbcommon-x11 xcb-icccm)

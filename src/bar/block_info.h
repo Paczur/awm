@@ -12,9 +12,10 @@ bool block_info_find_redraw(xcb_window_t);
 void block_info_update_all(void);
 void block_info_update_highlight(int n, int delay);
 void block_info_update(int n);
+void block_info_count_update(const PangoFontDescription *, size_t);
 
-void block_info_init(const PangoFontDescription*, void (*)(void),
-                     const bar_block_info_init_t*, xcb_connection_t*);
+void block_info_init(const PangoFontDescription *, void (*)(void),
+                     const bar_block_info_init_t *, xcb_connection_t *);
 void block_info_deinit(void);
 
 #endif

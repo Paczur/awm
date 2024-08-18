@@ -1,5 +1,8 @@
 #!/bin/env dash
 dir="/sys/class/backlight/$(ls /sys/class/backlight/ -1 | head -n1)"
+if [ "$dir" = "/sys/class/backlight/" ]; then
+  exit 1;
+fi
 current="$(cat "$dir/brightness")"
 max="$(cat "$dir/max_brightness")"
 curr_percent="$(echo "$current*100/$max" | bc)"

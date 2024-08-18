@@ -52,6 +52,13 @@ bool block_minimized_find_redraw(xcb_window_t window) {
                            window);
 }
 
+void block_minimized_count_update(const PangoFontDescription *font,
+                                  size_t old) {
+  for(size_t i = 0; i < MAX_MINIMIZED_BLOCKS; i++) {
+    block_count_update(block_minimized.blocks + i, font, old);
+  }
+}
+
 void block_minimized_init(const PangoFontDescription *font,
                           const bar_block_minimized_init_t *init) {
   block_settings(&block_minimized.even, &init->even);

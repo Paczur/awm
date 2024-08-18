@@ -15,10 +15,9 @@ static char workspace_names[MAX_WORKSPACES * (MAX_WORKSPACE_NAME_SIZE + 1)];
 
 void layout_workareas_update(const rect_t *ws, const rect_t *full,
                              size_t count) {
+  size_t old = workarea_count;
   workarea_update((const workarea_t *)ws, (const workarea_t *)full, count);
-  for(size_t i = 0; i < MAX_WORKSPACES; i++) {
-    workspace_update(i);
-  }
+  workspace_area_count_update(old);
   for(size_t i = 0; i < count; i++) {
     grid_update(i);
   }

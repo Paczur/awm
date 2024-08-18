@@ -23,6 +23,7 @@
 bool bar_launcher_visible;
 static xcb_connection_t *conn;
 static const xcb_screen_t *screen;
+static const char *fontstr;
 
 static size_t (*focused_workspace)(void);
 
@@ -217,14 +218,29 @@ void bar_focus(xcb_window_t win) {
   }
 }
 
-void bar_containers_update(const rect_t *rect, size_t count) {
+void bar_count_update(const rect_t *rect, size_t count) {
+  PangoFontDescription *font;
   bar_containers_t containers = bar_containers;
+  size_t old = bar_container_count;
+  if(count > bar_container_count) {
+    containers.x = realloc(containers.x, count * sizeof(uint32_t));
+    containers.y = realloc(containers.y, count * sizeof(uint32_t));
+    containers.w = realloc(containers.w, count * sizeof(uint32_t));
+    containers.visibility =
+      realloc(containers.visibility, count * sizeof(uint32_t));
+  }
   for(size_t i = 0; i < count; i++) {
     containers.x[i] = rect[i].x;
     containers.y[i] = rect[i].y;
     containers.w[i] = rect[i].w;
   }
   bar_container_update(containers, count);
+  font = pango_font_description_from_string(fontstr);
+  block_mode_count_update(font, old);
+  block_info_count_update(font, old);
+  block_minimized_count_update(font, old);
+  block_workspace_count_update(font, old);
+  pango_font_description_free(font);
   bar_update_all();
 }
 
@@ -233,6 +249,7 @@ void bar_init(const bar_init_t *init) {
   conn = init->conn;
   screen = init->screen;
   PangoFontDescription *font;
+  fontstr = init->bar_font;
   bar_containers_t containers;
   focused_workspace = init->focused_workspace;
   containers.x = malloc(init->bar_container_count * sizeof(uint32_t));
