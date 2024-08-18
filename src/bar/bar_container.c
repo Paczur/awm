@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
+
 bar_containers_t bar_containers;
 size_t bar_container_count;
 static xcb_connection_t *conn;
@@ -26,7 +28,7 @@ void bar_container_color(size_t index) {
 
 void bar_container_update(bar_containers_t bcs, size_t count) {
   uint32_t vals[4] = {[3] = bcs.h};
-  for(size_t i = 0; i < count; i++) {
+  for(size_t i = 0; i < MIN(count, bar_container_count); i++) {
     vals[0] = bcs.x[i];
     vals[1] = bcs.y[i];
     vals[2] = bcs.w[i];
@@ -35,26 +37,26 @@ void bar_container_update(bar_containers_t bcs, size_t count) {
       XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH,
       vals);
   }
-  if(count != bar_container_count) {
+
+  if(count < bar_container_count) {
     for(size_t i = count; i < bar_container_count; i++) {
-      xcb_destroy_window(conn, bar_containers.id[i]);
-    }
-    for(size_t i = bar_container_count; i < count; i++) {
-      bcs.id[i] = xcb_generate_id(conn);
-      vals[0] = bcs.x[i];
-      vals[1] = bcs.y[i];
-      vals[2] = bcs.w[i];
-      xcb_create_window(
-        conn, screen->root_depth, bcs.id[i], screen->root, bcs.x[i], bcs.y[i],
-        bcs.w[i], bcs.h, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, screen->root_visual,
-        XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH,
-        vals);
-      xcb_map_window(conn, bcs.id[i]);
+      xcb_destroy_window(conn, bcs.id[i]);
     }
     bcs.x = realloc(bcs.x, count * sizeof(uint32_t));
-    bcs.y = realloc(bcs.x, count * sizeof(uint32_t));
-    bcs.w = realloc(bcs.x, count * sizeof(uint32_t));
-    bcs.visibility = realloc(bcs.x, count * sizeof(uint32_t));
+    bcs.y = realloc(bcs.y, count * sizeof(uint32_t));
+    bcs.w = realloc(bcs.w, count * sizeof(uint32_t));
+    bcs.visibility = realloc(bcs.visibility, count * sizeof(uint32_t));
+  }
+  vals[0] = bcs.background[0];
+  vals[1] = XCB_EVENT_MASK_EXPOSURE;
+  for(size_t i = bar_container_count; i < count; i++) {
+    bcs.id[i] = xcb_generate_id(conn);
+    bcs.visibility[i] = true;
+    xcb_create_window(conn, screen->root_depth, bcs.id[i], screen->root,
+                      bcs.x[i], bcs.y[i], bcs.w[i], bcs.h, 0,
+                      XCB_WINDOW_CLASS_INPUT_OUTPUT, screen->root_visual,
+                      XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK, vals);
+    xcb_map_window(conn, bcs.id[i]);
   }
   bar_containers = bcs;
   bar_container_count = count;

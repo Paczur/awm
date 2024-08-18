@@ -154,6 +154,12 @@ void block_info_redraw(size_t bar) {
   block_redraw_batch(block_info.blocks, block_count, bar);
 }
 
+void block_info_count_update(const PangoFontDescription *font, size_t old) {
+  for(size_t i = 0; i < block_count; i++) {
+    block_count_update(block_info.blocks + i, font, old);
+  }
+}
+
 bool block_info_find_redraw(xcb_window_t window) {
   return block_find_redraw(block_info.blocks, block_count, window);
 }

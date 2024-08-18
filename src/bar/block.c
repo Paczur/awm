@@ -275,6 +275,54 @@ void block_create(block_t *block, const PangoFontDescription *font) {
   }
 }
 
+void block_count_update(block_t *block, const PangoFontDescription *font,
+                        size_t old) {
+  uint32_t mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
+  uint32_t values[2] = {bar_containers.background[color_index],
+                        XCB_EVENT_MASK_EXPOSURE};
+  if(old < bar_container_count) {
+    block->id = realloc(block->id, bar_container_count * sizeof(xcb_window_t));
+    block->surface =
+      realloc(block->surface, bar_container_count * sizeof(cairo_surface_t *));
+    block->cairo =
+      realloc(block->cairo, bar_container_count * sizeof(cairo_t *));
+    block->pango =
+      realloc(block->pango, bar_container_count * sizeof(PangoLayout *));
+    block->state = realloc(block->state, bar_container_count * sizeof(bool));
+    for(size_t i = old; i < bar_container_count; i++) {
+      block->state[i] = 0;
+      block->id[i] = xcb_generate_id(conn);
+      xcb_create_window(conn, screen->root_depth, block->id[i],
+                        bar_containers.id[i], 0, 0, 1, bar_containers.h, 0,
+                        XCB_WINDOW_CLASS_INPUT_OUTPUT, screen->root_visual,
+                        mask, values);
+    }
+    for(size_t i = old; i < bar_container_count; i++) {
+      block->surface[i] = cairo_xcb_surface_create(
+        conn, block->id[i], visual_type, 1, bar_containers.h);
+      block->cairo[i] = cairo_create(block->surface[i]);
+      block->pango[i] = pango_cairo_create_layout(block->cairo[i]);
+      pango_layout_set_font_description(block->pango[i], font);
+    }
+  }
+  if(old > bar_container_count) {
+    for(size_t i = bar_container_count; i < old; i++) {
+      g_object_unref(block->pango[i]);
+      cairo_destroy(block->cairo[i]);
+      cairo_surface_destroy(block->surface[i]);
+      xcb_destroy_window(conn, block->id[i]);
+    }
+    block->id = realloc(block->id, bar_container_count * sizeof(xcb_window_t));
+    block->surface =
+      realloc(block->surface, bar_container_count * sizeof(cairo_surface_t *));
+    block->cairo =
+      realloc(block->cairo, bar_container_count * sizeof(cairo_t *));
+    block->pango =
+      realloc(block->pango, bar_container_count * sizeof(PangoLayout *));
+    block->state = realloc(block->state, bar_container_count * sizeof(bool));
+  }
+}
+
 void block_launcher_create(block_t *block, const PangoFontDescription *font) {
   uint32_t mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
   uint32_t values[2] = {bar_containers.background[color_index],

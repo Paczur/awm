@@ -748,6 +748,7 @@ void c_event_configure(const xcb_generic_event_t *e) {
 }
 
 void c_event_randr(const xcb_generic_event_t *e) {
+  (void)e;
   rect_t *t_rect;
   rect_t *monitors;
   size_t monitor_count;
@@ -756,7 +757,7 @@ void c_event_randr(const xcb_generic_event_t *e) {
   c_calc_layout(t_rect, monitors, monitor_count);
   layout_workareas_update(t_rect, monitors, monitor_count);
   c_calc_bar(t_rect, monitors, monitor_count);
-  bar_containers_update(t_rect, monitor_count);
+  bar_count_update(t_rect, monitor_count);
   free(t_rect);
   free(monitors);
   fflush(stdout);
