@@ -12,6 +12,8 @@ size_t bar_container_find(xcb_window_t);
 
 void bar_container_color(size_t);
 
+void bar_container_update(bar_containers_t, size_t);
+
 void bar_container_init(xcb_connection_t*, const xcb_screen_t*,
                         bar_containers_t, size_t);
 void bar_container_deinit(void);

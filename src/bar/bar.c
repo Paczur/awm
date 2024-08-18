@@ -217,6 +217,17 @@ void bar_focus(xcb_window_t win) {
   }
 }
 
+void bar_containers_update(const rect_t *rect, size_t count) {
+  bar_containers_t containers = bar_containers;
+  for(size_t i = 0; i < count; i++) {
+    containers.x[i] = rect[i].x;
+    containers.y[i] = rect[i].y;
+    containers.w[i] = rect[i].w;
+  }
+  bar_container_update(containers, count);
+  bar_update_all();
+}
+
 void bar_init(const bar_init_t *init) {
   xcolor_t color;
   conn = init->conn;
