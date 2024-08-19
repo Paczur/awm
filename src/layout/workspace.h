@@ -18,6 +18,7 @@ size_t workspace_window_count(size_t);
 bool workspace_empty(size_t);
 bool workspace_urgent(size_t);
 void workspace_area_update(size_t, size_t);
+void workspace_area_count_update(size_t);
 void workspace_update(size_t);
 void workspace_switch(size_t);
 
