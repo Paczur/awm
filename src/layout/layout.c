@@ -16,6 +16,21 @@ static char workspace_names[MAX_WORKSPACES * (MAX_WORKSPACE_NAME_SIZE + 1)];
 void layout_workareas_update(const rect_t *ws, const rect_t *full,
                              size_t count) {
   size_t old = workarea_count;
+  size_t pos;
+  for(size_t i = 0; i < MAX_WORKSPACES; i++) {
+    for(size_t j = CELLS_PER_WORKAREA * count; j < CELLS_PER_WORKAREA * old;
+        j++) {
+      if(workspaces[i].grid[j].origin == j) {
+        pos = grid_next_poswo(i);
+        if(pos == SIZE_MAX) {
+          layout_minimize(workspaces[i].grid[j].window);
+        } else {
+          workspaces[i].grid[pos].window = workspaces[i].grid[j].window;
+          workspaces[i].grid[pos].origin = pos;
+        }
+      }
+    }
+  }
   workarea_update((const workarea_t *)ws, (const workarea_t *)full, count);
   workspace_area_count_update(old);
   for(size_t i = 0; i < count; i++) {

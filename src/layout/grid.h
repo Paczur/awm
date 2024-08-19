@@ -21,6 +21,7 @@ size_t grid_focused(void);
 size_t grid_pos2area(size_t);
 size_t grid_win2area(const window_t *win);
 size_t grid_next_pos(void);
+size_t grid_next_poswo(size_t);
 void grid_unmark(window_t *);
 void grid_refresh(void);
 void grid_update(size_t);
