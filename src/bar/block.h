@@ -64,6 +64,9 @@ void block_set_text_batch(const block_t *, size_t, const char *);
 
 void block_set_text(const block_t *, const char *);
 
+void block_launcher_count_update(block_t *, const PangoFontDescription *,
+                                 size_t);
+
 void block_count_update(block_t *, const PangoFontDescription *, size_t);
 
 void block_create(block_t *, const PangoFontDescription *);

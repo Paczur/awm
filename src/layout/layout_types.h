@@ -70,6 +70,7 @@ typedef struct layout_init_t {
   size_t workarea_count;
   const char *const (*name_replacements)[2];
   size_t name_replacements_length;
+  bool (*global_window_minimize)(xcb_window_t);
   grid_init_t grid_init;
 } layout_init_t;
 

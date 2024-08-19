@@ -42,6 +42,7 @@ bool block_mode_find_redraw(xcb_window_t window) {
 
 void block_mode_count_update(const PangoFontDescription *font, size_t old) {
   block_count_update(&block_mode.block, font, old);
+  block_show_all(&block_mode.block);
 }
 
 void block_mode_init(const PangoFontDescription *font,

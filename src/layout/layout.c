@@ -12,27 +12,30 @@ static xcb_connection_t *conn;
 static bool workspace_numbers_only;
 static void (*window_state_changed)(xcb_window_t, WINDOW_STATE, WINDOW_STATE);
 static char workspace_names[MAX_WORKSPACES * (MAX_WORKSPACE_NAME_SIZE + 1)];
+static bool (*global_window_minimize)(xcb_window_t);
 
 void layout_workareas_update(const rect_t *ws, const rect_t *full,
                              size_t count) {
   size_t old = workarea_count;
   size_t pos;
+  workspace_area_count_update(old);
+  workarea_update((const workarea_t *)ws, (const workarea_t *)full, count);
   for(size_t i = 0; i < MAX_WORKSPACES; i++) {
     for(size_t j = CELLS_PER_WORKAREA * count; j < CELLS_PER_WORKAREA * old;
         j++) {
       if(workspaces[i].grid[j].origin == j) {
         pos = grid_next_poswo(i);
         if(pos == SIZE_MAX) {
-          layout_minimize(workspaces[i].grid[j].window);
+          global_window_minimize(workspaces[i].grid[j].window->id);
         } else {
+          if(i == workspace_focused) grid_force_update(pos);
           workspaces[i].grid[pos].window = workspaces[i].grid[j].window;
           workspaces[i].grid[pos].origin = pos;
         }
       }
     }
+    grid_adjust_poswo(i);
   }
-  workarea_update((const workarea_t *)ws, (const workarea_t *)full, count);
-  workspace_area_count_update(old);
   for(size_t i = 0; i < count; i++) {
     grid_update(i);
   }
@@ -356,6 +359,7 @@ void layout_init(const layout_init_t *init) {
   conn = init->conn;
   window_state_changed = init->window_state_changed;
   workspace_numbers_only = init->workspace_numbers_only;
+  global_window_minimize = init->global_window_minimize;
   layout_workspace_names_init();
   workarea_init((const workarea_t *)init->workareas,
                 (const workarea_t *)init->workareas_fullscreen,

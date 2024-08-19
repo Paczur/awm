@@ -105,34 +105,33 @@ void workspace_update(size_t n) {
   for(size_t i = 0; i < workarea_count; i++) workspaces[n].update[i] = true;
 }
 
-void workspace_area_count_update(size_t old) {
-  size_t diff = workarea_count - old;
-  if(old != workarea_count) {
+void workspace_area_count_update(size_t new) {
+  size_t diff = new - workarea_count;
+  if(new > workarea_count) {
     for(size_t i = 0; i < MAX_WORKSPACES; i++) {
-      workspaces[i].grid =
-        realloc(workspaces[i].grid,
-                CELLS_PER_WORKAREA * workarea_count * sizeof(grid_cell_t));
-      workspaces[i].cross =
-        realloc(workspaces[i].cross, GRID_AXIS * workarea_count * sizeof(int));
-      workspaces[i].update =
-        realloc(workspaces[i].update, workarea_count * sizeof(bool));
-      workspaces[i].fullscreen =
-        realloc(workspaces[i].fullscreen, workarea_count * sizeof(bool));
-      if(workarea_count > old) {
-        memset(workspaces[i].grid + old * CELLS_PER_WORKAREA, 0,
-               CELLS_PER_WORKAREA * diff * sizeof(grid_cell_t));
-        memset(workspaces[i].cross + old * GRID_AXIS, 0,
-               GRID_AXIS * diff * sizeof(int));
-        memset(workspaces[i].update + old, 0, diff * sizeof(bool));
-        memset(workspaces[i].fullscreen + old, 0, diff * sizeof(bool));
-        for(size_t j = old * CELLS_PER_WORKAREA;
-            j < CELLS_PER_WORKAREA * workarea_count; j++) {
-          workspaces[i].grid[j].origin = -1;
-        }
+      if(workarea_capacity < workarea_count) {
+        workspaces[i].grid = realloc(
+          workspaces[i].grid, CELLS_PER_WORKAREA * new * sizeof(grid_cell_t));
+        workspaces[i].cross =
+          realloc(workspaces[i].cross, GRID_AXIS * new * sizeof(int));
+        workspaces[i].update =
+          realloc(workspaces[i].update, new * sizeof(bool));
+        workspaces[i].fullscreen =
+          realloc(workspaces[i].fullscreen, new * sizeof(bool));
+      }
+      memset(workspaces[i].grid + workarea_count * CELLS_PER_WORKAREA, 0,
+             CELLS_PER_WORKAREA * diff * sizeof(grid_cell_t));
+      memset(workspaces[i].cross + workarea_count * GRID_AXIS, 0,
+             GRID_AXIS * diff * sizeof(int));
+      memset(workspaces[i].update + workarea_count, 0, diff * sizeof(bool));
+      memset(workspaces[i].fullscreen + workarea_count, 0, diff * sizeof(bool));
+      for(size_t j = workarea_count * CELLS_PER_WORKAREA;
+          j < CELLS_PER_WORKAREA * new; j++) {
+        workspaces[i].grid[j].origin = -1;
       }
     }
   }
-  for(size_t i = 0; i < workarea_count; i++) {
+  for(size_t i = 0; i < MAX_WORKSPACES; i++) {
     workspace_update(i);
   }
 }
