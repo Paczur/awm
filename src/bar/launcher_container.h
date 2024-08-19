@@ -7,6 +7,7 @@ void launcher_container_show(void);
 void launcher_container_hide(void);
 void launcher_container_color(size_t);
 
+void launcher_container_count_update(size_t);
 void launcher_container_init(xcb_connection_t*, const xcb_screen_t*);
 void launcher_container_deinit(void);
 

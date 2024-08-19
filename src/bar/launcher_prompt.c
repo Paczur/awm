@@ -66,6 +66,11 @@ void launcher_prompt_clear(void) {
   }
 }
 
+void launcher_prompt_count_update(const PangoFontDescription *font,
+                                  size_t old) {
+  block_launcher_count_update(&launcher_prompt.block, font, old);
+}
+
 void launcher_prompt_init(const PangoFontDescription *font,
                           const bar_launcher_prompt_init_t *init) {
   block_settings(&launcher_prompt.settings, &init->settings);

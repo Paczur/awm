@@ -157,12 +157,6 @@ static void grid_calculate(size_t m, uint32_t *values, size_t offset) {
 #undef PRINT
 }
 
-static void grid_force_update(size_t pos) {
-  for(size_t i = 0; i < CONF_ATOMS; i++) {
-    confstate[pos * CONF_ATOMS + i] = -1;
-  }
-}
-
 size_t grid_win2area(const window_t *win) {
   if(!win || win->state < 0) return -1;
   return grid_pos2area(grid_win2pos(win));
@@ -175,6 +169,10 @@ void grid_clean(void) {
 
 window_t *grid_pos2win(size_t n) {
   return grid_pos_invalid(n) ? NULL : workspace_focusedw()->grid[n].window;
+}
+
+window_t *grid_pos2winwo(size_t n, size_t wo) {
+  return grid_pos_invalid(n) ? NULL : workspaces[wo].grid[n].window;
 }
 
 size_t grid_ord2pos(size_t n) {
@@ -289,6 +287,12 @@ void grid_refresh(void) {
   }
 }
 
+void grid_force_update(size_t pos) {
+  for(size_t i = 0; i < CONF_ATOMS; i++) {
+    confstate[pos * CONF_ATOMS + i] = -1;
+  }
+}
+
 void grid_update(size_t m) {
   const workspace_t *workspace = workspace_focusedw();
   uint32_t newstate[CONF_ATOMS * CELLS_PER_WORKAREA];
@@ -341,6 +345,54 @@ void grid_update(size_t m) {
 #undef PRINT
   memcpy(confstate + m * CONF_ATOMS * CELLS_PER_WORKAREA, newstate,
          sizeof(newstate));
+}
+
+void grid_adjust_poswo(size_t wo) {
+  size_t t;
+  size_t t2;
+  bool *moved;
+  size_t count = 0;
+  size_t iter = 0;
+  size_t orig;
+  moved = calloc(workarea_count, sizeof(bool));
+  for(size_t i = 0; i < CELLS_PER_WORKAREA * workarea_count; i++) {
+    if(grid_pos2originwo(i, wo) == i) count++;
+  }
+  for(size_t i = 0; i < spawn_order_len && iter < count; i++) {
+    t = spawn_order[i];
+    if(grid_pos_invalid(t)) continue;
+    orig = grid_pos2originwo(t, wo);
+    iter++;
+    if(grid_pos2winwo(t, wo) == NULL || orig != t) {
+      for(size_t j = i + 1; j < spawn_order_len; j++) {
+        t2 = spawn_order[j];
+        if(!grid_pos_invalid(t2) && grid_pos2winwo(t2, wo) != NULL &&
+           grid_pos2originwo(t2, wo) == t2) {
+          grid_pos2cellwo(t, wo)->origin = t;
+          grid_pos2cellwo(t, wo)->window = grid_pos2winwo(t2, wo);
+          grid_pos2cellwo(t2, wo)->origin = -1;
+          grid_pos2cellwo(t2, wo)->window = NULL;
+          moved[grid_pos2area(t)] = true;
+          moved[grid_pos2area(t2)] = true;
+          if(wo == workspace_focused) {
+            grid_force_update(t);
+            grid_force_update(t2);
+          }
+          break;
+        }
+      }
+    }
+  }
+  for(size_t i = 0; i < workarea_count; i++) {
+    if(moved[i]) {
+      if(wo == workspace_focused) {
+        grid_update(i);
+      } else {
+        workspace_area_update(wo, i);
+      }
+    }
+  }
+  free(moved);
 }
 
 void grid_adjust_pos(void) {

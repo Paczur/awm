@@ -55,6 +55,12 @@ void launcher_hint_update(size_t left_offset) {
                                left_offset, launcher_hint.min_width, 0);
 }
 
+void launcher_hint_count_update(const PangoFontDescription *font, size_t old) {
+  for(size_t i = 0; i < MAX_LAUNCHER_HINTS; i++) {
+    block_launcher_count_update(launcher_hint.blocks + i, font, old);
+  }
+}
+
 void launcher_hint_init(const PangoFontDescription *font,
                         const bar_launcher_hint_init_t *init) {
   block_settings(&launcher_hint.focused, &init->focused);

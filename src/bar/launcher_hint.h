@@ -13,6 +13,7 @@ bool launcher_hint_find_redraw(xcb_window_t);
 void launcher_hint_regen(const char*, size_t);
 void launcher_hint_update(size_t);
 
+void launcher_hint_count_update(const PangoFontDescription*, size_t);
 void launcher_hint_init(const PangoFontDescription*,
                         const bar_launcher_hint_init_t*);
 void launcher_hint_deinit(void);

@@ -240,6 +240,9 @@ void bar_count_update(const rect_t *rect, size_t count) {
   block_info_count_update(font, old);
   block_minimized_count_update(font, old);
   block_workspace_count_update(font, old);
+  launcher_container_count_update(old);
+  launcher_prompt_count_update(font, old);
+  launcher_hint_count_update(font, old);
   pango_font_description_free(font);
   bar_update_all();
 }
