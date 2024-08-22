@@ -107,7 +107,7 @@ bool window_set_input(window_t *window, bool state) {
   return false;
 }
 
-rda(1) void window_show(const window_t *window) {
+void window_show(const window_t *window) {
   window_list_t *next;
   pthread_rwlock_wrlock(&window_lock);
   window_list_t *list = windows_minimized;
@@ -140,7 +140,7 @@ void window_minimize_request(window_t *window) {
   pthread_rwlock_unlock(&window_lock);
 }
 
-rda(1) constf bool window_minimize_requested(const window_t *window) {
+constf bool window_minimize_requested(const window_t *window) {
   return window->minimize;
 }
 
@@ -156,7 +156,7 @@ void window_minimize(window_t *window) {
   pthread_rwlock_unlock(&window_lock);
 }
 
-rda(2) void window_init(xcb_connection_t *c, const char *const (*names)[2],
+void window_init(xcb_connection_t *c, const char *const (*names)[2],
                         size_t names_length,
                         xcb_get_property_reply_t *(*gc)(xcb_window_t, size_t)) {
   size_t len;

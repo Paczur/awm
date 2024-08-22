@@ -567,7 +567,7 @@ void hint_window_hints_set(xcb_window_t window) {
 #undef PRINT
 }
 
-rda(1) void hint_init(const hint_init_t *init) {
+void hint_init(const hint_init_t *init) {
   conn = init->conn;
   screen = init->screen;
   workspace_number = init->workspace_number;

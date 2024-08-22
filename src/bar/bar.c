@@ -32,7 +32,7 @@ static void bar_launcher_hint_refresh(void) {
   launcher_hint_update(block_next_x(&launcher_prompt_geometry));
 }
 
-rda(1) size_t bar_get_containers(const bar_containers_t **cont) {
+size_t bar_get_containers(const bar_containers_t **cont) {
   *cont = &bar_containers;
   return bar_container_count;
 }
@@ -78,7 +78,7 @@ void bar_launcher_hide(void) {
   }
 }
 
-rda(1) void bar_launcher_append(const char *buff, size_t len) {
+void bar_launcher_append(const char *buff, size_t len) {
   if(bar_launcher_visible) {
     launcher_prompt_append(buff, len);
     bar_launcher_hint_refresh();
@@ -218,7 +218,7 @@ void bar_focus(xcb_window_t win) {
   }
 }
 
-rda(1) void bar_count_update(const rect_t *rect, size_t count) {
+void bar_count_update(const rect_t *rect, size_t count) {
   PangoFontDescription *font;
   bar_containers_t containers = bar_containers;
   size_t old = bar_container_count;
@@ -247,7 +247,7 @@ rda(1) void bar_count_update(const rect_t *rect, size_t count) {
   bar_update_all();
 }
 
-rda(1) void bar_init(const bar_init_t *init) {
+void bar_init(const bar_init_t *init) {
   xcolor_t color;
   conn = init->conn;
   screen = init->screen;

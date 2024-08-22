@@ -14,7 +14,7 @@ static void (*window_state_changed)(xcb_window_t, WINDOW_STATE, WINDOW_STATE);
 static char workspace_names[MAX_WORKSPACES * (MAX_WORKSPACE_NAME_SIZE + 1)];
 static bool (*global_window_minimize)(xcb_window_t);
 
-rda(1) rda(2) void layout_workareas_update(const rect_t *ws, const rect_t *full,
+void layout_workareas_update(const rect_t *ws, const rect_t *full,
                                            size_t count) {
   size_t old = workarea_count;
   size_t pos;
@@ -139,7 +139,7 @@ puref window_list_t *const *layout_minimized(void) {
   return &windows_minimized;
 }
 
-rda(1) puref xcb_window_t layout_win2xwin(const window_t *win) {
+puref xcb_window_t layout_win2xwin(const window_t *win) {
   return (!win) ? (xcb_window_t)-1 : win->id;
 }
 
@@ -149,7 +149,7 @@ puref window_t *layout_spawn2win(size_t s) {
   return grid_pos2win(grid_ord2pos(s));
 }
 
-rda(1) puref size_t layout_win2area(const window_t *win) {
+puref size_t layout_win2area(const window_t *win) {
   return grid_win2area(win);
 }
 
@@ -223,7 +223,7 @@ bool layout_input_set(window_t *win, bool state) {
   return ret;
 }
 
-rda(1) rda(2) bool layout_swap(const window_t *win1, const window_t *win2) {
+bool layout_swap(const window_t *win1, const window_t *win2) {
   size_t pos1 = grid_win2pos(win1);
   size_t pos2 = grid_win2pos(win2);
   bool ret = grid_swap(pos1, pos2);
@@ -238,7 +238,7 @@ rda(1) rda(2) bool layout_swap(const window_t *win1, const window_t *win2) {
   return ret;
 }
 
-rda(1) void layout_reset_sizes(const window_t *win) {
+void layout_reset_sizes(const window_t *win) {
   size_t pos = grid_win2pos(win);
   size_t area = grid_pos2area(pos);
   grid_reset_sizes(area);
@@ -250,7 +250,7 @@ rda(1) void layout_reset_sizes(const window_t *win) {
 #undef PRINT
 }
 
-rda(1) void layout_resize_w(const window_t *win, int n) {
+void layout_resize_w(const window_t *win, int n) {
   size_t pos = grid_win2pos(win);
   size_t area = grid_pos2area(pos);
   bool status = grid_resize_w(area, n);
@@ -264,7 +264,7 @@ rda(1) void layout_resize_w(const window_t *win, int n) {
 #undef PRINT
 }
 
-rda(1) void layout_resize_h(const window_t *win, int n) {
+void layout_resize_h(const window_t *win, int n) {
   size_t pos = grid_win2pos(win);
   size_t area = grid_pos2area(pos);
   bool status = grid_resize_h(area, n);
@@ -361,7 +361,7 @@ window_t *layout_create(xcb_window_t window) {
   return window_event_create(window);
 }
 
-rda(1) void layout_init(const layout_init_t *init) {
+void layout_init(const layout_init_t *init) {
   conn = init->conn;
   window_state_changed = init->window_state_changed;
   workspace_numbers_only = init->workspace_numbers_only;

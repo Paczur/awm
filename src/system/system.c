@@ -18,7 +18,7 @@ xcb_connection_t *conn;
 const xcb_setup_t *setup;
 xcb_screen_t *screen;
 
-rda(1) int system_sh_out(const char *cmd, char *out, size_t len) {
+int system_sh_out(const char *cmd, char *out, size_t len) {
   FILE *f;
   int pid = 0;
   int status = 0;
@@ -53,7 +53,7 @@ rda(1) int system_sh_out(const char *cmd, char *out, size_t len) {
   return status;
 }
 
-rda(1) void system_sh(const char *cmd) {
+void system_sh(const char *cmd) {
   int status;
   int pid = fork();
   if(pid == 0) {
