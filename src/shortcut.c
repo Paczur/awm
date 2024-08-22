@@ -91,7 +91,7 @@ void shortcut_add(xcb_keysym_t keysym, SHORTCUT_TYPE type, uint16_t mod_mask,
   t->repeatable = repeatable;
 }
 
-rda(1) void shortcut_enable(const xcb_screen_t *screen, SHORTCUT_TYPE type) {
+void shortcut_enable(const xcb_screen_t *screen, SHORTCUT_TYPE type) {
   shortcut_t *sh;
   bool found;
   xcb_mod_mask_t mask;
@@ -143,7 +143,7 @@ rda(1) void shortcut_enable(const xcb_screen_t *screen, SHORTCUT_TYPE type) {
   free(used);
 }
 
-rda(1) void shortcut_event_state(const xcb_xkb_state_notify_event_t *event) {
+void shortcut_event_state(const xcb_xkb_state_notify_event_t *event) {
   if(event->xkbType == XCB_XKB_STATE_NOTIFY) {
     xkb_state_update_mask(xkbstate, event->baseMods, event->latchedMods,
                           event->lockedMods, event->baseGroup,

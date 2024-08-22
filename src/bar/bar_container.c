@@ -62,7 +62,7 @@ void bar_container_update(bar_containers_t bcs, size_t count) {
   bar_container_count = count;
 }
 
-rda(2) void bar_container_init(xcb_connection_t *c, const xcb_screen_t *sc,
+void bar_container_init(xcb_connection_t *c, const xcb_screen_t *sc,
                                bar_containers_t bcs, size_t count) {
   bar_containers = bcs;
   bar_container_count = count;

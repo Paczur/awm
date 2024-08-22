@@ -162,7 +162,7 @@ void workspace_deinit(void) {
   }
 }
 
-rda(1) void workspace_event_unmap(const window_t *win, WINDOW_STATE prev) {
+void workspace_event_unmap(const window_t *win, WINDOW_STATE prev) {
   (void)win;
   if(prev < 0) return;
   for(size_t i = 0; i < workarea_count; i++) {

@@ -25,7 +25,7 @@ static void launcher_prompt_update(void) {
   }
 }
 
-rda(1) void launcher_prompt_append(const char *str, size_t len) {
+void launcher_prompt_append(const char *str, size_t len) {
   if(len + 1 + launcher_prompt_search_length > LAUNCHER_PROMPT_MAX_LENGTH)
     return;
   memcpy(launcher_prompt_search + launcher_prompt_search_length, str, len);
@@ -66,14 +66,13 @@ void launcher_prompt_clear(void) {
   }
 }
 
-rda(1) void launcher_prompt_count_update(const PangoFontDescription *font,
-                                         size_t old) {
+void launcher_prompt_count_update(const PangoFontDescription *font,
+                                  size_t old) {
   block_launcher_count_update(&launcher_prompt.block, font, old);
 }
 
-rda(1)
-  rda(2) void launcher_prompt_init(const PangoFontDescription *font,
-                                   const bar_launcher_prompt_init_t *init) {
+void launcher_prompt_init(const PangoFontDescription *font,
+                          const bar_launcher_prompt_init_t *init) {
   block_settings(&launcher_prompt.settings, &init->settings);
   launcher_prompt.min_width = init->min_width;
   block_launcher_create(&launcher_prompt.block, font);

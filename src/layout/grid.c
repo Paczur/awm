@@ -110,7 +110,7 @@ puref static const workarea_t *grid_workarea(size_t m) {
   return workareas + m;
 }
 
-rda(1) puref size_t grid_win2area(const window_t *win) {
+puref size_t grid_win2area(const window_t *win) {
   if(!win || win->state < 0) return -1;
   return grid_pos2area(grid_win2pos(win));
 }
@@ -173,7 +173,7 @@ puref xcb_window_t grid_pos2xwin(size_t n) {
   return w->id;
 }
 
-rda(1) puref size_t grid_win2pos(const window_t *win) {
+puref size_t grid_win2pos(const window_t *win) {
   if(!win || win->state < 0) return -1;
   const workspace_t *workspace = workspaces + win->state;
   for(size_t i = 0; i < workarea_count * CELLS_PER_WORKAREA; i++) {
@@ -267,7 +267,7 @@ puref size_t grid_next_pos(void) {
   return SIZE_MAX;
 }
 
-nonea(1) void grid_unmark(window_t *w) {
+void grid_unmark(window_t *w) {
   workspace_t *workspace;
   for(size_t j = 0; j < MAX_WORKSPACES; j++) {
     workspace = workspaces + j;
@@ -605,9 +605,7 @@ bool grid_show(window_t *window) {
   return true;
 }
 
-rda(1) void grid_minimizew(const window_t *win) {
-  xcb_unmap_window(conn, win->id);
-}
+void grid_minimizew(const window_t *win) { xcb_unmap_window(conn, win->id); }
 
 bool grid_minimize(size_t n) {
   grid_cell_t *cell = grid_pos2cell(n);
@@ -732,7 +730,7 @@ bool grid_restore_window(window_t *win, size_t wo) {
   return true;
 }
 
-rda(2) void grid_init(xcb_connection_t *c, const grid_init_t *init) {
+void grid_init(xcb_connection_t *c, const grid_init_t *init) {
   conn = c;
   gap_size = init->gaps;
   border_size = init->borders;

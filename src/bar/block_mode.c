@@ -40,13 +40,13 @@ bool block_mode_find_redraw(xcb_window_t window) {
   return block_find_redraw(&block_mode.block, 1, window);
 }
 
-rda(1) void block_mode_count_update(const PangoFontDescription *font,
+void block_mode_count_update(const PangoFontDescription *font,
                                     size_t old) {
   block_count_update(&block_mode.block, font, old);
   block_show_all(&block_mode.block);
 }
 
-rda(1) rda(2) void block_mode_init(const PangoFontDescription *font,
+void block_mode_init(const PangoFontDescription *font,
                                    const bar_block_mode_init_t *init) {
   block_settings(&block_mode.insert, &init->insert);
   block_settings(&block_mode.normal, &init->normal);
