@@ -10,7 +10,7 @@ size_t bar_container_count;
 static xcb_connection_t *conn;
 static const xcb_screen_t *screen;
 
-size_t bar_container_find(xcb_window_t window) {
+puref size_t bar_container_find(xcb_window_t window) {
   for(size_t i = 0; i < bar_container_count; i++) {
     if(bar_containers.id[i] == window) return i;
   }
@@ -62,8 +62,8 @@ void bar_container_update(bar_containers_t bcs, size_t count) {
   bar_container_count = count;
 }
 
-void bar_container_init(xcb_connection_t *c, const xcb_screen_t *sc,
-                        bar_containers_t bcs, size_t count) {
+rda(2) void bar_container_init(xcb_connection_t *c, const xcb_screen_t *sc,
+                               bar_containers_t bcs, size_t count) {
   bar_containers = bcs;
   bar_container_count = count;
   screen = sc;

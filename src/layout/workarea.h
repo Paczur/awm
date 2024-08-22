@@ -4,6 +4,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "layout_types.h"
+
 typedef struct workarea_t workarea_t;
 
 extern workarea_t *workareas;

@@ -9,9 +9,9 @@ static const xcb_screen_t *screen;
 static xcb_visualtype_t *visual_type;
 static size_t color_index = 0;
 
-static void block_geometry(const block_t *block, uint32_t min_width,
-                           uint32_t *width, uint32_t *text_x,
-                           uint32_t *text_y) {
+rda(1) static void block_geometry(const block_t *block, uint32_t min_width,
+                                  uint32_t *width, uint32_t *text_x,
+                                  uint32_t *text_y) {
   PangoRectangle t;
   PangoRectangle t2;
   pango_layout_get_extents(block->pango[0], &t, &t2);
@@ -81,11 +81,12 @@ void block_settings(block_settings_t *bs, const block_settings_init_t *init) {
     bs->foreground[2][i] = color[i] / 255.0;
 }
 
-uint32_t block_next_x(const block_geometry_t *geom) {
+rda(1) puref uint32_t block_next_x(const block_geometry_t *geom) {
   return (geom->w < 2) ? geom->x : geom->x + geom->w + bar_containers.separator;
 }
 
-uint32_t block_combined_width(const block_geometry_t *geom, size_t count) {
+rda(1) puref uint32_t
+  block_combined_width(const block_geometry_t *geom, size_t count) {
   uint32_t width = 0;
   for(size_t i = 0; i < count; i++) {
     if(geom[i].w > 1) width += geom[i].w + bar_containers.separator;
@@ -94,9 +95,10 @@ uint32_t block_combined_width(const block_geometry_t *geom, size_t count) {
   return width;
 }
 
-void block_update_batch(const block_t *blocks, size_t count,
-                        const block_settings_t *settings,
-                        const block_geometry_t *geom, size_t bar) {
+rda(1) rda(3)
+  rda(4) void block_update_batch(const block_t *blocks, size_t count,
+                                 const block_settings_t *settings,
+                                 const block_geometry_t *geom, size_t bar) {
   uint32_t vals[2] = {geom->x, geom->w};
   for(size_t i = 0; i < count; i++) {
     xcb_configure_window(conn, blocks[i].id[bar],
@@ -124,7 +126,8 @@ void block_redraw(const block_t *block, size_t bar) {
   pango_cairo_show_layout(block->cairo[bar], block->pango[bar]);
 }
 
-void block_redraw_batch(const block_t *blocks, size_t count, size_t bar) {
+rda(1) void block_redraw_batch(const block_t *blocks, size_t count,
+                               size_t bar) {
   for(size_t i = 0; i < count; i++) {
     xcb_clear_area(conn, 0, blocks[i].id[bar], 0, 0, bar_containers.w[bar],
                    bar_containers.h);
@@ -132,8 +135,8 @@ void block_redraw_batch(const block_t *blocks, size_t count, size_t bar) {
   }
 }
 
-bool block_find_redraw(const block_t *blocks, size_t count,
-                       xcb_window_t window) {
+rda(1) bool block_find_redraw(const block_t *blocks, size_t count,
+                              xcb_window_t window) {
   for(size_t i = 0; i < count; i++) {
     for(size_t bar = 0; bar < bar_container_count; bar++) {
       if(blocks[i].id[bar] == window) {
@@ -147,10 +150,11 @@ bool block_find_redraw(const block_t *blocks, size_t count,
   return false;
 }
 
-void block_update_batchf(const block_t *blocks, const block_geometry_t *geom,
-                         size_t count,
-                         const block_settings_t *(*settings)(size_t),
-                         size_t bar) {
+rda(1)
+  rda(2) void block_update_batchf(const block_t *blocks,
+                                  const block_geometry_t *geom, size_t count,
+                                  const block_settings_t *(*settings)(size_t),
+                                  size_t bar) {
   uint32_t vals[2];
   for(size_t i = 0; i < count; i++) {
     vals[0] = geom[i].x;
@@ -175,8 +179,10 @@ void block_update_batchf(const block_t *blocks, const block_geometry_t *geom,
   }
 }
 
-void block_update(const block_t *block, const block_settings_t *settings,
-                  const block_geometry_t *geom, size_t bar) {
+rda(1) rda(2)
+  rda(3) void block_update(const block_t *block,
+                           const block_settings_t *settings,
+                           const block_geometry_t *geom, size_t bar) {
   uint32_t vals[2] = {geom->x, geom->w};
   xcb_configure_window(conn, block->id[bar],
                        XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_WIDTH, vals);
@@ -192,8 +198,9 @@ void block_update(const block_t *block, const block_settings_t *settings,
   pango_cairo_show_layout(block->cairo[bar], block->pango[bar]);
 }
 
-void block_update_same(const block_t *block, const block_settings_t *settings,
-                       const block_geometry_t *geom) {
+rda(1) rda(2) rda(3) void block_update_same(const block_t *block,
+                                            const block_settings_t *settings,
+                                            const block_geometry_t *geom) {
   uint32_t vals[2] = {geom->x, geom->w};
   for(size_t bar = 0; bar < bar_container_count; bar++) {
     xcb_configure_window(conn, block->id[bar],
@@ -212,8 +219,8 @@ void block_update_same(const block_t *block, const block_settings_t *settings,
   }
 }
 
-void block_set_text_batch(const block_t *blocks, size_t count,
-                          const char *text) {
+rda(1) rda(3) void block_set_text_batch(const block_t *blocks, size_t count,
+                                        const char *text) {
   for(size_t i = 0; i < count; i++) {
     for(size_t j = 0; j < bar_container_count; j++) {
       pango_layout_set_text(blocks[i].pango[j], text, -1);
@@ -221,7 +228,7 @@ void block_set_text_batch(const block_t *blocks, size_t count,
   }
 }
 
-void block_set_text(const block_t *block, const char *text) {
+rda(1) rda(2) void block_set_text(const block_t *block, const char *text) {
   for(size_t i = 0; i < bar_container_count; i++) {
     pango_layout_set_text(block->pango[i], text, -1);
   }
@@ -248,7 +255,7 @@ void block_show_all(block_t *block) {
   }
 }
 
-void block_create(block_t *block, const PangoFontDescription *font) {
+rda(2) void block_create(block_t *block, const PangoFontDescription *font) {
   uint32_t mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
   uint32_t values[2] = {bar_containers.background[color_index],
                         XCB_EVENT_MASK_EXPOSURE};
@@ -275,8 +282,8 @@ void block_create(block_t *block, const PangoFontDescription *font) {
   }
 }
 
-void block_count_update(block_t *block, const PangoFontDescription *font,
-                        size_t old) {
+rda(2) void block_count_update(block_t *block, const PangoFontDescription *font,
+                               size_t old) {
   uint32_t mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
   uint32_t values[2] = {bar_containers.background[color_index],
                         XCB_EVENT_MASK_EXPOSURE};
@@ -323,8 +330,9 @@ void block_count_update(block_t *block, const PangoFontDescription *font,
   }
 }
 
-void block_launcher_count_update(block_t *block,
-                                 const PangoFontDescription *font, size_t old) {
+rda(2) void block_launcher_count_update(block_t *block,
+                                        const PangoFontDescription *font,
+                                        size_t old) {
   uint32_t mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
   uint32_t values[2] = {bar_containers.background[color_index],
                         XCB_EVENT_MASK_EXPOSURE};
@@ -371,7 +379,8 @@ void block_launcher_count_update(block_t *block,
   }
 }
 
-void block_launcher_create(block_t *block, const PangoFontDescription *font) {
+rda(2) void block_launcher_create(block_t *block,
+                                  const PangoFontDescription *font) {
   uint32_t mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
   uint32_t values[2] = {bar_containers.background[color_index],
                         XCB_EVENT_MASK_EXPOSURE};
@@ -398,8 +407,8 @@ void block_launcher_create(block_t *block, const PangoFontDescription *font) {
   }
 }
 
-void block_geometry_batch(const block_t *blocks, block_geometry_t *geom,
-                          size_t count, uint32_t min_width) {
+rda(1) void block_geometry_batch(const block_t *blocks, block_geometry_t *geom,
+                                 size_t count, uint32_t min_width) {
   geom[0].x = 0;
   block_geometry(blocks, min_width, &geom->w, &geom->text_x, &geom->text_y);
   for(size_t i = 1; i < count; i++) {
@@ -409,8 +418,9 @@ void block_geometry_batch(const block_t *blocks, block_geometry_t *geom,
   }
 }
 
-void block_geometry_left(const block_t *block, uint32_t min_width,
-                         const block_geometry_t *in, block_geometry_t *out) {
+rda(1) rda(3) void block_geometry_left(const block_t *block, uint32_t min_width,
+                                       const block_geometry_t *in,
+                                       block_geometry_t *out) {
   if(in == NULL) {
     out->x = 0;
   } else {
@@ -510,8 +520,8 @@ void block_destroy(block_t *block) {
   free(block->pango);
 }
 
-void block_init(xcb_connection_t *c, const xcb_screen_t *s,
-                xcb_visualtype_t *type) {
+rda(2) void block_init(xcb_connection_t *c, const xcb_screen_t *s,
+                       xcb_visualtype_t *type) {
   conn = c;
   screen = s;
   visual_type = type;

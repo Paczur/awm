@@ -232,7 +232,7 @@ void launcher_trie_clear(launcher_trie_node_t *node) {
   }
 }
 
-void launcher_trie_print(const launcher_trie_node_t *node) {
+rda(1) void launcher_trie_print(const launcher_trie_node_t *node) {
   if(node == NULL) {
     puts("NULL");
     return;
@@ -268,7 +268,7 @@ void launcher_trie_print(const launcher_trie_node_t *node) {
   }
 }
 
-launcher_trie_search_node_t *launcher_trie_search(
+constf launcher_trie_search_node_t *launcher_trie_search(
   const launcher_trie_node_t *tree, const char *word, size_t length) {
   launcher_trie_search_node_t *search;
   const launcher_trie_node_t *curr = tree;
@@ -302,7 +302,7 @@ launcher_trie_search_node_t *launcher_trie_search(
   }
 }
 
-launcher_trie_search_node_t *launcher_trie_search_sr(
+constf launcher_trie_search_node_t *launcher_trie_search_sr(
   const launcher_trie_search_node_t *node, const char *word, size_t length) {
   const launcher_trie_node_t *curr = node->node;
   launcher_trie_search_node_t *search;
@@ -329,7 +329,7 @@ launcher_trie_search_node_t *launcher_trie_search_sr(
   }
 }
 
-void launcher_trie_new_shortest(const char *buff, char length) {
+rda(1) void launcher_trie_new_shortest(const char *buff, char length) {
   for(size_t i = 0; i < LENGTH(lengths); i++) {
     if(lengths[i] > length) {
       memmove(lengths + i + 1, lengths + i,
@@ -344,8 +344,8 @@ void launcher_trie_new_shortest(const char *buff, char length) {
   }
 }
 
-void launcher_trie_10_shortest(const launcher_trie_node_t *node, char *buff,
-                               size_t length) {
+rda(1) void launcher_trie_10_shortest(const launcher_trie_node_t *node,
+                                      char *buff, size_t length) {
   const launcher_trie_node_t *curr = node;
   while(curr != NULL) {
     if(curr->next != NULL || curr->end) {
@@ -365,8 +365,8 @@ void launcher_trie_10_shortest(const launcher_trie_node_t *node, char *buff,
   }
 }
 
-void launcher_trie_10_shortest_sr(const launcher_trie_search_node_t *node,
-                                  char *buff, size_t length) {
+rda(1) void launcher_trie_10_shortest_sr(
+  const launcher_trie_search_node_t *node, char *buff, size_t length) {
   if(node == NULL) return;
   const launcher_trie_node_t *curr = node->node;
   length -= node->wrong;
@@ -407,8 +407,8 @@ void launcher_trie_10_shortest_sr(const launcher_trie_search_node_t *node,
   }
 }
 
-void launcher_trie_gen_hints_sr(const launcher_trie_search_node_t *node,
-                                char *buff, size_t length) {
+rda(1) void launcher_trie_gen_hints_sr(const launcher_trie_search_node_t *node,
+                                       char *buff, size_t length) {
   memset(lengths, UCHAR_MAX, sizeof(lengths));
   launcher_trie_10_shortest_sr(node, buff, length);
   for(size_t i = 0; i < MAX_LAUNCHER_HINTS; i++) {
@@ -419,8 +419,8 @@ void launcher_trie_gen_hints_sr(const launcher_trie_search_node_t *node,
   }
 }
 
-void launcher_trie_gen_hints(const launcher_trie_node_t *node, char *buff,
-                             size_t length) {
+rda(1) void launcher_trie_gen_hints(const launcher_trie_node_t *node,
+                                    char *buff, size_t length) {
   memset(lengths, UCHAR_MAX, sizeof(lengths));
   launcher_trie_10_shortest(node, buff, length);
   for(size_t i = 0; i < MAX_LAUNCHER_HINTS; i++) {

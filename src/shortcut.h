@@ -6,6 +6,8 @@
 #include <xcb/xcb.h>
 #include <xcb/xkb.h>
 
+#include "types.h"
+
 typedef struct shortcut_t {
   struct shortcut_t *next;
   uint32_t state;

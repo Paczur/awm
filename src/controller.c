@@ -35,8 +35,8 @@ size_t c_wm_color_current = 0;
   {x##_MIN_WIDTH, SETTINGS_INIT(x##_##n), SETTINGS_INIT(x##_##h), \
    SETTINGS_INIT(x##_URGENT)}
 
-static void c_calc_layout(rect_t *t_rect, const rect_t *monitors,
-                          size_t monitor_count) {
+wra(1) rda(2) static void c_calc_layout(rect_t *t_rect, const rect_t *monitors,
+                                        size_t monitor_count) {
   for(size_t i = 0; i < monitor_count; i++) {
     t_rect[i].x = monitors[i].x;
     t_rect[i].y = monitors[i].y + CONFIG_BAR_HEIGHT;
@@ -45,8 +45,8 @@ static void c_calc_layout(rect_t *t_rect, const rect_t *monitors,
   }
 }
 
-static void c_calc_bar(rect_t *t_rect, const rect_t *monitors,
-                       size_t monitor_count) {
+wra(1) rda(2) static void c_calc_bar(rect_t *t_rect, const rect_t *monitors,
+                                     size_t monitor_count) {
   for(size_t i = 0; i < monitor_count; i++) {
     t_rect[i].x = monitors[i].x;
     t_rect[i].y = monitors[i].y;
@@ -55,7 +55,7 @@ static void c_calc_bar(rect_t *t_rect, const rect_t *monitors,
   }
 }
 
-static uint32_t c_hex2xcolor(const char *hex) {
+constf static uint32_t c_hex2xcolor(const char *hex) {
   uint32_t mul = 1;
   uint32_t ret = 0;
   size_t end = 6;
@@ -408,7 +408,7 @@ void c_bar_block_update_highlight(size_t n, int delay) {
 #undef PRINT
 }
 
-void c_event_message(const xcb_generic_event_t *e) {
+rda(1) void c_event_message(const xcb_generic_event_t *e) {
   const xcb_client_message_event_t *event =
     (const xcb_client_message_event_t *)e;
   if(hint_atom_wm_change_state(event->type) &&
@@ -430,7 +430,7 @@ void c_event_message(const xcb_generic_event_t *e) {
   }
 }
 
-void c_event_map(const xcb_generic_event_t *e) {
+rda(1) void c_event_map(const xcb_generic_event_t *e) {
   const xcb_map_request_event_t *event = (const xcb_map_request_event_t *)e;
   xcb_atom_t *atoms;
   rect_t rect;
@@ -472,7 +472,7 @@ void c_event_map(const xcb_generic_event_t *e) {
   free(atoms);
 }
 
-void c_event_map_notify(const xcb_generic_event_t *e) {
+rda(1) void c_event_map_notify(const xcb_generic_event_t *e) {
   bool bar = false;
   const bar_containers_t *bar_containers;
   window_t *win;
@@ -502,7 +502,7 @@ void c_event_map_notify(const xcb_generic_event_t *e) {
 #undef PRINT
 }
 
-void c_event_key_press(const xcb_generic_event_t *e) {
+rda(1) void c_event_key_press(const xcb_generic_event_t *e) {
   const xcb_key_press_event_t *event = (const xcb_key_press_event_t *)e;
   char buff[10];
   size_t len;
@@ -532,7 +532,7 @@ void c_event_key_press(const xcb_generic_event_t *e) {
 #undef PRINT
 }
 
-void c_event_key_release(const xcb_generic_event_t *e) {
+rda(1) void c_event_key_release(const xcb_generic_event_t *e) {
   const xcb_key_release_event_t *event = (const xcb_key_release_event_t *)e;
 
   if(bar_launcher_window(event->event)) {
@@ -558,7 +558,7 @@ void c_event_key_release(const xcb_generic_event_t *e) {
 #undef PRINT
 }
 
-void c_event_button_press(const xcb_generic_event_t *e) {
+rda(1) void c_event_button_press(const xcb_generic_event_t *e) {
   const xcb_button_press_event_t *event = (const xcb_button_press_event_t *)e;
   xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, XCB_CURRENT_TIME);
   if((event->detail < 4 || event->detail > 7) && event->event != screen->root) {
@@ -573,7 +573,7 @@ void c_event_button_press(const xcb_generic_event_t *e) {
 #undef PRINT
 }
 
-void c_event_button_release(const xcb_generic_event_t *e) {
+rda(1) void c_event_button_release(const xcb_generic_event_t *e) {
   const xcb_button_release_event_t *event =
     (const xcb_button_release_event_t *)e;
   xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, XCB_CURRENT_TIME);
@@ -585,7 +585,7 @@ void c_event_button_release(const xcb_generic_event_t *e) {
 #undef PRINT
 }
 
-void c_event_create(const xcb_generic_event_t *e) {
+rda(1) void c_event_create(const xcb_generic_event_t *e) {
   const xcb_create_notify_event_t *event = (const xcb_create_notify_event_t *)e;
   xcb_grab_button(conn, 1, event->window, XCB_EVENT_MASK_BUTTON_PRESS,
                   XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE,
@@ -596,7 +596,7 @@ void c_event_create(const xcb_generic_event_t *e) {
 #undef PRINT
 }
 
-void c_event_destroy(const xcb_generic_event_t *e) {
+rda(1) void c_event_destroy(const xcb_generic_event_t *e) {
   const xcb_destroy_notify_event_t *event =
     (const xcb_destroy_notify_event_t *)e;
   WINDOW_STATE state_before_destroy = layout_event_destroy(event->window);
@@ -614,7 +614,7 @@ void c_event_destroy(const xcb_generic_event_t *e) {
 #undef PRINT
 }
 
-void c_event_unmap(const xcb_generic_event_t *e) {
+rda(1) void c_event_unmap(const xcb_generic_event_t *e) {
   const xcb_unmap_notify_event_t *event = (const xcb_unmap_notify_event_t *)e;
   bool bar = false;
   size_t workarea_count;
@@ -647,7 +647,7 @@ void c_event_unmap(const xcb_generic_event_t *e) {
 #undef PRINT
 }
 
-void c_event_focus(const xcb_generic_event_t *e) {
+rda(1) void c_event_focus(const xcb_generic_event_t *e) {
   const xcb_focus_in_event_t *event = (const xcb_focus_in_event_t *)e;
   if(event->detail != XCB_NOTIFY_DETAIL_POINTER) {
     xcb_grab_button(conn, 1, event->event, XCB_EVENT_MASK_BUTTON_PRESS,
@@ -662,16 +662,16 @@ void c_event_focus(const xcb_generic_event_t *e) {
   bar_focus(event->event);
 }
 
-void c_event_expose(const xcb_generic_event_t *e) {
+rda(1) void c_event_expose(const xcb_generic_event_t *e) {
   const xcb_expose_event_t *event = (const xcb_expose_event_t *)e;
   bar_redraw(event->window);
 }
 
-void c_event_xkb(const xcb_generic_event_t *e) {
+rda(1) void c_event_xkb(const xcb_generic_event_t *e) {
   shortcut_event_state((xcb_xkb_state_notify_event_t *)e);
 }
 
-void c_event_property(const xcb_generic_event_t *e) {
+rda(1) void c_event_property(const xcb_generic_event_t *e) {
   uint32_t color;
   window_t *win = NULL;
   const xcb_property_notify_event_t *event =
@@ -711,7 +711,7 @@ void c_event_property(const xcb_generic_event_t *e) {
   }
 }
 
-void c_event_configure(const xcb_generic_event_t *e) {
+rda(1) void c_event_configure(const xcb_generic_event_t *e) {
   const xcb_configure_request_event_t *event =
     (xcb_configure_request_event_t *)e;
   uint32_t mask = XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT |
@@ -747,7 +747,7 @@ void c_event_configure(const xcb_generic_event_t *e) {
   }
 }
 
-void c_event_randr(const xcb_generic_event_t *e) {
+rda(1) void c_event_randr(const xcb_generic_event_t *e) {
   (void)e;
   rect_t *t_rect;
   rect_t *monitors;
@@ -777,8 +777,8 @@ static void convert_shortcuts(SHORTCUT_TYPE type,
   }
 }
 
-static void c_init_bar(rect_t *t_rect, const rect_t *monitors,
-                       size_t monitor_count) {
+rda(2) static void c_init_bar(rect_t *t_rect, const rect_t *monitors,
+                              size_t monitor_count) {
   c_calc_bar(t_rect, monitors, monitor_count);
   bar_init_t binit = (bar_init_t){
     conn,
@@ -813,8 +813,8 @@ static void c_init_bar(rect_t *t_rect, const rect_t *monitors,
   bar_init(&binit);
 }
 
-static void c_init_layout(rect_t *t_rect, const rect_t *monitors,
-                          size_t monitor_count) {
+rda(2) static void c_init_layout(rect_t *t_rect, const rect_t *monitors,
+                                 size_t monitor_count) {
   c_calc_layout(t_rect, monitors, monitor_count);
   layout_init_t linit = (layout_init_t){
     conn,

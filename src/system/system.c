@@ -18,7 +18,7 @@ xcb_connection_t *conn;
 const xcb_setup_t *setup;
 xcb_screen_t *screen;
 
-int system_sh_out(const char *cmd, char *out, size_t len) {
+rda(1) int system_sh_out(const char *cmd, char *out, size_t len) {
   FILE *f;
   int pid = 0;
   int status = 0;
@@ -53,7 +53,7 @@ int system_sh_out(const char *cmd, char *out, size_t len) {
   return status;
 }
 
-void system_sh(const char *cmd) {
+rda(1) void system_sh(const char *cmd) {
   int status;
   int pid = fork();
   if(pid == 0) {
@@ -209,9 +209,9 @@ void system_monitors(rect_t **monitors, size_t *monitor_count) {
   OUT_RECT_ARR(*monitors);
 }
 
-uint8_t system_xkb(void) { return xkb_event; }
+puref uint8_t system_xkb(void) { return xkb_event; }
 
-uint8_t system_randr(void) { return randr_event; }
+puref uint8_t system_randr(void) { return randr_event; }
 
 void system_init(void (*term_action)(int)) {
   struct sigaction action = {.sa_handler = term_action};

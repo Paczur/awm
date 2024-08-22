@@ -10,7 +10,8 @@ workarea_t *workareas_fullscreen;
 size_t workarea_count;
 size_t workarea_capacity;
 
-void workarea_init(const workarea_t *ws, const workarea_t *full, size_t count) {
+rda(1) rda(2) void workarea_init(const workarea_t *ws, const workarea_t *full,
+                                 size_t count) {
   workareas = malloc(count * sizeof(workarea_t));
   workareas_fullscreen = malloc(count * sizeof(workarea_t));
   workarea_count = count;
@@ -19,8 +20,8 @@ void workarea_init(const workarea_t *ws, const workarea_t *full, size_t count) {
   memcpy(workareas_fullscreen, full, count * sizeof(workarea_t));
 }
 
-void workarea_update(const workarea_t *ws, const workarea_t *full,
-                     size_t count) {
+rda(1) rda(2) void workarea_update(const workarea_t *ws, const workarea_t *full,
+                                   size_t count) {
   if(workarea_count != count) {
     workareas = realloc(workareas, count * sizeof(workarea_t));
     workareas_fullscreen =

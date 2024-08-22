@@ -37,7 +37,7 @@ static int (*get_output)(const char *, char *, size_t);
 static block_geometry_t *block_info_geometry;
 static xcb_connection_t *conn;
 
-static const block_settings_t *block_info_get_settings(size_t n) {
+puref static const block_settings_t *block_info_get_settings(size_t n) {
   switch(block_info.state[n].status) {
   case 1:
   case 33:
@@ -48,6 +48,7 @@ static const block_settings_t *block_info_get_settings(size_t n) {
     return &block_info.normal;
   }
 }
+
 static void *block_info_update_periodic(void *) {
   int max;
   struct timespec ts =
@@ -154,7 +155,8 @@ void block_info_redraw(size_t bar) {
   block_redraw_batch(block_info.blocks, block_count, bar);
 }
 
-void block_info_count_update(const PangoFontDescription *font, size_t old) {
+rda(1) void block_info_count_update(const PangoFontDescription *font,
+                                    size_t old) {
   for(size_t i = 0; i < block_count; i++) {
     block_count_update(block_info.blocks + i, font, old);
   }
@@ -164,8 +166,10 @@ bool block_info_find_redraw(xcb_window_t window) {
   return block_find_redraw(block_info.blocks, block_count, window);
 }
 
-void block_info_init(const PangoFontDescription *font, void (*cb)(void),
-                     const bar_block_info_init_t *init, xcb_connection_t *c) {
+rda(1) rda(3) void block_info_init(const PangoFontDescription *font,
+                                   void (*cb)(void),
+                                   const bar_block_info_init_t *init,
+                                   xcb_connection_t *c) {
   block_settings(&block_info.normal, &init->normal);
   block_settings(&block_info.highlighted, &init->highlighted);
   block_settings(&block_info.urgent, &init->urgent);
