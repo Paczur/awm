@@ -12,13 +12,15 @@ size_t workspace_focused;
 
 static xcb_connection_t *conn;
 
-workspace_t *workspace_focusedw(void) { return workspaces + workspace_focused; }
+puref workspace_t *workspace_focusedw(void) {
+  return workspaces + workspace_focused;
+}
 
-bool workspace_area_empty(size_t n, size_t m) {
+puref bool workspace_area_empty(size_t n, size_t m) {
   return !workspaces[n].grid[m * CELLS_PER_WORKAREA].window;
 }
 
-size_t workspace_window_count(size_t n) {
+puref size_t workspace_window_count(size_t n) {
   size_t counter = 0;
   workspace_t *workspace = workspaces + n;
   for(size_t i = 0; i < CELLS_PER_WORKAREA * workarea_count; i++) {
@@ -27,14 +29,14 @@ size_t workspace_window_count(size_t n) {
   return counter;
 }
 
-bool workspace_empty(size_t n) {
+puref bool workspace_empty(size_t n) {
   for(size_t i = 0; i < workarea_count; i++) {
     if(!workspace_area_empty(n, i)) return false;
   }
   return true;
 }
 
-bool workspace_urgent(size_t n) {
+puref bool workspace_urgent(size_t n) {
   for(size_t i = 0; i < CELLS_PER_WORKAREA * workarea_count; i++) {
     if(workspaces[n].grid[i].window != NULL &&
        workspaces[n].grid[i].window->urgent)
@@ -160,7 +162,7 @@ void workspace_deinit(void) {
   }
 }
 
-void workspace_event_unmap(const window_t *win, WINDOW_STATE prev) {
+rda(1) void workspace_event_unmap(const window_t *win, WINDOW_STATE prev) {
   (void)win;
   if(prev < 0) return;
   for(size_t i = 0; i < workarea_count; i++) {

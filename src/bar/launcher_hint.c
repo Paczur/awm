@@ -14,7 +14,7 @@ size_t launcher_hint_count;
 static block_geometry_t launcher_hint_geometry[MAX_LAUNCHER_HINTS];
 static launcher_hint_t launcher_hint;
 
-static const block_settings_t *launcher_hint_get_settings(size_t n) {
+constf static const block_settings_t *launcher_hint_get_settings(size_t n) {
   return (n == launcher_hint_selected) ? &launcher_hint.focused
                                        : &launcher_hint.unfocused;
 }
@@ -27,7 +27,7 @@ bool launcher_hint_find_redraw(xcb_window_t window) {
   return block_find_redraw(launcher_hint.blocks, MAX_LAUNCHER_HINTS, window);
 }
 
-void launcher_hint_regen(const char *search, size_t length) {
+rda(1) void launcher_hint_regen(const char *search, size_t length) {
   char buff[MAX_WORD_LENGTH];
   launcher_trie_search_node_t *sr;
   launcher_hint_selected = 0;
@@ -55,14 +55,15 @@ void launcher_hint_update(size_t left_offset) {
                                left_offset, launcher_hint.min_width, 0);
 }
 
-void launcher_hint_count_update(const PangoFontDescription *font, size_t old) {
+rda(1) void launcher_hint_count_update(const PangoFontDescription *font,
+                                       size_t old) {
   for(size_t i = 0; i < MAX_LAUNCHER_HINTS; i++) {
     block_launcher_count_update(launcher_hint.blocks + i, font, old);
   }
 }
 
-void launcher_hint_init(const PangoFontDescription *font,
-                        const bar_launcher_hint_init_t *init) {
+rda(1) rda(2) void launcher_hint_init(const PangoFontDescription *font,
+                                      const bar_launcher_hint_init_t *init) {
   block_settings(&launcher_hint.focused, &init->focused);
   block_settings(&launcher_hint.unfocused, &init->unfocused);
   launcher_hint.min_width = init->min_width;

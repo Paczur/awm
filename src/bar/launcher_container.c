@@ -45,7 +45,8 @@ void launcher_container_count_update(size_t old) {
   }
 }
 
-void launcher_container_init(xcb_connection_t *c, const xcb_screen_t *sc) {
+rda(2) void launcher_container_init(xcb_connection_t *c,
+                                    const xcb_screen_t *sc) {
   uint32_t mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
   uint32_t values[2] = {bar_containers.background[0], XCB_EVENT_MASK_EXPOSURE};
   conn = c;

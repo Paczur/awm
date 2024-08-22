@@ -16,7 +16,7 @@ static size_t name_offset;
 static size_t urgent_offset;
 
 // counted from 1 instead of zero, locked in _update
-static const block_settings_t *block_minimized_get_settings(size_t n) {
+puref static const block_settings_t *block_minimized_get_settings(size_t n) {
   const plist_t *curr = *windows;
   for(size_t i = 0; curr != NULL && i < n; i++) {
     curr = curr->next;
@@ -52,15 +52,16 @@ bool block_minimized_find_redraw(xcb_window_t window) {
                            window);
 }
 
-void block_minimized_count_update(const PangoFontDescription *font,
-                                  size_t old) {
+rda(1) void block_minimized_count_update(const PangoFontDescription *font,
+                                         size_t old) {
   for(size_t i = 0; i < MAX_MINIMIZED_BLOCKS; i++) {
     block_count_update(block_minimized.blocks + i, font, old);
   }
 }
 
-void block_minimized_init(const PangoFontDescription *font,
-                          const bar_block_minimized_init_t *init) {
+rda(1)
+  rda(2) void block_minimized_init(const PangoFontDescription *font,
+                                   const bar_block_minimized_init_t *init) {
   block_settings(&block_minimized.even, &init->even);
   block_settings(&block_minimized.odd, &init->odd);
   block_settings(&block_minimized.urgent, &init->urgent);

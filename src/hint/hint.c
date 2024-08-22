@@ -249,33 +249,37 @@ xcb_get_property_reply_t *hint_window_class(xcb_window_t window,
   return xcb_get_property_reply(conn, cookie, NULL);
 }
 
-bool hint_atom_wm_change_state(xcb_atom_t a) { return WM_CHANGE_STATE == a; }
+constf bool hint_atom_wm_change_state(xcb_atom_t a) {
+  return WM_CHANGE_STATE == a;
+}
 
-bool hint_state_iconic(uint32_t state) { return state == 3; }
+constf bool hint_state_iconic(uint32_t state) { return state == 3; }
 
-bool hint_atom_close_window(xcb_atom_t a) { return _NET_CLOSE_WINDOW == a; }
+constf bool hint_atom_close_window(xcb_atom_t a) {
+  return _NET_CLOSE_WINDOW == a;
+}
 
-bool hint_atom_frame_extents(xcb_atom_t a) {
+constf bool hint_atom_frame_extents(xcb_atom_t a) {
   return _NET_REQUEST_FRAME_EXTENTS == a;
 }
 
-bool hint_atom_window_type_splash(xcb_atom_t a) {
+constf bool hint_atom_window_type_splash(xcb_atom_t a) {
   return _NET_WM_WINDOW_TYPE_SPLASH == a;
 }
 
-bool hint_atom_window_type_utility(xcb_atom_t a) {
+constf bool hint_atom_window_type_utility(xcb_atom_t a) {
   return _NET_WM_WINDOW_TYPE_UTILITY == a;
 }
 
-bool hint_atom_window_type_notification(xcb_atom_t a) {
+constf bool hint_atom_window_type_notification(xcb_atom_t a) {
   return _NET_WM_WINDOW_TYPE_NOTIFICATION == a;
 }
 
-bool hint_atom_urgent(xcb_atom_t atom) {
+constf bool hint_atom_urgent(xcb_atom_t atom) {
   return atom == WM_HINTS || atom == _NET_WM_STATE;
 }
 
-bool hint_atom_input(xcb_atom_t atom) { return atom == WM_HINTS; }
+constf bool hint_atom_input(xcb_atom_t atom) { return atom == WM_HINTS; }
 
 size_t hint_atom_window_type(xcb_atom_t **atoms, xcb_window_t window) {
   size_t ret;
@@ -563,7 +567,7 @@ void hint_window_hints_set(xcb_window_t window) {
 #undef PRINT
 }
 
-void hint_init(const hint_init_t *init) {
+rda(1) void hint_init(const hint_init_t *init) {
   conn = init->conn;
   screen = init->screen;
   workspace_number = init->workspace_number;

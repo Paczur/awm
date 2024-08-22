@@ -75,15 +75,16 @@ void block_workspace_update(size_t focused, size_t offset_left, size_t start) {
   }
 }
 
-void block_workspace_count_update(const PangoFontDescription *font,
-                                  size_t old) {
+rda(1) void block_workspace_count_update(const PangoFontDescription *font,
+                                         size_t old) {
   for(size_t i = 0; i < MAX_WORKSPACE_BLOCKS; i++) {
     block_count_update(block_workspace.blocks + i, font, old);
   }
 }
 
-void block_workspace_init(const PangoFontDescription *font,
-                          const bar_block_workspace_init_t *init) {
+rda(1)
+  rda(2) void block_workspace_init(const PangoFontDescription *font,
+                                   const bar_block_workspace_init_t *init) {
   block_settings(&block_workspace.focused, &init->focused);
   block_settings(&block_workspace.unfocused, &init->unfocused);
   block_settings(&block_workspace.urgent, &init->urgent);
