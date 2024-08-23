@@ -37,7 +37,7 @@ static int (*get_output)(const char *, char *, size_t);
 static block_geometry_t *block_info_geometry;
 static xcb_connection_t *conn;
 
-puref static const block_settings_t *block_info_get_settings(size_t n) {
+PURE static const block_settings_t *block_info_get_settings(size_t n) {
   switch(block_info.state[n].status) {
   case 1:
   case 33:

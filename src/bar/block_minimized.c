@@ -16,7 +16,7 @@ static size_t name_offset;
 static size_t urgent_offset;
 
 // counted from 1 instead of zero, locked in _update
-puref static const block_settings_t *block_minimized_get_settings(size_t n) {
+PURE static const block_settings_t *block_minimized_get_settings(size_t n) {
   const plist_t *curr = *windows;
   for(size_t i = 0; curr != NULL && i < n; i++) {
     curr = curr->next;

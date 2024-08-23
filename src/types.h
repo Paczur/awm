@@ -8,8 +8,8 @@ typedef unsigned char uchar;
 
 #define LENGTH(x) (sizeof(x) / sizeof((x)[0]))
 
-#define puref __attribute__((pure))
-#define constf __attribute__((const))
+#define PURE __attribute__((pure))
+#define CONST __attribute__((const))
 
 typedef enum WINDOW_STATE {
   WINDOW_INVALID = -3,

@@ -10,7 +10,7 @@ size_t bar_container_count;
 static xcb_connection_t *conn;
 static const xcb_screen_t *screen;
 
-puref size_t bar_container_find(xcb_window_t window) {
+PURE size_t bar_container_find(xcb_window_t window) {
   for(size_t i = 0; i < bar_container_count; i++) {
     if(bar_containers.id[i] == window) return i;
   }

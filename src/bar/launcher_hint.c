@@ -14,7 +14,7 @@ size_t launcher_hint_count;
 static block_geometry_t launcher_hint_geometry[MAX_LAUNCHER_HINTS];
 static launcher_hint_t launcher_hint;
 
-constf static const block_settings_t *launcher_hint_get_settings(size_t n) {
+CONST static const block_settings_t *launcher_hint_get_settings(size_t n) {
   return (n == launcher_hint_selected) ? &launcher_hint.focused
                                        : &launcher_hint.unfocused;
 }

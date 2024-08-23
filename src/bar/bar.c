@@ -117,7 +117,7 @@ char *bar_launcher_return(void) {
   return NULL;
 }
 
-puref bool bar_launcher_window(xcb_window_t window) {
+PURE bool bar_launcher_window(xcb_window_t window) {
   if(!bar_launcher_visible) return false;
   for(size_t i = 0; i < bar_container_count; i++) {
     if(bar_containers.launcher[i] == window) return true;
