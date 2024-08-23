@@ -55,7 +55,7 @@ static void c_calc_bar(rect_t *t_rect, const rect_t *monitors,
   }
 }
 
-constf static uint32_t c_hex2xcolor(const char *hex) {
+CONST static uint32_t c_hex2xcolor(const char *hex) {
   uint32_t mul = 1;
   uint32_t ret = 0;
   size_t end = 6;

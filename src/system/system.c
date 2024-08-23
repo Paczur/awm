@@ -209,9 +209,9 @@ void system_monitors(rect_t **monitors, size_t *monitor_count) {
   OUT_RECT_ARR(*monitors);
 }
 
-puref uint8_t system_xkb(void) { return xkb_event; }
+PURE uint8_t system_xkb(void) { return xkb_event; }
 
-puref uint8_t system_randr(void) { return randr_event; }
+PURE uint8_t system_randr(void) { return randr_event; }
 
 void system_init(void (*term_action)(int)) {
   struct sigaction action = {.sa_handler = term_action};

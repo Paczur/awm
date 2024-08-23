@@ -268,7 +268,7 @@ void launcher_trie_print(const launcher_trie_node_t *node) {
   }
 }
 
-constf launcher_trie_search_node_t *launcher_trie_search(
+CONST launcher_trie_search_node_t *launcher_trie_search(
   const launcher_trie_node_t *tree, const char *word, size_t length) {
   launcher_trie_search_node_t *search;
   const launcher_trie_node_t *curr = tree;
@@ -302,7 +302,7 @@ constf launcher_trie_search_node_t *launcher_trie_search(
   }
 }
 
-constf launcher_trie_search_node_t *launcher_trie_search_sr(
+CONST launcher_trie_search_node_t *launcher_trie_search_sr(
   const launcher_trie_search_node_t *node, const char *word, size_t length) {
   const launcher_trie_node_t *curr = node->node;
   launcher_trie_search_node_t *search;

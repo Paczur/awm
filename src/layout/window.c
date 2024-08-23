@@ -140,7 +140,7 @@ void window_minimize_request(window_t *window) {
   pthread_rwlock_unlock(&window_lock);
 }
 
-constf bool window_minimize_requested(const window_t *window) {
+CONST bool window_minimize_requested(const window_t *window) {
   return window->minimize;
 }
 

@@ -81,11 +81,11 @@ void block_settings(block_settings_t *bs, const block_settings_init_t *init) {
     bs->foreground[2][i] = color[i] / 255.0;
 }
 
-puref uint32_t block_next_x(const block_geometry_t *geom) {
+PURE uint32_t block_next_x(const block_geometry_t *geom) {
   return (geom->w < 2) ? geom->x : geom->x + geom->w + bar_containers.separator;
 }
 
-puref uint32_t block_combined_width(const block_geometry_t *geom,
+PURE uint32_t block_combined_width(const block_geometry_t *geom,
                                     size_t count) {
   uint32_t width = 0;
   for(size_t i = 0; i < count; i++) {

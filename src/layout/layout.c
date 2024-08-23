@@ -15,7 +15,7 @@ static char workspace_names[MAX_WORKSPACES * (MAX_WORKSPACE_NAME_SIZE + 1)];
 static bool (*global_window_minimize)(xcb_window_t);
 
 void layout_workareas_update(const rect_t *ws, const rect_t *full,
-                                           size_t count) {
+                             size_t count) {
   size_t old = workarea_count;
   size_t pos;
   workspace_area_count_update(old);
@@ -51,13 +51,13 @@ size_t layout_workspaces(const workspace_t **w) {
   return MAX_WORKSPACES;
 }
 
-puref size_t layout_workspace_focused(void) { return workspace_focused; }
+PURE size_t layout_workspace_focused(void) { return workspace_focused; }
 
-puref bool layout_workspace_isempty(size_t w) { return workspace_empty(w); }
+PURE bool layout_workspace_isempty(size_t w) { return workspace_empty(w); }
 
-puref bool layout_workspace_isurgent(size_t w) { return workspace_urgent(w); }
+PURE bool layout_workspace_isurgent(size_t w) { return workspace_urgent(w); }
 
-puref bool layout_workspace_area_isfullscreen(size_t w, size_t m) {
+PURE bool layout_workspace_area_isfullscreen(size_t w, size_t m) {
   return workspaces[w].fullscreen[m];
 }
 
@@ -107,7 +107,7 @@ static void layout_workspace_names_update(void) {
 #undef PRINT
 }
 
-puref const char *layout_workspace_name(size_t n) {
+PURE const char *layout_workspace_name(size_t n) {
   char *pos = workspace_names;
   for(size_t i = 0; i < n; i++) {
     pos += strlen(pos) + 1;
@@ -115,7 +115,7 @@ puref const char *layout_workspace_name(size_t n) {
   return pos;
 }
 
-puref const char *layout_workspace_names(void) { return workspace_names; }
+CONST const char *layout_workspace_names(void) { return workspace_names; }
 
 bool layout_workspace_area_fullscreen_toggle(size_t w, size_t m) {
   bool ret = workspace_area_fullscreen_toggle(w, m);
@@ -133,29 +133,27 @@ bool layout_workspace_area_fullscreen_toggle(size_t w, size_t m) {
   return ret;
 }
 
-puref pthread_rwlock_t *layout_window_lock(void) { return &window_lock; }
+CONST pthread_rwlock_t *layout_window_lock(void) { return &window_lock; }
 
-puref window_list_t *const *layout_minimized(void) {
+CONST window_list_t *const *layout_minimized(void) {
   return &windows_minimized;
 }
 
-puref xcb_window_t layout_win2xwin(const window_t *win) {
+PURE xcb_window_t layout_win2xwin(const window_t *win) {
   return (!win) ? (xcb_window_t)-1 : win->id;
 }
 
-puref window_t *layout_xwin2win(xcb_window_t win) { return window_find(win); }
+PURE window_t *layout_xwin2win(xcb_window_t win) { return window_find(win); }
 
-puref window_t *layout_spawn2win(size_t s) {
+PURE window_t *layout_spawn2win(size_t s) {
   return grid_pos2win(grid_ord2pos(s));
 }
 
-puref size_t layout_win2area(const window_t *win) {
-  return grid_win2area(win);
-}
+PURE size_t layout_win2area(const window_t *win) { return grid_win2area(win); }
 
-puref window_t *layout_focused(void) { return grid_focusedw(); }
+PURE window_t *layout_focused(void) { return grid_focusedw(); }
 
-puref size_t layout_area_focused(void) { return grid_pos2area(grid_focused()); }
+PURE size_t layout_area_focused(void) { return grid_pos2area(grid_focused()); }
 
 bool layout_focus(const window_t *win) {
   if(!win) return false;
@@ -184,13 +182,13 @@ void layout_focus_lose(void) {
   LOGFE(LAYOUT_TRACE);
 }
 
-puref window_t *layout_above(void) { return grid_pos2win(grid_above()); }
+PURE window_t *layout_above(void) { return grid_pos2win(grid_above()); }
 
-puref window_t *layout_below(void) { return grid_pos2win(grid_below()); }
+PURE window_t *layout_below(void) { return grid_pos2win(grid_below()); }
 
-puref window_t *layout_to_right(void) { return grid_pos2win(grid_to_right()); }
+PURE window_t *layout_to_right(void) { return grid_pos2win(grid_to_right()); }
 
-puref window_t *layout_to_left(void) { return grid_pos2win(grid_to_left()); }
+PURE window_t *layout_to_left(void) { return grid_pos2win(grid_to_left()); }
 
 bool layout_urgency_set(window_t *win, bool state) {
   if(!win) return false;
