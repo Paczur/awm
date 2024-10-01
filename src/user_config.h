@@ -105,7 +105,7 @@
 #define CONFIG_BAR_HEIGHT 32
 #define CONFIG_BAR_FONT "Maple Mono 14"
 #undef CONFIG_BAR_FONT
-#define CONFIG_BAR_FONT "CodeNewRoman Nerd Font Propo 14"
+#define CONFIG_BAR_FONT "CodeNewRoman Nerd Font Propo 16"
 #define CONFIG_BAR_COMPONENT_PADDING 8
 #define CONFIG_BAR_COMPONENT_SEPARATOR 2
 
@@ -162,8 +162,8 @@
   {4, "/etc/awm/scripts/battery",    60}, \
   {8, "/etc/awm/scripts/gpu",        60}, \
   {5, "/etc/awm/scripts/cpu",        5},  \
-  {6, "date '+󰃶  %a %d' && exit 1",  3600}, \
-  {7, "date '+  %H:%M' && exit 1",  30}, \
+  {6, "date '+󰃶 %a %d' && exit 1",  3600}, \
+  {7, "date '+ %H:%M' && exit 1",  30}, \
 }
 // clang-format on
 
