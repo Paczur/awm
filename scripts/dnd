@@ -3,9 +3,9 @@ process="$(ps -A | grep dunst)"
 ex=0
 
 if [ -z "$process" ]; then
-  mode="󰂛"
+  mode=""
 else
-  mode="󰂚"
+  mode=""
   ex=1
 fi
 
