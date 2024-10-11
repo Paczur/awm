@@ -88,7 +88,6 @@
 #define CONFIG_TERMINAL_CMD "mlterm"
 #define CONFIG_RESIZE_STEP 10
 
-#define BLACK {"000000", "f3f3f3"}
 #define DARK_GRAY {"111111", "eeeeee"}
 #define GRAY {"333333", "aaaaaa"}
 #define YELLOW {"f3f36e", "b32d2e"}
