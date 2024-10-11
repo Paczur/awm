@@ -90,7 +90,7 @@
 
 #define DARK_GRAY {"111111", "eeeeee"}
 #define GRAY {"333333", "aaaaaa"}
-#define YELLOW {"f3f36e", "b32d2e"}
+#define YELLOW {"f3f36e", "e4bc04"}
 #define WHITE {"f3f3f3", "000000"}
 
 #define CONFIG_SPAWN_ORDER {0, 4, 6, 1, 7, 3, 5, 2}
