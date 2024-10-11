@@ -253,7 +253,7 @@ void bar_init(const bar_init_t *init) {
   screen = init->screen;
   PangoFontDescription *font;
   fontstr = init->bar_font;
-  bar_containers_t containers;
+  bar_containers_t containers = {.id = 0};
   focused_workspace = init->focused_workspace;
   containers.x = malloc(init->bar_container_count * sizeof(uint32_t));
   containers.y = malloc(init->bar_container_count * sizeof(uint32_t));
