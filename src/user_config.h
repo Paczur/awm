@@ -85,7 +85,7 @@
 #define CONFIG_SHORTCUTS_LAUNCHER_MODE_RELEASE { }
 // clang-format on
 
-#define CONFIG_TERMINAL_CMD "mlterm"
+#define CONFIG_TERMINAL_CMD "urxvt"
 #define CONFIG_RESIZE_STEP 10
 
 #define DARK_GRAY {"111111", "eeeeee"}
@@ -135,6 +135,7 @@
 #define CONFIG_BAR_MINIMIZED_NAME_REPLACEMENTS                 \
   {                                                            \
     {"mlterm",           "󰆍"}, \
+    {"urxvt",           "󰆍"}, \
     {"librewolf",        ""}, \
     {"LibreWolf",        ""}, \
     {"gimp",             ""}, \
