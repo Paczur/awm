@@ -1,57 +1,76 @@
-#ifndef H_LAYOUT
-#define H_LAYOUT
+#ifndef H_AWM_LAYOUT
+#define H_AWM_LAYOUT
 
-#include "layout_types.h"
+#include "../x/x.h"
 
-size_t layout_workareas(const workarea_t **);
-void layout_workareas_update(const rect_t *, const rect_t *, size_t);
+typedef enum layout_mode {
+  LAYOUT_MODE_TILING,
+  LAYOUT_MODE_FLOATING,
+} layout_mode;
 
-size_t layout_workspaces(const workspace_t **);
-size_t layout_workspace_focused(void);
-void layout_workspace_switch(size_t);
-const char *layout_workspace_name(size_t);
-const char *layout_workspace_names(void);
-bool layout_workspace_isempty(size_t);
-bool layout_workspace_isurgent(size_t);
-bool layout_workspace_area_isfullscreen(size_t, size_t);
-bool layout_workspace_area_fullscreen_toggle(size_t, size_t);
+typedef struct layout_window layout_window;
+typedef struct layout_workspace layout_workspace;
 
-pthread_rwlock_t *layout_window_lock(void);
-window_list_t *const *layout_minimized(void);
-window_t *layout_xwin2win(xcb_window_t);
-xcb_window_t layout_win2xwin(const window_t *win);
-size_t layout_win2area(const window_t *win);
-window_t *layout_spawn2win(size_t);
-window_t *layout_focused(void);
-size_t layout_area_focused(void);
-xcb_window_t layout_focused_xwin(void);
-bool layout_focus_restore(void);
-bool layout_focus(const window_t *);
-void layout_focus_lose(void);
-window_t *layout_above(void);
-window_t *layout_below(void);
-window_t *layout_to_right(void);
-window_t *layout_to_left(void);
-bool layout_urgency_set(window_t *, bool);
-bool layout_input_set(window_t *, bool);
-bool layout_swap(const window_t *, const window_t *);
-void layout_reset_sizes(const window_t *);
-void layout_resize_w(const window_t *, int);
-void layout_resize_h(const window_t *, int);
-void layout_show(size_t);
-WINDOW_STATE layout_minimize(window_t *);
-void layout_destroy(xcb_window_t);
-void layout_restore(xcb_window_t, size_t);
-window_t *layout_create(xcb_window_t);
+/* Global */
+uint32_t layout_screen_width(void);
+uint32_t layout_screen_height(void);
 
-void layout_init(const layout_init_t *);
-void layout_deinit(void);
+/* Windows */
+layout_window *layout_window_by_order(uint32_t);
+layout_window *layout_window_top_left(void);
+layout_window *layout_window_top_right(void);
+layout_window *layout_window_bottom_left(void);
+layout_window *layout_window_bottom_right(void);
+layout_window *layout_window_to_left(const layout_window *, bool wrap);
+layout_window *layout_window_to_right(const layout_window *, bool wrap);
+layout_window *layout_window_above(const layout_window *, bool wrap);
+layout_window *layout_window_bellow(const layout_window *, bool wrap);
+layout_window *layout_window_focused(void);
 
-bool layout_event_map(xcb_window_t, bool iconic);
-void layout_event_map_notify(xcb_window_t);
-WINDOW_STATE layout_event_unmap(xcb_window_t);
-void layout_event_create(xcb_window_t);
-WINDOW_STATE layout_event_destroy(xcb_window_t);
-void layout_event_focus(xcb_window_t);
+layout_window *layout_window_from_awm(awm_window);
+awm_window layout_window_to_awm(const layout_window *);
+
+uint32_t layout_window_count(void);
+bool layout_window_isminimized(const layout_window *);
+bool layout_window_isfullscreen(const layout_window *);
+bool layout_window_isurgent(const layout_window *);
+const char *layout_window_name(const layout_window *);
+layout_mode layout_window_mode(const layout_window *);
+uint32_t layout_window_width(const layout_window *);
+uint32_t layout_window_heigth(const layout_window *);
+uint32_t layout_window_x(const layout_window *);
+uint32_t layout_window_y(const layout_window *);
+
+awm_status layout_window_focus(layout_window *);
+awm_status layout_window_resize(layout_window *, int32_t x, int32_t y);
+awm_status layout_window_size_reset(layout_window *);
+awm_status layout_window_destroy(layout_window *, bool force);
+awm_status layout_window_urgent_set(layout_window *, bool);
+awm_status layout_window_fullscreen_toggle(layout_window *);
+awm_status layout_window_fullscreen_set(layout_window *, bool);
+awm_status layout_window_minimize_set(layout_window *, bool);
+awm_status layout_window_swap(layout_window *, layout_window *);
+awm_status layout_window_move(layout_window *, uint32_t x, uint32_t y);
+awm_status layout_window_render_at(layout_window *, uint32_t x, uint32_t y);
+awm_status layout_window_workspace_set(layout_window *, layout_workspace *);
+awm_status layout_window_mode_set(layout_window *, layout_mode);
+awm_status layout_window_mode_toggle(layout_window *);
+awm_status layout_window_new(awm_window);
+
+/* Workspaces */
+layout_workspace *layout_workspace_by_order(uint32_t);
+layout_workspace *layout_workspace_next(const layout_workspace *);
+layout_workspace *layout_workspace_prev(const layout_workspace *);
+layout_workspace *layout_workspace_focused(void);
+
+const char *layout_workspace_name(const layout_workspace *);
+bool layout_workspace_isempty(const layout_workspace *);
+bool layout_workspace_isurgent(const layout_workspace *);
+layout_mode layout_workspace_mode(const layout_workspace *);
+uint32_t layout_workspace_window_count(const layout_workspace *);
+uint32_t layout_workspace_count(void);
+
+awm_status layout_workspace_mode_set(layout_workspace *, layout_mode);
+awm_status layout_workspace_mode_toggle(layout_workspace *);
 
 #endif

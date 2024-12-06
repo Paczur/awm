@@ -1,186 +1,90 @@
-#ifndef H_SHARED_RECT
-#define H_SHARED_RECT
+#ifndef H_AWM_TYPES
+#define H_AWM_TYPES
 
-typedef unsigned char uchar;
-
+#include <stdbool.h>
 #include <stdint.h>
-#include <string.h>
+#include <stdlib.h>
+#include <xcb/xcb.h>
 
-#define LENGTH(x) (sizeof(x) / sizeof((x)[0]))
-
-#define PURE __attribute__((pure))
-#define CONST __attribute__((const))
-
-typedef enum WINDOW_STATE {
-  WINDOW_INVALID = -3,
-  WINDOW_WITHDRAWN = -2,
-  WINDOW_ICONIC = -1,
-  WINDOW_WORKSPACE_START = 0,
-} WINDOW_STATE;
-
-typedef struct list_t {
-  struct list_t *next;
-} list_t;
-
-typedef struct double_list_t {
-  struct double_list_t *next;
-  struct double_list_t *prev;
-} double_list_t;
-
-typedef struct plist_t {
-  struct plist_t *next;
-  char *p;
-} plist_t;
-
-typedef struct rect_t {
-  uint32_t x;
-  uint32_t y;
-  uint32_t w;
-  uint32_t h;
-} rect_t;
-
-typedef const char *color_t[2];
-typedef uint32_t xcolor_t[2];
-
-typedef enum { MODE_NORMAL, MODE_INSERT, MODE_INVALID } MODE;
-
-#define OUT_PREFIX(val) printf("\t\"" #val "\": ")
-#define OUT_SUFFIX() puts(",")
-#define OUT_RAW(val)                          \
-  printf(_Generic((val),                      \
-         bool: (val) ? "true (%d)" : "false", \
-         char: "%c",                          \
-         signed char: "%d",                   \
-         short: "%d",                         \
-         int: "%d",                           \
-         long: "%ld",                         \
-         unsigned char: "%u",                 \
-         unsigned short: "%u",                \
-         unsigned int: "%u",                  \
-         unsigned long: "%lu",                \
-         char *: "\"%s\"",                    \
-         const char *: "\"%s\"",              \
-         float: "%f",                         \
-         double: "%lf",                       \
-         default: "%p"),                      \
-         (val));
-#define OUT(val)   \
-  OUT_PREFIX(val); \
-  OUT_RAW(val);    \
-  OUT_SUFFIX();
-
-#define OUT_ARR_PREFIX(val, count) \
-  OUT_PREFIX(val);                 \
-  printf("(\"" #count "\": %lu)[ ", (size_t)count);
-#define OUT_ARR_SUFFIX() \
-  printf(" ]");          \
-  OUT_SUFFIX()
-#define OUT_ARR_NEXT(val) printf(", ");
-#define OUT_ARR_GENERIC(val, count, out)                     \
-  do {                                                       \
-    OUT_ARR_PREFIX(val, count);                              \
-    if((count) > 0 && (val) != NULL) {                       \
-      for(size_t _i = 0; _i < ((size_t)(count) - 1); _i++) { \
-        out((val)[_i]);                                      \
-        OUT_ARR_NEXT((val)[_i]);                             \
-      }                                                      \
-      out((val)[(count) - 1]);                               \
-    }                                                        \
-    OUT_ARR_SUFFIX();                                        \
-  } while(0)
-#define OUT_ARR(val, count) OUT_ARR_GENERIC(val, count, OUT_RAW)
-
-#define OUT_MODE(mode)                         \
-  do {                                         \
-    OUT_PREFIX(mode);                          \
-    puts((mode) == MODE_NORMAL   ? "normal"    \
-         : (mode == MODE_INSERT) ? "insert"    \
-                                 : "invalid"); \
-  } while(0)
-#define OUT_MODE_ARR(mode, count) OUT_ARR_GENERIC(mode, count, OUT_MODE)
-
-#define OUT_WINDOW_STATE(state)            \
-  do {                                     \
-    OUT_PREFIX(state);                     \
-    if((state) == WINDOW_WITHDRAWN) {      \
-      puts("withdrawn");                   \
-    } else if((state) == WINDOW_ICONIC) {  \
-      puts("iconic");                      \
-    } else if((state) == WINDOW_INVALID) { \
-      puts("invalid");                     \
-    } else {                               \
-      printf("%d\n", state);               \
-    }                                      \
-  } while(0)
-#define OUT_WINDOW_STATE_ARR(state, count) \
-  OUT_ARR_GENERIC(mode, count, OUT_MODE)
-
-#define OUT_RECT(r) \
-  do {              \
-    OUT(r.x);       \
-    OUT(r.y);       \
-    OUT(r.w);       \
-    OUT(r.h);       \
-  } while(0)
-#define OUT_RECTP(r) \
-  do {               \
-    OUT(r->x);       \
-    OUT(r->y);       \
-    OUT(r->w);       \
-    OUT(r->h);       \
-  } while(0)
-#define OUT_RECT_ARR(r, count) OUT_ARR_GENERIC(r, count, OUT_RECT)
-
-#ifdef DEBUG
-#undef DEBUG
-#define DEBUG 1
+#ifndef CTF_H
+#include <assert.h>
+#define awm_assert(x) assert(x)
 #else
-#define DEBUG 0
+#define awm_assert(x) ctf_assert(x)
 #endif
 
-#ifdef TRACE
-#undef TRACE
-#define TRACE 1
-#undef DEBUG
-#define DEBUG 1
-#else
-#define TRACE 0
-#endif
+#define AWM_MODE_NORMAL 0
+#define AWM_MODE_INSERT 1
 
-#define _STR(x) #x
-#define STR(x) _STR(x)
+#define AWM_STATUS_X X(OK)
+typedef enum awm_status {
+#define X(x) AWM_STATUS_##x,
+  AWM_STATUS_X
+#undef X
+} awm_status;
+extern const char *awm_status_str[];
+extern int awm_component_bar;
+extern const char *awm_current_component;
 
-#define _LOG(level, msg)     \
-  do {                       \
-    if(level) {              \
-      printf("%s {\n", msg); \
-      PRINT                  \
-      puts("}");             \
-    }                        \
+#define awm_vector_init(t) \
+  struct {                 \
+    uint32_t size;         \
+    uint32_t capacity;     \
+    t *array;              \
+  }
+#define awm_vector_alloc(vec)                                         \
+  do {                                                                \
+    (vec)->array = malloc(sizeof((vec)->array[0]) * (vec)->capacity); \
+    awm_assert((vec)->array != NULL);                                 \
+  } while(0)
+#define awm_vector_append(vec, x)                                             \
+  do {                                                                        \
+    if((vec)->array == NULL) {                                                \
+      awm_vector_alloc(vec);                                                  \
+    } else if(awm_vector_full(vec)) {                                         \
+      (vec)->array =                                                          \
+        realloc((vec)->array, sizeof((vec)->array[0]) * (vec)->capacity * 2); \
+      awm_assert((vec)->array);                                               \
+      (vec)->capacity *= 2;                                                   \
+    }                                                                         \
+    (vec)->array[(vec)->size++] = x;                                          \
+  } while(0)
+#define awm_vector_full(vec) ((vec)->size >= (vec)->capacity)
+#define awm_vector_capacity_set(vec, cap)                  \
+  do {                                                     \
+    if((vec)->array == NULL) {                             \
+      awm_vector_alloc(vec);                               \
+    } else if((vec)->capacity != cap) {                    \
+      (vec)->array = realloc((vec)->array, isize * cap);   \
+      awm_assert((vec)->array);                            \
+      (vec)->size = AWM_MIN((vec)->size, (vec)->capacity); \
+      (vec)->capacity = cap;                               \
+    }                                                      \
+  } while(0)
+#define awm_vector_capacity_grow(vec, cap)                                 \
+  do {                                                                     \
+    if((vec)->array == NULL) {                                             \
+      awm_vector_alloc(vec);                                               \
+    } else if((vec)->capacity < cap) {                                     \
+      (vec)->array = realloc((vec)->array, sizeof((vec)->array[0]) * cap); \
+      awm_assert((vec)->array);                                            \
+      (vec)->capacity = cap;                                               \
+    }                                                                      \
+  } while(0)
+#define awm_vector_clear(vec) (vec)->size = 0
+#define awm_vector_capacity(vec) ((vec)->capacity)
+#define awm_vector_size(vec) ((vec)->size)
+#define awm_vector_size_set(vec, x) ((vec)->size = (x));
+#define awm_vector_last(vec) ((vec)->array[(vec)->size - 1])
+#define awm_vector_get(vec, i) ((vec)->array[i])
+#define awm_vector_zero(vec)                                            \
+  do {                                                                  \
+    (vec)->size = 0;                                                    \
+    memset((vec)->array, 0, sizeof((vec)->array[0]) * (vec)->capacity); \
   } while(0)
 
-#define _LOGF(level)              \
-  do {                            \
-    if(level) {                   \
-      printf("%s {\n", __func__); \
-      PRINT                       \
-      puts("}");                  \
-    }                             \
-  } while(0)
-
-#define _LOGFE(level)                      \
-  do {                                     \
-    if(level) printf("%s {}\n", __func__); \
-  } while(0)
-
-#define _LOGE(level, text) \
-  do {                     \
-    if(level) puts(text);  \
-  } while(0)
-
-#define LOG _LOG
-#define LOGF _LOGF
-#define LOGFE _LOGFE
-#define LOGE _LOGE
+#define AMW_MAX(x, y) (((x) >= (y)) ? (x) : (y))
+#define AWM_MIN(x, y) (((x) <= (y)) ? (x) : (y))
+#define AWM_LENGTH(x) (sizeof(x) / sizeof(*(x)))
 
 #endif
