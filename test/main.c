@@ -5,8 +5,8 @@
 
 #undef log
 #undef log_status
-#define log(level, cause)
-#define log_status(level, status, cause)
+#define log(level, msg, ...)
+#define log_status(level, status, msg, ...)
 
 const char *awm_current_component = "TEST";
 int awm_component_bar = 0;

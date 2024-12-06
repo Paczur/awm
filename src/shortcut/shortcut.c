@@ -2,6 +2,8 @@
 
 #include <string.h>
 
+#include "../log/log.h"
+
 #define to_flags(mode, type, mod, auto_repeat, sym_code) \
   ((mode) | (type) << 1 | (mod) << 2 | (auto_repeat) << 6 | (sym_code) << 7)
 
@@ -68,6 +70,9 @@ static void shortcut_keymap_refresh(void) {
 
 shortcut *shortcut_new(uint32_t mode, uint32_t type, uint32_t mod, uint32_t sym,
                        void (*f)(void), bool auto_repeat) {
+  log(LOG_LEVEL_INFO,
+      "Adding shortcut sym: %u type: %u mod: %u auto_repeat: %u", sym, type,
+      mod, auto_repeat);
   struct shortcut sh = {
     .flags = to_flags(mode, type, mod, auto_repeat, 0),
     .data.sym = sym,
@@ -80,6 +85,9 @@ shortcut *shortcut_new(uint32_t mode, uint32_t type, uint32_t mod, uint32_t sym,
 
 shortcut *shortcut_new_code(uint32_t mode, uint32_t type, uint32_t mod,
                             uint8_t code, void (*f)(void), bool auto_repeat) {
+  log(LOG_LEVEL_INFO,
+      "Adding shortcut code: %u type: %u mod: %u auto_repeat: %u", code, type,
+      mod, auto_repeat);
   struct shortcut sh = {
     .flags = to_flags(mode, type, mod, auto_repeat, 1),
     .data.code = code,
@@ -91,17 +99,23 @@ shortcut *shortcut_new_code(uint32_t mode, uint32_t type, uint32_t mod,
 }
 
 void shortcut_handle(uint32_t mode, uint32_t type, uint32_t mod, uint8_t code) {
-  if(shortcut_map[code][to_mapped(mode, type, mod)].f == NULL ||
-     (last_shortcut == shortcut_map + code &&
-      !shortcut_map[code][to_mapped(mode, type, mod)].auto_repeat))
+  if(last_shortcut == shortcut_map + code &&
+     !shortcut_map[code][to_mapped(mode, type, mod)].auto_repeat) {
+    log(LOG_LEVEL_INFO,
+        "Key %u with flags %u pressed but auto-repeat disabled - ignoring",
+        code, to_mapped(mode, type, mod));
     return;
+  }
   last_shortcut = shortcut_map + code;
+  if(shortcut_map[code][to_mapped(mode, type, mod)].f == NULL) return;
+  log(LOG_LEVEL_INFO, "Key %u with flags %u handler starting", code,
+      to_mapped(mode, type, mod));
   shortcut_map[code][to_mapped(mode, type, mod)].f();
 }
 
 void shortcut_keymap_set(uint32_t **syms, uint32_t length,
                          uint8_t keysyms_per_keycode) {
-  // Cache syms
+  log(LOG_LEVEL_INFO, "Setting new keymap");
   awm_vector_capacity_grow(&cached_syms, length * keysyms_per_keycode);
   awm_vector_size_set(&cached_syms, length * keysyms_per_keycode);
   syms_per_code = keysyms_per_keycode;
