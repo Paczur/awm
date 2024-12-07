@@ -12,7 +12,7 @@ TEST_RUN=build/$(TEST_BIN).run
 MEMORY_DEBUG_FLAGS=-fsanitize=address -fsanitize=pointer-compare -fsanitize=pointer-subtract
 WARN_FLAGS=-Wall -Wextra -Werror -Wno-error=cpp -Wno-unused-function -Wunused-result -Wvla -Wshadow -Wstrict-prototypes -Wno-maybe-uninitialized -Wno-logical-not-parentheses
 SANTIIZER_FLAGS=-fsanitize=undefined -fsanitize-address-use-after-scope -fstack-check -fno-stack-clash-protection
-DEBUG_FLAGS=$(WARN_FLAGS) -Og -ggdb3
+DEBUG_FLAGS=$(WARN_FLAGS) $(MEMORY_DEBUG_FLAGS) $(SANITIZER_FLAGS) -Og -ggdb3
 OPTIMIZE_FLAGS=-march=native -O2 -pipe -D NDEBUG
 LINK_FLAGS=$(BASE_CFLAGS) -flto=4 -fwhole-program $(shell pkg-config --cflags --libs xcb xcb-randr xcb-xkb)
 TEST_FLAGS=$(CFLAGS) -Isrc -lctf
@@ -35,8 +35,8 @@ clean:
 bins: bin/awm bin/awm-bar
 
 install: bins
-	install -Ds bin/awm /usr/bin/awm
-	install -Ds bin/awm-bar /usr/bin/awm-bar
+	install -D bin/awm /usr/bin/awm-test
+	# install -Ds bin/awm-bar /usr/bin/awm-bar
 	mkdir -p /etc/awm
 	cp -r scripts /etc/awm
 

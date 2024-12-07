@@ -4,7 +4,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <xcb/xcb.h>
 
 #ifndef CTF_H
 #include <assert.h>
@@ -12,9 +11,6 @@
 #else
 #define awm_assert(x) ctf_assert(x)
 #endif
-
-#define AWM_MODE_NORMAL 0
-#define AWM_MODE_INSERT 1
 
 #define AWM_STATUS_X X(OK)
 typedef enum awm_status {
@@ -25,6 +21,13 @@ typedef enum awm_status {
 extern const char *awm_status_str[];
 extern int awm_component_bar;
 extern const char *awm_current_component;
+
+struct awm_rect {
+  uint32_t x;
+  uint32_t y;
+  uint32_t width;
+  uint32_t height;
+};
 
 #define awm_vector_init(t) \
   struct {                 \
@@ -64,6 +67,7 @@ extern const char *awm_current_component;
 #define awm_vector_capacity_grow(vec, cap)                                 \
   do {                                                                     \
     if((vec)->array == NULL) {                                             \
+      (vec)->capacity = cap;                                               \
       awm_vector_alloc(vec);                                               \
     } else if((vec)->capacity < cap) {                                     \
       (vec)->array = realloc((vec)->array, sizeof((vec)->array[0]) * cap); \
@@ -82,6 +86,7 @@ extern const char *awm_current_component;
     (vec)->size = 0;                                                    \
     memset((vec)->array, 0, sizeof((vec)->array[0]) * (vec)->capacity); \
   } while(0)
+#define awm_vector_array(vec) ((vec)->array)
 
 #define AMW_MAX(x, y) (((x) >= (y)) ? (x) : (y))
 #define AWM_MIN(x, y) (((x) <= (y)) ? (x) : (y))

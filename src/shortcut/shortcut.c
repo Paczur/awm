@@ -36,11 +36,12 @@ static awm_vector_init(shortcut) user_shortcuts = {.capacity = 25};
 static awm_vector_init(uint32_t) cached_syms = {.capacity = 255};
 static uint32_t syms_per_code;
 static mapped_shortcut *last_shortcut = NULL;
+static uint32_t mode = SHORTCUT_MODE_NORMAL;
 
 static void shortcut_keymap_refresh(void) {
-  const uint32_t length = awm_vector_size(&cached_syms) / syms_per_code;
+  const uint32_t size = awm_vector_size(&cached_syms);
+  const uint32_t length = size / syms_per_code;
   shortcut *curr_sh;
-  awm_assert(awm_vector_size(&cached_syms) >= length * syms_per_code);
   memset(shortcut_map, 0, sizeof(mapped_shortcut) * 255);
   for(uint32_t i = 0; i < awm_vector_size(&user_shortcuts); i++) {
     curr_sh = &awm_vector_get(&user_shortcuts, i);
@@ -55,8 +56,8 @@ static void shortcut_keymap_refresh(void) {
     for(uint32_t j = 0; j < length; j++) {
       for(uint32_t k = 0; k < syms_per_code; k++) {
         if(curr_sh->data.sym ==
-           awm_vector_get(&cached_syms, j * syms_per_code + i)) {
-          shortcut_map[curr_sh->data.code][flags_to_mapped(curr_sh->flags)] =
+           awm_vector_get(&cached_syms, j * syms_per_code + k)) {
+          shortcut_map[j][flags_to_mapped(curr_sh->flags)] =
             (struct internal_mapped_shortcut){
               .auto_repeat = flags_to_auto_repeat(curr_sh->flags),
               .f = curr_sh->f,
@@ -68,13 +69,13 @@ static void shortcut_keymap_refresh(void) {
   }
 }
 
-shortcut *shortcut_new(uint32_t mode, uint32_t type, uint32_t mod, uint32_t sym,
+shortcut *shortcut_new(uint32_t m, uint32_t type, uint32_t mod, uint32_t sym,
                        void (*f)(void), bool auto_repeat) {
   log(LOG_LEVEL_INFO,
       "Adding shortcut sym: %u type: %u mod: %u auto_repeat: %u", sym, type,
       mod, auto_repeat);
   struct shortcut sh = {
-    .flags = to_flags(mode, type, mod, auto_repeat, 0),
+    .flags = to_flags(m, type, mod, auto_repeat, 0),
     .data.sym = sym,
     .f = f,
   };
@@ -83,13 +84,13 @@ shortcut *shortcut_new(uint32_t mode, uint32_t type, uint32_t mod, uint32_t sym,
   return &awm_vector_last(&user_shortcuts);
 }
 
-shortcut *shortcut_new_code(uint32_t mode, uint32_t type, uint32_t mod,
+shortcut *shortcut_new_code(uint32_t m, uint32_t type, uint32_t mod,
                             uint8_t code, void (*f)(void), bool auto_repeat) {
   log(LOG_LEVEL_INFO,
       "Adding shortcut code: %u type: %u mod: %u auto_repeat: %u", code, type,
       mod, auto_repeat);
   struct shortcut sh = {
-    .flags = to_flags(mode, type, mod, auto_repeat, 1),
+    .flags = to_flags(m, type, mod, auto_repeat, 1),
     .data.code = code,
     .f = f,
   };
@@ -98,7 +99,7 @@ shortcut *shortcut_new_code(uint32_t mode, uint32_t type, uint32_t mod,
   return &awm_vector_last(&user_shortcuts);
 }
 
-void shortcut_handle(uint32_t mode, uint32_t type, uint32_t mod, uint8_t code) {
+void shortcut_handle(uint32_t type, uint32_t mod, uint8_t code) {
   if(last_shortcut == shortcut_map + code &&
      !shortcut_map[code][to_mapped(mode, type, mod)].auto_repeat) {
     log(LOG_LEVEL_INFO,
@@ -113,16 +114,18 @@ void shortcut_handle(uint32_t mode, uint32_t type, uint32_t mod, uint8_t code) {
   shortcut_map[code][to_mapped(mode, type, mod)].f();
 }
 
-void shortcut_keymap_set(uint32_t **syms, uint32_t length,
+void shortcut_mode_set(uint32_t m) { mode = m; }
+
+void shortcut_mode_toggle(void) { mode ^= 1; }
+
+uint32_t shortcut_mode(void) { return mode; }
+
+void shortcut_keymap_set(uint32_t *syms, uint32_t length,
                          uint8_t keysyms_per_keycode) {
   log(LOG_LEVEL_INFO, "Setting new keymap");
-  awm_vector_capacity_grow(&cached_syms, length * keysyms_per_keycode);
-  awm_vector_size_set(&cached_syms, length * keysyms_per_keycode);
+  awm_vector_capacity_grow(&cached_syms, length);
+  awm_vector_size_set(&cached_syms, length);
   syms_per_code = keysyms_per_keycode;
-  for(uint32_t i = 0; i < length; i++) {
-    for(uint32_t j = 0; j < keysyms_per_keycode; j++) {
-      awm_vector_get(&cached_syms, i * keysyms_per_keycode + j) = syms[i][j];
-    }
-  }
+  memcpy(awm_vector_array(&cached_syms), syms, length * sizeof(*syms));
   shortcut_keymap_refresh();
 }

@@ -3,7 +3,7 @@
 
 #include "log/log.h"
 
-const char *log_dir = "stdout";
-const int log_level = LOG_LEVEL_WARNING;
+#define LOG_DIR "stdout"
+#define LOG_LEVEL LOG_LEVEL_INFO
 
 #endif

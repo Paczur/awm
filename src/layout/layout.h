@@ -27,8 +27,8 @@ layout_window *layout_window_above(const layout_window *, bool wrap);
 layout_window *layout_window_bellow(const layout_window *, bool wrap);
 layout_window *layout_window_focused(void);
 
-layout_window *layout_window_from_awm(awm_window);
-awm_window layout_window_to_awm(const layout_window *);
+layout_window *layout_window_from_awm(x_window);
+x_window layout_window_to_awm(const layout_window *);
 
 uint32_t layout_window_count(void);
 bool layout_window_isminimized(const layout_window *);
@@ -55,7 +55,7 @@ awm_status layout_window_render_at(layout_window *, uint32_t x, uint32_t y);
 awm_status layout_window_workspace_set(layout_window *, layout_workspace *);
 awm_status layout_window_mode_set(layout_window *, layout_mode);
 awm_status layout_window_mode_toggle(layout_window *);
-awm_status layout_window_new(awm_window);
+awm_status layout_window_new(x_window);
 
 /* Workspaces */
 layout_workspace *layout_workspace_by_order(uint32_t);
