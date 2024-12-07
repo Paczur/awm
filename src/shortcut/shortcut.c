@@ -129,3 +129,5 @@ void shortcut_keymap_set(uint32_t *syms, uint32_t length,
   memcpy(awm_vector_array(&cached_syms), syms, length * sizeof(*syms));
   shortcut_keymap_refresh();
 }
+
+void shortcut_state_reset(void) { last_shortcut = NULL; }

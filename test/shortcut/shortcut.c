@@ -34,11 +34,9 @@ CTF_TEST_STATIC(shortcut_sym_auto_repeat) {
   const uint32_t mod = SHORTCUT_MOD_NONE;
   uint32_t map[] = {
     sym,
-    0,
     sym_rep,
-    0,
   };
-  shortcut_keymap_set(map, 4, 2);
+  shortcut_keymap_set(map, 2, 1);
   shortcut_new(mode, type, mod, sym, dummy_function, false);
   shortcut_new(mode, type, mod, sym_rep, dummy_function, true);
   mock(dummy_function, dummy_mock);
@@ -51,6 +49,21 @@ CTF_TEST_STATIC(shortcut_sym_auto_repeat) {
   shortcut_handle(type, mod, 1);
   shortcut_handle(type, mod, 1);
   expect_uint_eq(2, mock_call_count(dummy_function));
+}
+
+CTF_TEST_STATIC(shortcut_multiple_syms_per_code) {
+  const uint32_t sym = 3;
+  const uint32_t mode = SHORTCUT_MODE_NORMAL;
+  const uint32_t type = SHORTCUT_TYPE_PRESS;
+  const uint32_t mod = SHORTCUT_MOD_NONE;
+  uint32_t map[] = {0, 0, 0, sym};
+  shortcut_keymap_set(map, 4, 2);
+  shortcut_new(mode, type, mod, sym, dummy_function, false);
+  mock(dummy_function, dummy_mock);
+
+  shortcut_mode_set(mode);
+  shortcut_handle(type, mod, 1);
+  expect_uint_eq(1, mock_call_count(dummy_function));
 }
 
 CTF_TEST_STATIC(keymap_set_preserves_shortcuts) {
@@ -92,10 +105,30 @@ CTF_TEST_STATIC(mode_setting_and_toggling) {
   expect_uint_eq(SHORTCUT_MODE_INSERT, shortcut_mode());
 }
 
+CTF_TEST_STATIC(state_reset_resets_auto_repeat) {
+  const uint8_t code = 1;
+  const uint32_t mode = SHORTCUT_MODE_NORMAL;
+  const uint32_t type = SHORTCUT_TYPE_PRESS;
+  const uint32_t mod = SHORTCUT_MOD_NONE;
+  uint32_t map[] = {5};
+  shortcut_keymap_set(map, 1, 1);
+  shortcut_new_code(mode, type, mod, code, dummy_function, false);
+  mock(dummy_function, dummy_mock);
+
+  shortcut_mode_set(mode);
+  shortcut_handle(type, mod, code);
+  expect_uint_eq(1, mock_call_count(dummy_function));
+  shortcut_handle(type, mod, code);
+  expect_uint_eq(0, mock_call_count(dummy_function));
+  shortcut_state_reset();
+  shortcut_handle(type, mod, code);
+  expect_uint_eq(1, mock_call_count(dummy_function));
+}
+
 CTF_GROUP(shortcut_group) = {
-  shortcut_code_auto_repeat,
-  shortcut_sym_auto_repeat,
-  keymap_set_preserves_shortcuts,
-  mode_setting_and_toggling,
+  shortcut_code_auto_repeat,       shortcut_sym_auto_repeat,
+  shortcut_multiple_syms_per_code, keymap_set_preserves_shortcuts,
+  mode_setting_and_toggling,       state_reset_resets_auto_repeat,
 };
 
+CTF_GROUP_TEST_TEARDOWN(shortcut_group) { shortcut_state_reset(); }

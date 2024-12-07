@@ -46,5 +46,7 @@ void shortcut_mode_toggle(void);
 
 void shortcut_keymap_set(uint32_t *syms, uint32_t length,
                          uint8_t keysyms_per_keycode);
+
+void shortcut_state_reset(void);
 #endif
 
