@@ -1,11 +1,14 @@
 #include "shortcut.h"
 
+#include <stdio.h>
 #include <string.h>
 
 #include "../log/log.h"
+#include "../x/x.h"
 
 #define to_flags(mode, type, mod, auto_repeat, sym_code) \
   ((mode) | (type) << 1 | (mod) << 2 | (auto_repeat) << 6 | (sym_code) << 7)
+#define MODE_MAX_VALUE 15
 
 #define flags_to_mode(flags) (((flags) >> 0) & 1)
 #define flags_to_type(flags) (((flags) >> 1) & 1)
@@ -38,6 +41,23 @@ static uint32_t syms_per_code;
 static mapped_shortcut *last_shortcut = NULL;
 static uint32_t mode = SHORTCUT_MODE_NORMAL;
 
+static void refresh_insert(void) {
+  x_keyboard_ungrab();
+  for(uint8_t i = 0; i < 255; i++) {
+    for(uint8_t j = 0; j < MODE_MAX_VALUE; j++) {
+      if(shortcut_map[i]
+                     [to_mapped(SHORTCUT_MODE_INSERT, SHORTCUT_TYPE_PRESS, j)]
+                       .f != NULL ||
+         shortcut_map[i]
+                     [to_mapped(SHORTCUT_MODE_INSERT, SHORTCUT_TYPE_RELEASE, j)]
+                       .f != NULL) {
+        x_key_grab(i);
+        break;
+      }
+    }
+  }
+}
+
 static void shortcut_keymap_refresh(void) {
   const uint32_t size = awm_vector_size(&cached_syms);
   const uint32_t length = size / syms_per_code;
@@ -51,7 +71,6 @@ static void shortcut_keymap_refresh(void) {
           .auto_repeat = flags_to_auto_repeat(curr_sh->flags),
           .f = curr_sh->f,
         };
-      continue;
     }
     for(uint32_t j = 0; j < length; j++) {
       for(uint32_t k = 0; k < syms_per_code; k++) {
@@ -62,18 +81,18 @@ static void shortcut_keymap_refresh(void) {
               .auto_repeat = flags_to_auto_repeat(curr_sh->flags),
               .f = curr_sh->f,
             };
-          break;
         }
       }
     }
   }
+  if(mode == SHORTCUT_MODE_INSERT) refresh_insert();
 }
 
 shortcut *shortcut_new(uint32_t m, uint32_t type, uint32_t mod, uint32_t sym,
                        void (*f)(void), bool auto_repeat) {
   log(LOG_LEVEL_INFO,
-      "Adding shortcut sym: %u type: %u mod: %u auto_repeat: %u", sym, type,
-      mod, auto_repeat);
+      "Adding shortcut sym: %u mode: %u type: %u mod: %u auto_repeat: %u", sym,
+      m, type, mod, auto_repeat);
   struct shortcut sh = {
     .flags = to_flags(m, type, mod, auto_repeat, 0),
     .data.sym = sym,
@@ -87,8 +106,8 @@ shortcut *shortcut_new(uint32_t m, uint32_t type, uint32_t mod, uint32_t sym,
 shortcut *shortcut_new_code(uint32_t m, uint32_t type, uint32_t mod,
                             uint8_t code, void (*f)(void), bool auto_repeat) {
   log(LOG_LEVEL_INFO,
-      "Adding shortcut code: %u type: %u mod: %u auto_repeat: %u", code, type,
-      mod, auto_repeat);
+      "Adding shortcut code: %u mode: %u type: %u mod: %u auto_repeat: %u",
+      code, m, type, mod, auto_repeat);
   struct shortcut sh = {
     .flags = to_flags(m, type, mod, auto_repeat, 1),
     .data.code = code,
@@ -114,9 +133,28 @@ void shortcut_handle(uint32_t type, uint32_t mod, uint8_t code) {
   shortcut_map[code][to_mapped(mode, type, mod)].f();
 }
 
-void shortcut_mode_set(uint32_t m) { mode = m; }
+void shortcut_mode_set(uint32_t m) {
+  if(mode == m) return;
+  mode = m;
+  if(mode == SHORTCUT_MODE_INSERT) {
+    log(LOG_LEVEL_INFO, "Changing mode to INSERT");
+    refresh_insert();
+  } else {
+    log(LOG_LEVEL_INFO, "Changing mode to NORMAL");
+    x_keyboard_grab();
+  }
+}
 
-void shortcut_mode_toggle(void) { mode ^= 1; }
+void shortcut_mode_toggle(void) {
+  mode ^= 1;
+  if(mode == SHORTCUT_MODE_INSERT) {
+    log(LOG_LEVEL_INFO, "Changing mode to INSERT");
+    refresh_insert();
+  } else {
+    log(LOG_LEVEL_INFO, "Changing mode to NORMAL");
+    x_keyboard_grab();
+  }
+}
 
 uint32_t shortcut_mode(void) { return mode; }
 

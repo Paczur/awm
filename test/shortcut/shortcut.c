@@ -105,6 +105,30 @@ CTF_TEST_STATIC(mode_setting_and_toggling) {
   expect_uint_eq(SHORTCUT_MODE_INSERT, shortcut_mode());
 }
 
+CTF_TEST_STATIC(mode_grabbing) {
+  const uint32_t mode = SHORTCUT_MODE_INSERT;
+  const uint32_t type = SHORTCUT_TYPE_PRESS;
+  const uint32_t mod = SHORTCUT_MOD_NONE;
+  shortcut_mode_set(SHORTCUT_MODE_INSERT);
+  mock_call_count(x_keyboard_ungrab);
+
+  expect_uint_eq(0, mock_call_count(x_keyboard_grab));
+  shortcut_mode_set(SHORTCUT_MODE_NORMAL);
+  expect_uint_eq(1, mock_call_count(x_keyboard_grab));
+
+  shortcut_keymap_set((uint32_t[]){}, 0, 1);
+  shortcut_new_code(mode, type, mod, 1, dummy_function, true);
+  shortcut_new_code(mode, type, mod, 2, dummy_function, true);
+  shortcut_new_code(mode, type, mod + 1, 2, dummy_function, true);
+  expect_uint_eq(0, mock_call_count(x_keyboard_ungrab));
+  expect_uint_eq(0, mock_call_count(x_key_grab));
+
+  mock_expect_once_uint_eq(x_key_grab, key, 1);
+  shortcut_mode_set(SHORTCUT_MODE_INSERT);
+  expect_uint_eq(1, mock_call_count(x_keyboard_ungrab));
+  expect_uint_eq(2, mock_call_count(x_key_grab));
+}
+
 CTF_TEST_STATIC(state_reset_resets_auto_repeat) {
   const uint8_t code = 1;
   const uint32_t mode = SHORTCUT_MODE_NORMAL;
@@ -126,9 +150,15 @@ CTF_TEST_STATIC(state_reset_resets_auto_repeat) {
 }
 
 CTF_GROUP(shortcut_group) = {
-  shortcut_code_auto_repeat,       shortcut_sym_auto_repeat,
-  shortcut_multiple_syms_per_code, keymap_set_preserves_shortcuts,
-  mode_setting_and_toggling,       state_reset_resets_auto_repeat,
+  shortcut_code_auto_repeat,
+  shortcut_sym_auto_repeat,
+  shortcut_multiple_syms_per_code,
+  keymap_set_preserves_shortcuts,
+  mode_setting_and_toggling,
+  state_reset_resets_auto_repeat,
+  mode_grabbing,
 };
+
+CTF_GROUP_TEST_SETUP(shortcut_group) { mock_group(x_plain); }
 
 CTF_GROUP_TEST_TEARDOWN(shortcut_group) { shortcut_state_reset(); }

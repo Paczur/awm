@@ -3,7 +3,7 @@
 wraps="$(grep -h '^\s*CTF_MOCK(' "$@" | sed 's/\s*CTF_MOCK([^,]\+,\s*\([^ ,]\+\)\s*,.*/,--wrap=\1/' | sort | uniq | tr -d '\n' | sed 's/^,//')"
 wraps="${wraps}$(grep -h '^\s*CTF_MOCK_VOID_RET(' "$@" | sed 's/\s*CTF_MOCK_VOID_RET(\([^ ,]\+\)\s*,.*/,--wrap=\1/' | sort | uniq | tr -d '\n')"
 if [ -n "${wraps}" ]; then
-  echo "-Wl${wraps}"
+  echo "-Wl,${wraps}"
 else
   echo ""
 fi

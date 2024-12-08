@@ -130,7 +130,7 @@ void x_init(void) {
 void x_deinit(void) { xcb_disconnect(conn); }
 
 void x_keyboard_grab(void) {
-  xcb_grab_key(conn, 0, screen->root, XCB_MOD_MASK_ANY, XCB_GRAB_ANY,
+  xcb_grab_key(conn, 1, screen->root, XCB_MOD_MASK_ANY, XCB_GRAB_ANY,
                XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
 }
 
@@ -138,9 +138,15 @@ void x_keyboard_ungrab(void) {
   xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, XCB_MOD_MASK_ANY);
 }
 
-void x_window_keyboard_grab(x_window win) {
-  xcb_grab_keyboard_unchecked(conn, 0, win, XCB_CURRENT_TIME,
-                              XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_SYNC);
+void x_key_grab(uint8_t key) {
+  xcb_grab_key(conn, 1, screen->root, XCB_MOD_MASK_ANY,
+               key + setup->min_keycode, XCB_GRAB_MODE_ASYNC,
+               XCB_GRAB_MODE_ASYNC);
+}
+
+void x_key_ungrab(uint8_t key) {
+  xcb_ungrab_key(conn, key + setup->min_keycode, screen->root,
+                 XCB_MOD_MASK_ANY);
 }
 
 x_event *x_event_next(x_event *prev) {
@@ -202,6 +208,10 @@ x_window x_event_window(const x_event *ev) {
   }
 }
 
+uint8_t x_event_error_code(const x_event *ev) {
+  return ((xcb_generic_error_t *)ev)->error_code;
+}
+
 void x_window_map(x_window win) { xcb_map_window(conn, win); }
 
 void x_window_resize(x_window win, struct awm_rect *rect) {
@@ -209,6 +219,29 @@ void x_window_resize(x_window win, struct awm_rect *rect) {
                        XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y |
                          XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
                        rect);
+}
+
+void x_window_focus(x_window win) {
+  xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, win,
+                      XCB_CURRENT_TIME);
+}
+
+void x_window_keyboard_grab(x_window win) {
+  xcb_grab_key(conn, 0, win, XCB_MOD_MASK_ANY, XCB_GRAB_ANY,
+               XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+}
+
+void x_window_keyboard_ungrab(x_window win) {
+  xcb_ungrab_key(conn, XCB_GRAB_ANY, win, XCB_MOD_MASK_ANY);
+}
+
+void x_window_key_grab(x_window win, uint8_t key) {
+  xcb_grab_key(conn, 0, win, XCB_MOD_MASK_ANY, key + setup->min_keycode,
+               XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+}
+
+void x_window_key_ungrab(x_window win, uint8_t key) {
+  xcb_ungrab_key(conn, key + setup->min_keycode, win, XCB_MOD_MASK_ANY);
 }
 
 x_keymap *x_keymap_get(void) {
