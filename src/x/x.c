@@ -138,15 +138,13 @@ void x_keyboard_ungrab(void) {
   xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, XCB_MOD_MASK_ANY);
 }
 
-void x_key_grab(uint8_t key) {
-  xcb_grab_key(conn, 1, screen->root, XCB_MOD_MASK_ANY,
-               key + setup->min_keycode, XCB_GRAB_MODE_ASYNC,
-               XCB_GRAB_MODE_ASYNC);
+void x_key_grab(uint8_t key, uint8_t mod) {
+  xcb_grab_key(conn, 1, screen->root, mod, key + setup->min_keycode,
+               XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
 }
 
-void x_key_ungrab(uint8_t key) {
-  xcb_ungrab_key(conn, key + setup->min_keycode, screen->root,
-                 XCB_MOD_MASK_ANY);
+void x_key_ungrab(uint8_t key, uint8_t mod) {
+  xcb_ungrab_key(conn, key + setup->min_keycode, screen->root, mod);
 }
 
 x_event *x_event_next(x_event *prev) {
@@ -226,24 +224,6 @@ void x_window_focus(x_window win) {
                       XCB_CURRENT_TIME);
 }
 
-void x_window_keyboard_grab(x_window win) {
-  xcb_grab_key(conn, 0, win, XCB_MOD_MASK_ANY, XCB_GRAB_ANY,
-               XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
-}
-
-void x_window_keyboard_ungrab(x_window win) {
-  xcb_ungrab_key(conn, XCB_GRAB_ANY, win, XCB_MOD_MASK_ANY);
-}
-
-void x_window_key_grab(x_window win, uint8_t key) {
-  xcb_grab_key(conn, 0, win, XCB_MOD_MASK_ANY, key + setup->min_keycode,
-               XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
-}
-
-void x_window_key_ungrab(x_window win, uint8_t key) {
-  xcb_ungrab_key(conn, key + setup->min_keycode, win, XCB_MOD_MASK_ANY);
-}
-
 x_keymap *x_keymap_get(void) {
   xcb_generic_error_t *e = NULL;
   xcb_get_keyboard_mapping_reply_t *rep = NULL;
@@ -268,6 +248,8 @@ uint32_t *x_keymap_syms(x_keymap *k) {
 uint8_t x_key_code(x_event *ev) {
   return ((xcb_key_press_event_t *)ev)->detail - setup->min_keycode;
 }
+
+uint8_t x_key_code_min(void) { return setup->min_keycode; }
 
 uint8_t x_key_mod(x_event *ev) { return ((xcb_key_press_event_t *)ev)->state; }
 

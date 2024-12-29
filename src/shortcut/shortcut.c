@@ -40,6 +40,7 @@ static awm_vector_init(uint32_t) cached_syms = {.capacity = 255};
 static uint32_t syms_per_code;
 static mapped_shortcut *last_shortcut = NULL;
 static uint32_t mode = SHORTCUT_MODE_NORMAL;
+static uint8_t min_key_code;
 
 static void refresh_insert(void) {
   x_keyboard_ungrab();
@@ -51,7 +52,7 @@ static void refresh_insert(void) {
          shortcut_map[i]
                      [to_mapped(SHORTCUT_MODE_INSERT, SHORTCUT_TYPE_RELEASE, j)]
                        .f != NULL) {
-        x_key_grab(i);
+        x_key_grab(i, j);
         break;
       }
     }
@@ -110,7 +111,7 @@ shortcut *shortcut_new_code(uint32_t m, uint32_t type, uint32_t mod,
       code, m, type, mod, auto_repeat);
   struct shortcut sh = {
     .flags = to_flags(m, type, mod, auto_repeat, 1),
-    .data.code = code,
+    .data.code = code - min_key_code,
     .f = f,
   };
   awm_vector_append(&user_shortcuts, sh);
@@ -127,10 +128,11 @@ void shortcut_handle(uint32_t type, uint32_t mod, uint8_t code) {
     return;
   }
   last_shortcut = shortcut_map + code;
-  if(shortcut_map[code][to_mapped(mode, type, mod)].f == NULL) return;
+  if(shortcut_map[code - min_key_code][to_mapped(mode, type, mod)].f == NULL)
+    return;
   log(LOG_LEVEL_INFO, "Key %u with flags %u handler starting", code,
       to_mapped(mode, type, mod));
-  shortcut_map[code][to_mapped(mode, type, mod)].f();
+  shortcut_map[code - min_key_code][to_mapped(mode, type, mod)].f();
 }
 
 void shortcut_mode_set(uint32_t m) {
@@ -166,6 +168,7 @@ void shortcut_keymap_set(uint32_t *syms, uint32_t length,
   syms_per_code = keysyms_per_keycode;
   memcpy(awm_vector_array(&cached_syms), syms, length * sizeof(*syms));
   shortcut_keymap_refresh();
+  min_key_code = x_key_code_min();
 }
 
 void shortcut_state_reset(void) { last_shortcut = NULL; }

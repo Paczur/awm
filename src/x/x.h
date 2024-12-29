@@ -47,8 +47,8 @@ void x_deinit(void);
 
 void x_keyboard_grab(void);
 void x_keyboard_ungrab(void);
-void x_key_grab(uint8_t);
-void x_key_ungrab(uint8_t);
+void x_key_grab(uint8_t key, uint8_t mod);
+void x_key_ungrab(uint8_t key, uint8_t mod);
 
 x_event *x_event_next(x_event *prev);
 uint32_t x_event_type(const x_event *);
@@ -63,12 +63,9 @@ uint8_t x_keymap_syms_per_code(x_keymap *);
 void x_window_map(x_window);
 void x_window_focus(x_window);
 void x_window_resize(x_window, struct awm_rect *);
-void x_window_keyboard_grab(x_window);
-void x_window_keyboard_ungrab(x_window);
-void x_window_key_grab(x_window, uint8_t);
-void x_window_key_ungrab(x_window, uint8_t);
 
 uint8_t x_key_code(x_event *);
+uint8_t x_key_code_min(void);
 uint8_t x_key_mod(x_event *);
 
 void x_free(void *);
