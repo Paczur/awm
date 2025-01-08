@@ -25,9 +25,15 @@ Scripts used are copied to /etc/awm/scripts.
 ## Implementation notes
 - Bar as a separate executable
 - Grid and floating layout provide same interface
+- Floating and tiling as separate workspace modes
 - Layout module chooses appropriate layout
 - Layout uses opaque pointer in interface
 - Multiple entry points: event module, default config, ipc?, lua?
 - Wrapper over xcb
 - Hints managaed by most general function designed to handle specific functionality
 - One shortcut per key + modifiers + mode + type
+- Manual tiling
+- Emacs/Vim style splits with placeholder window
+- Workspace per monitor, always switched together
+- Opened windows go to minimized stack, unless placeholder window exists on
+  workspace or current workspace is floating
