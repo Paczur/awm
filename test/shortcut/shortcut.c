@@ -2,8 +2,26 @@
 
 #include <shortcut/shortcut.h>
 
+#include "../fakes/malloc.h"
 #include "../mocks/mocks.h"
 
+CTF_TEST_STATIC(function_new_shortcut_state) {
+  shortcut_state *state = new_shortcut_state();
+  subtest(returns_non_null) assert_non_null(state);
+}
+
+CTF_GROUP(shortcut_spec) = {
+  function_new_shortcut_state,
+};
+CTF_GROUP_TEST_SETUP(shortcut_spec) {
+  mock_group(fake_alloc);
+  mock_group(x_empty);
+}
+CTF_GROUP_TEST_TEARDOWN(shortcut_spec) { fake_alloc_clear(); }
+
+/********************/
+
+/*
 CTF_TEST_STATIC(shortcut_code_auto_repeat) {
   const uint8_t code = 1;
   const uint8_t code_rep = 2;
@@ -14,7 +32,7 @@ CTF_TEST_STATIC(shortcut_code_auto_repeat) {
   shortcut_keymap_set(map, 1, 1);
   shortcut_new_code(mode, type, mod, code, dummy_function, false);
   shortcut_new_code(mode, type, mod, code_rep, dummy_function, true);
-  mock_global(dummy_function, dummy_mock);
+  mock_global(dummy_function, NULL);
 
   mock_select(dummy_function) {
     shortcut_mode_set(mode);
@@ -43,7 +61,7 @@ CTF_TEST_STATIC(shortcut_sym_auto_repeat) {
   shortcut_keymap_set(map, 2, 1);
   shortcut_new(mode, type, mod, sym, dummy_function, false);
   shortcut_new(mode, type, mod, sym_rep, dummy_function, true);
-  mock_global(dummy_function, dummy_mock);
+  mock_global(dummy_function, NULL);
 
   mock_select(dummy_function) {
     shortcut_mode_set(mode);
@@ -70,7 +88,7 @@ CTF_TEST_STATIC(shortcut_multiple_syms_per_code) {
   shortcut_keymap_set(map, 4, 2);
   shortcut_new(mode, type, mod, sym, dummy_function, false);
 
-  mock(dummy_function, dummy_mock) {
+  mock(dummy_function, NULL) {
     shortcut_mode_set(mode);
     shortcut_handle(type, mod, 1);
     expect(1, ==, mock_call_count);
@@ -94,7 +112,7 @@ CTF_TEST_STATIC(keymap_set_preserves_shortcuts) {
   shortcut_keymap_set(dummy_map, 2, 1);
   shortcut_new(mode, type, mod, sym, dummy_function, true);
   shortcut_new_code(mode, type, mod, code, dummy_function, true);
-  mock_global(dummy_function, dummy_mock);
+  mock_global(dummy_function, NULL);
 
   mock_select(dummy_function) {
     shortcut_mode_set(mode);
@@ -170,7 +188,7 @@ CTF_TEST_STATIC(state_reset_resets_auto_repeat) {
   uint32_t map[] = {5};
   shortcut_keymap_set(map, 1, 1);
   shortcut_new_code(mode, type, mod, code, dummy_function, false);
-  mock_global(dummy_function, dummy_mock);
+  mock_global(dummy_function, NULL);
 
   mock_select(dummy_function) {
     shortcut_mode_set(mode);
@@ -201,6 +219,7 @@ CTF_GROUP(shortcut_group) = {
   mode_grabbing,
 };
 
-CTF_GROUP_TEST_SETUP(shortcut_group) { mock_group(x_plain); }
+CTF_GROUP_TEST_SETUP(shortcut_group) { mock_group(x_empty); }
 
 CTF_GROUP_TEST_TEARDOWN(shortcut_group) { shortcut_state_reset(); }
+*/

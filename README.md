@@ -24,22 +24,30 @@ Scripts used are copied to /etc/awm/scripts.
 
 ## Notes
 ### Layout
-- Grid and floating layout provide same interface
-- Layout module chooses appropriate layout
 - Floating and tiling as separate workspace modes
-- Manual tiling (automatic as option?)
-- Emacs/Vim style splits with placeholder window
-- Monitors bound together (same or separate workspace?)
+- All layout modes provide same interface
+- Layout module chooses appropriate layout
 - Stack of minimized windows
+- Monitor workspaces bound together (same or separate workspace?)
+
+Tiling Choice:
+- Manual tiling with automatic placement
+or:
+- Manual tiling (no automatic placement)
+- Placeholder window inserted on split
+- Splits in floating mode problem
 
 ### General
 - One shortcut per key + modifiers + mode + type
-- Bar as a separate executable
+- Bar as a separate process
 - Opaque pointers where it makes sense
-- Multiple entry points: event module, default config, ipc?, lua?
+- Multiple entry points
+- Opaque structs
+- Separate protocol for additional information
+- Use X atoms as long term storage
 
 ### XCB Wrapper
 - Sole global X interface
 - Caching
 - Unknown state on startup, lookup when needed
-- Every struct is opaque
+- Every information in atoms

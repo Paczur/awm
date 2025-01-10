@@ -29,24 +29,25 @@
 #define SHORTCUT_MOD_5 1 << 6
 
 typedef struct shortcut shortcut;
+typedef struct shortcut_state shortcut_state;
 
-shortcut *shortcut_new(uint32_t mode, uint32_t shortcut_type,
+shortcut_state *new_shortcut_state(void);
+
+shortcut *add_shortcut(shortcut_state *, uint32_t mode, uint32_t shortcut_type,
                        uint32_t shortcut_mod, uint32_t sym, void (*f)(void),
                        bool auto_repeat);
 
-shortcut *shortcut_new_code(uint32_t mode, uint32_t shortcut_type,
-                            uint32_t shortcut_mod, uint8_t code,
-                            void (*f)(void), bool auto_repeat);
+shortcut *add_shortcut_by_code(shortcut_state *, uint32_t mode,
+                               uint32_t shortcut_type, uint32_t shortcut_mod,
+                               uint8_t code, void (*f)(void), bool auto_repeat);
 
-void shortcut_handle(uint32_t type, uint32_t mod, uint8_t code);
+void handle_shortcut(shortcut_state *, uint32_t type, uint32_t mod,
+                     uint8_t code);
 
-void shortcut_mode_set(uint32_t);
-uint32_t shortcut_mode(void);
-void shortcut_mode_toggle(void);
+void set_shortcut_mode(shortcut_state *, uint32_t);
+void toggle_shortcut_mode(shortcut_state *);
 
-void shortcut_keymap_set(uint32_t *syms, uint32_t length,
-                         uint8_t keysyms_per_keycode);
+void refresh_shortcut_keymap(shortcut_state *);
 
-void shortcut_state_reset(void);
 #endif
 

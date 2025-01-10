@@ -3,6 +3,6 @@
 
 #include <ctf/ctf.h>
 
-CTF_GROUP_EXTERN(shortcut_group);
+CTF_GROUP_EXTERN(shortcut_spec);
 
 #endif

@@ -64,7 +64,7 @@ bin/awm: $(filter-out build/src/awm-bar.o, $(SRC_OBJECTS))
 $(TEST_RUN): bin/$(TEST_BIN)
 	mkdir -p $(@D)
 	$(info RUN $<)
-	./$<
+	./$< --cleanup --sigsegv
 	touch $@
 
 bin/$(TEST_BIN): $(TEST_OBJECTS) $(filter-out build/src/awm.o build/src/awm-bar.o, $(SRC_OBJECTS)) | build/test/$(TEST_BIN).lf
