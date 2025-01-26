@@ -8,12 +8,14 @@ void dummy_function(void);
 CTF_MOCK_VOID_EXTERN(dummy_function);
 
 // x.h
-CTF_MOCK_VOID_EXTERN(x_keyboard_grab);
-CTF_MOCK_VOID_EXTERN(x_keyboard_ungrab);
-CTF_MOCK_VOID_RET_EXTERN(x_key_grab, (uint8_t key, uint8_t mod));
-CTF_MOCK_VOID_RET_EXTERN(x_key_ungrab, (uint8_t key, uint8_t mod));
+CTF_MOCK_VOID_ARG_EXTERN(uint32_t, x_shortcut_mode);
+CTF_MOCK_VOID_RET_EXTERN(x_set_shortcut_mode, (uint32_t mode));
+CTF_MOCK_VOID_EXTERN(x_grab_keyboard);
+CTF_MOCK_VOID_EXTERN(x_ungrab_keyboard);
+CTF_MOCK_VOID_RET_EXTERN(x_grab_key, (uint8_t key, uint8_t mod));
+CTF_MOCK_VOID_RET_EXTERN(x_ungrab_key, (uint8_t key, uint8_t mod));
 
-CTF_MOCK_VOID_EXTERN(x_keymap_refresh);
+CTF_MOCK_VOID_EXTERN(x_refresh_keymap);
 CTF_MOCK_VOID_ARG_EXTERN(uint32_t, x_keymap_length);
 CTF_MOCK_VOID_ARG_EXTERN(uint32_t *, x_keymap_syms);
 CTF_MOCK_VOID_ARG_EXTERN(uint8_t, x_keymap_syms_per_code);

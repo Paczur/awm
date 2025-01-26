@@ -16,17 +16,17 @@
 #define SHORTCUT_MOD_CTRL 1 << 2
 #define SHORTCUT_MOD_ALT 1 << 3
 #define SHORTCUT_MOD_NUM_LOCK 1 << 4
-#define SHORTCUT_MOD_ISO_LEVEL5_SHIFT 1 << 4
-#define SHORTCUT_MOD_SUPER 1 << 5
-#define SHORTCUT_MOD_ISO_LEVEL3_SHIFT 1 << 6
+#define SHORTCUT_MOD_ISO_LEVEL5_SHIFT 1 << 5
+#define SHORTCUT_MOD_SUPER 1 << 6
+#define SHORTCUT_MOD_ISO_LEVEL3_SHIFT 1 << 7
 
 #define SHORTCUT_MOD_LOCK 1 << 1
 #define SHORTCUT_MOD_CONTROL 1 << 2
 #define SHORTCUT_MOD_1 1 << 3
 #define SHORTCUT_MOD_2 1 << 4
-#define SHORTCUT_MOD_3 1 << 4
-#define SHORTCUT_MOD_4 1 << 5
-#define SHORTCUT_MOD_5 1 << 6
+#define SHORTCUT_MOD_3 1 << 5
+#define SHORTCUT_MOD_4 1 << 6
+#define SHORTCUT_MOD_5 1 << 7
 
 typedef struct shortcut shortcut;
 typedef struct shortcut_state shortcut_state;
@@ -50,4 +50,3 @@ void toggle_shortcut_mode(shortcut_state *);
 void refresh_shortcut_keymap(shortcut_state *);
 
 #endif
-

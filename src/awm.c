@@ -13,7 +13,7 @@ static void init(void) {
   x_init();
   globals_init();
   shortcuts();
-  x_keyboard_grab();
+  x_grab_keyboard();
 }
 
 int main(void) {

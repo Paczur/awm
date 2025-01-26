@@ -37,29 +37,29 @@ uint32_t x_shortcut_mode(void) {
 
 void x_set_shortcut_mode(uint32_t m) { mode = m; }
 
-void x_keyboard_grab(void) {
+void x_ungrab_keyboard(void) {
+  xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, XCB_MOD_MASK_ANY);
+}
+
+void x_grab_keyboard(void) {
   xcb_grab_key(conn, 1, screen->root, XCB_MOD_MASK_ANY, XCB_GRAB_ANY,
                XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
 }
 
-void x_keyboard_ungrab(void) {
-  xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, XCB_MOD_MASK_ANY);
-}
-
-void x_key_grab(uint8_t key, uint8_t mod) {
+void x_grab_key(uint8_t key, uint8_t mod) {
   xcb_grab_key(conn, 1, screen->root, mod, key + setup->min_keycode,
                XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
 }
 
-void x_key_ungrab(uint8_t key, uint8_t mod) {
+void x_ungrab_key(uint8_t key, uint8_t mod) {
   xcb_ungrab_key(conn, key + setup->min_keycode, screen->root, mod);
 }
 
-void x_keymap_refresh(void) {
+void x_refresh_keymap(void) {
   xcb_generic_error_t *e = NULL;
   xcb_get_keyboard_mapping_reply_t *rep = NULL;
   xcb_get_keyboard_mapping_cookie_t cookie = xcb_get_keyboard_mapping(
-    conn, setup->min_keycode, setup->max_keycode - setup->min_keycode + 1);
+  conn, setup->min_keycode, setup->max_keycode - setup->min_keycode + 1);
   rep = xcb_get_keyboard_mapping_reply(conn, cookie, &e);
   if(rep == NULL || e != NULL) {
     log(LOG_LEVEL_FATAL, "Couldn't get keymap: %u", e->error_code);
@@ -72,17 +72,17 @@ void x_keymap_refresh(void) {
 }
 
 uint8_t x_keymap_syms_per_code(void) {
-  if(awm_vector_size(&keymap_syms) == 0) x_keymap_refresh();
+  if(awm_vector_size(&keymap_syms) == 0) x_refresh_keymap();
   return syms_per_code;
 }
 
 uint32_t x_keymap_length(void) {
-  if(awm_vector_size(&keymap_syms) == 0) x_keymap_refresh();
+  if(awm_vector_size(&keymap_syms) == 0) x_refresh_keymap();
   return awm_vector_size(&keymap_syms);
 }
 
 uint32_t *x_keymap_syms(void) {
-  if(awm_vector_size(&keymap_syms) == 0) x_keymap_refresh();
+  if(awm_vector_size(&keymap_syms) == 0) x_refresh_keymap();
   return awm_vector_array(&keymap_syms);
 }
 
