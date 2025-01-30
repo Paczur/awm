@@ -50,9 +50,7 @@ CTF_TEST_STATIC(shortcut_function) {
             expect(mock_call_count, ==, 1);
           }
 
-          subtest(after_shortcut_different_by_type) {
-            add_shortcut_by_code(state, mode, type ^ 1, mod, code,
-                                 dummy_function, false);
+          subtest(after_key_different_by_type) {
             handle_shortcut(state, type ^ 1, mod, code);
             mock_select(dummy_function) {
               handle_shortcut(state, type, mod, code);
@@ -60,9 +58,7 @@ CTF_TEST_STATIC(shortcut_function) {
             }
           }
 
-          subtest(after_shortcut_different_by_mod) {
-            add_shortcut_by_code(state, mode, type, mod ^ 1, code,
-                                 dummy_function, false);
+          subtest(after_key_different_by_mod) {
             handle_shortcut(state, type, mod ^ 1, code);
             mock_select(dummy_function) {
               handle_shortcut(state, type, mod, code);
@@ -70,11 +66,9 @@ CTF_TEST_STATIC(shortcut_function) {
             }
           }
 
-          subtest(after_different_shortcut_by_mode) {
+          subtest(after_key_different_by_mode) {
             mock_select(x_shortcut_mode) {
               mock_return_nth(1, mode ^ 1);
-              add_shortcut_by_code(state, mode ^ 1, type, mod, code + 1,
-                                   dummy_function, false);
               handle_shortcut(state, type, mod, code + 1);
             }
             mock_select(dummy_function) {
@@ -83,9 +77,7 @@ CTF_TEST_STATIC(shortcut_function) {
             }
           }
 
-          subtest(after_shortcut_different_by_code) {
-            add_shortcut_by_code(state, mode, type, mod, code + 1,
-                                 dummy_function, false);
+          subtest(after_key_different_by_code) {
             handle_shortcut(state, type, mod, code + 1);
             mock_select(dummy_function) {
               handle_shortcut(state, type, mod, code);
@@ -120,9 +112,7 @@ CTF_TEST_STATIC(shortcut_function) {
             expect(mock_call_count, ==, 1);
           }
 
-          subtest(after_shortcut_different_by_type) {
-            add_shortcut_by_code(state, mode, type ^ 1, mod, code,
-                                 dummy_function, false);
+          subtest(after_key_different_by_type) {
             handle_shortcut(state, type ^ 1, mod, code);
             mock_select(dummy_function) {
               handle_shortcut(state, type, mod, code);
@@ -130,9 +120,7 @@ CTF_TEST_STATIC(shortcut_function) {
             }
           }
 
-          subtest(after_shortcut_different_by_mod) {
-            add_shortcut_by_code(state, mode, type, mod ^ 1, code,
-                                 dummy_function, false);
+          subtest(after_key_different_by_mod) {
             handle_shortcut(state, type, mod ^ 1, code);
             mock_select(dummy_function) {
               handle_shortcut(state, type, mod, code);
@@ -140,11 +128,9 @@ CTF_TEST_STATIC(shortcut_function) {
             }
           }
 
-          subtest(after_different_shortcut_by_mode) {
+          subtest(after_key_different_by_mode) {
             mock_select(x_shortcut_mode) {
               mock_return_nth(1, mode ^ 1);
-              add_shortcut_by_code(state, mode ^ 1, type, mod, code + 1,
-                                   dummy_function, false);
               handle_shortcut(state, type, mod, code + 1);
             }
             mock_select(dummy_function) {
@@ -153,9 +139,7 @@ CTF_TEST_STATIC(shortcut_function) {
             }
           }
 
-          subtest(after_shortcut_different_by_code) {
-            add_shortcut_by_code(state, mode, type, mod, code + 1,
-                                 dummy_function, false);
+          subtest(after_key_different_by_code) {
             handle_shortcut(state, type, mod, code + 1);
             mock_select(dummy_function) {
               handle_shortcut(state, type, mod, code);

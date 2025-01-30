@@ -146,7 +146,7 @@ void handle_shortcut(shortcut_state *state, uint32_t type, uint32_t mod,
   const uint32_t min_key_code = x_min_key_code();
   struct internal_mapped_shortcut *sh =
   state->shortcut_map[code - min_key_code] + to_mapped(mode, type, mod);
-  if(state->last_shortcut == sh && !sh->auto_repeat) {
+  if(state->last_shortcut == sh) {
     log(LOG_LEVEL_INFO,
         "Key %u with flags %u pressed but auto-repeat disabled - ignoring",
         code, to_mapped(mode, type, mod));
