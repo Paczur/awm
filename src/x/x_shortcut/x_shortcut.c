@@ -6,13 +6,6 @@
 #include "../x_atom/x_atom.h"
 #include "../x_private.h"
 
-#define FROM_X_KEYMAP(keymap) ((xcb_get_keyboard_mapping_reply_t *)(keymap))
-#define TO_X_KEYMAP(keymap) ((x_keymap *)(keymap))
-
-struct x_keymap {
-  xcb_get_keyboard_mapping_reply_t keymap;
-};
-
 static awm_vector_init(uint32_t) keymap_syms;
 static uint32_t syms_per_code;
 
