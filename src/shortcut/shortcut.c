@@ -152,8 +152,11 @@ void handle_shortcut(shortcut_state *state, uint32_t type, uint32_t mod,
         code, to_mapped(mode, type, mod));
     return;
   }
-  state->last_shortcut = sh;
-  if(sh->f == NULL) return;
+  if(sh->f == NULL) {
+    state->last_shortcut = NULL;
+    return;
+  }
+  state->last_shortcut = sh->auto_repeat ? NULL : sh;
   log(LOG_LEVEL_INFO, "Key %u with flags %u handler starting", code,
       to_mapped(mode, type, mod));
   sh->f();
