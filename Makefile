@@ -32,16 +32,15 @@ check: $(TEST_RUN)
 clean:
 	rm -rf build bin
 
-bins: bin/awm bin/awm-bar
+bins: bin/awm
 
 install: bins
 	install -D bin/awm /usr/bin/awm-test
-	# install -Ds bin/awm-bar /usr/bin/awm-bar
 	mkdir -p /etc/awm
 	cp -r scripts /etc/awm
 
 uninstall:
-	rm /usr/bin/awm /usr/bin/awm-bar
+	rm /usr/bin/awm
 
 MAKEFLAGS += --no-builtin-rules
 .SUFFIXES:
@@ -51,12 +50,7 @@ $(VERBOSE).SILENT:
 $(shell mkdir -p $(dir $(DEPENDENCIES)))
 -include $(DEPENDENCIES)
 
-bin/awm-bar: $(filter-out build/src/awm.o, $(SRC_OBJECTS))
-	mkdir -p $(@D)
-	$(info LN  $@)
-	$(CC) $(LINK_FLAGS) $(CFLAGS) -o $@ $^
-
-bin/awm: $(filter-out build/src/awm-bar.o, $(SRC_OBJECTS))
+bin/awm: $(SRC_OBJECTS)
 	mkdir -p $(@D)
 	$(info LN  $@)
 	$(CC) $(LINK_FLAGS) $(CFLAGS) -o $@ $^
@@ -67,7 +61,7 @@ $(TEST_RUN): bin/$(TEST_BIN)
 	./$< --cleanup --sigsegv
 	touch $@
 
-bin/$(TEST_BIN): $(TEST_OBJECTS) $(filter-out build/src/awm.o build/src/awm-bar.o, $(SRC_OBJECTS)) | build/test/$(TEST_BIN).lf
+bin/$(TEST_BIN): $(TEST_OBJECTS) $(filter-out build/src/awm.o, $(SRC_OBJECTS)) | build/test/$(TEST_BIN).lf
 	mkdir -p $(@D)
 	$(info LN  $@)
 	$(CC) $(LINK_FLAGS) $(TEST_FLAGS) `cat $|` -o $@ $^

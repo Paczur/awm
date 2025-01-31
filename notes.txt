@@ -1,9 +1,9 @@
 global:
 - configuration split to different files
-- modules have to be easily testable
-- keep things as simple as possible
+- modules have to be testable
+- keep things as small and simple as possible
 - prefer clean restart over being dynamic
-- restore everything on restart
+- restore EVERYTHING on restart
 
 shortcuts:
 - modifiers: shift ctrl alt

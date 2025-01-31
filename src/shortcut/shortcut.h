@@ -4,49 +4,43 @@
 #include "../types.h"
 #include "syms.h"
 
-#define SHORTCUT_MODE_NORMAL 0
-#define SHORTCUT_MODE_INSERT 1
+#define MAX_SHORTCUT_COUNT 100
+#define KEY_MODE KEY_Super_L
 
-#define SHORTCUT_TYPE_PRESS 0
-#define SHORTCUT_TYPE_RELEASE 1
+#define MODE_INSERT 1
+#define MODE_NORMAL 0
 
-#define SHORTCUT_MOD_NONE 0
-#define SHORTCUT_MOD_SHIFT 1 << 0
-#define SHORTCUT_MOD_CAPS_LOCK 1 << 1
-#define SHORTCUT_MOD_CTRL 1 << 2
-#define SHORTCUT_MOD_ALT 1 << 3
-#define SHORTCUT_MOD_NUM_LOCK 1 << 4
-#define SHORTCUT_MOD_ISO_LEVEL5_SHIFT 1 << 5
-#define SHORTCUT_MOD_SUPER 1 << 6
-#define SHORTCUT_MOD_ISO_LEVEL3_SHIFT 1 << 7
+#define FLAGS_NONE 0
+#define MOD_SHIFT (1 << 0)
+#define MOD_CTRL (1 << 2)
+#define MOD_ALT (1 << 3)
+#define AUTO_REPEAT (1 << 1)
 
-#define SHORTCUT_MOD_LOCK 1 << 1
-#define SHORTCUT_MOD_CONTROL 1 << 2
-#define SHORTCUT_MOD_1 1 << 3
-#define SHORTCUT_MOD_2 1 << 4
-#define SHORTCUT_MOD_3 1 << 5
-#define SHORTCUT_MOD_4 1 << 6
-#define SHORTCUT_MOD_5 1 << 7
+struct shortcut {
+  u8 flags;
+  u32 keysym;
+  void (*f)(void);
+};
 
-typedef struct shortcut shortcut;
-typedef struct shortcut_state shortcut_state;
+struct keymap {
+  u8 keysyms_per_keycode;
+  u8 min_keycode;
+  u32 length;
+  u32 *keysyms;
+};
 
-shortcut_state *new_shortcut_state(void);
+void init_shortcuts(struct keymap keymap, struct shortcut *shortcuts, u8 size);
 
-shortcut *add_shortcut(shortcut_state *, uint32_t mode, uint32_t shortcut_type,
-                       uint32_t shortcut_mod, uint32_t sym, void (*f)(void),
-                       bool auto_repeat);
+void (*find_shortcut(u8 flags, u8 keycode))(void);
 
-shortcut *add_shortcut_by_code(shortcut_state *, uint32_t mode,
-                               uint32_t shortcut_type, uint32_t shortcut_mod,
-                               uint8_t code, void (*f)(void), bool auto_repeat);
+void release_handler(u8 keycode);
 
-void handle_shortcut(shortcut_state *, uint32_t type, uint32_t mod,
-                     uint8_t code);
+static inline void handle_shortcut(u8 flags, u8 keycode) {
+  void (*const f)(void) = find_shortcut(flags, keycode);
+  if(f != NULL) f();
+}
 
-void set_shortcut_mode(shortcut_state *, uint32_t);
-void toggle_shortcut_mode(shortcut_state *);
-
-void refresh_shortcut_keymap(shortcut_state *);
+void set_mode(u8 mode);
+u8 get_mode(void);
 
 #endif
