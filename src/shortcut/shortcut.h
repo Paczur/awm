@@ -7,8 +7,8 @@
 #define MAX_SHORTCUT_COUNT 100
 #define KEY_MODE KEY_Super_L
 
-#define MODE_INSERT 1
-#define MODE_NORMAL 0
+#define INSERT_MODE 1
+#define NORMAL_MODE 0
 
 #define FLAGS_NONE 0
 #define MOD_SHIFT (1 << 0)

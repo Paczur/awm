@@ -68,7 +68,7 @@ bin/$(TEST_BIN): $(TEST_OBJECTS) $(filter-out build/src/awm.o, $(SRC_OBJECTS)) |
 
 build/test/$(TEST_BIN).lf: $(TESTS)
 	mkdir -p $(@D)
-	$(info FLG $@)
+	$(info FLG $@ )
 	$(SHELL) ./build_scripts/wraps $^ > $@
 
 build/test/%.c: test/%.c

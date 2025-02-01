@@ -3,6 +3,8 @@
 #include <assert.h>
 #include <string.h>
 
+#include "shortcut_x.h"
+
 static struct {
   u8 mode;
   u8 mode_keycode;
@@ -13,11 +15,11 @@ static struct {
   void (*f_return[MAX_SHORTCUT_COUNT])(void);
 } state = {.mode = 2};
 
-static void set_mode_to_normal(void) { set_mode(MODE_NORMAL); }
+static void set_mode_to_normal(void) { set_mode(NORMAL_MODE); }
 
 void init_shortcuts(struct keymap keymap, struct shortcut *shortcuts, u8 size) {
-  assert(keymap.keysyms != NULL);
-  assert(shortcuts != NULL);
+  assert(keymap.keysyms != NULL || keymap.length == 0);
+  assert(shortcuts != NULL || size == 0);
   u32 keysym;
   u8 flag_shift;
   u8 flag_index;
@@ -26,7 +28,7 @@ void init_shortcuts(struct keymap keymap, struct shortcut *shortcuts, u8 size) {
   for(u32 i = 0; i < keymap.length; i++) {
     for(u8 j = 0; j < keymap.keysyms_per_keycode; j++) {
       if(keymap.keysyms[i * keymap.keysyms_per_keycode + j] == KEY_MODE) {
-        state.mode_keycode = i;
+        state.mode_keycode = i + keymap.min_keycode;
         goto normal_mode;
       }
     }
@@ -50,10 +52,11 @@ normal_mode:
     }
   next:
   }
+  state.mode = query_mode();
 }
 
 void (*find_shortcut(u8 flags, u8 keycode))(void) {
-  if(state.mode == MODE_INSERT)
+  if(state.mode == INSERT_MODE)
     return flags == FLAGS_NONE ? set_mode_to_normal : NULL;
   const u8 code_search_size = state.code_search_size;
   for(u8 i = 0; i < code_search_size; i++) {
@@ -69,14 +72,20 @@ void (*find_shortcut(u8 flags, u8 keycode))(void) {
 void release_handler(u8 keycode) {
   if(state.mode_keycode == keycode && state.mode_return) {
     state.mode_return = 0;
-    set_mode(MODE_INSERT);
+    set_mode(INSERT_MODE);
   }
 }
 
 void set_mode(u8 mode) {
+  if(mode == state.mode) return;
   state.mode = mode;
-  // TODO: Set X ATOM
-  // TODO: Grab keyboard and keys
+  send_mode(mode);
+  if(mode == NORMAL_MODE) {
+    grab_keyboard();
+  } else {
+    ungrab_keyboard();
+    grab_key(state.mode_keycode, FLAGS_NONE);
+  }
 }
 
 u8 get_mode(void) { return state.mode; }
