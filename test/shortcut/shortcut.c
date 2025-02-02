@@ -6,6 +6,8 @@
 #include "../mocks/mocks.h"
 #define LENGTH(x) (sizeof(x) / sizeof(x[0]))
 
+static void dummy_function(void) {}
+
 CTF_TEST_STATIC(find_shortcut_returns_NULL_when_shortcut_wasnt_found) {
   expect(find_shortcut(FLAGS_NONE, 0), ==, NULL);
 }
@@ -26,7 +28,6 @@ CTF_TEST_STATIC(initializing_with_array_of_shortcuts) {
     {FLAGS_NONE, 1001, NULL + 5},
     {FLAGS_NONE, 1005, NULL + 3},
   };
-  mock_global(query_mode, NULL);
 
   subtest(makes_every_shortcut_from_array_findable) {
     init_shortcuts(keymap, shortcuts, LENGTH(shortcuts));
@@ -54,14 +55,7 @@ CTF_TEST_STATIC(setting_mode) {
     .length = 1,
     .keysyms = (u32[]){KEY_MODE},
   };
-
-  mock_global(send_mode, NULL);
-  mock_global(query_mode, NULL);
-  mock_global(grab_keyboard, NULL);
-  mock_global(ungrab_keyboard, NULL);
-  mock_global(grab_key, NULL);
   init_shortcuts(keymap, NULL, 0);
-
   set_mode(NORMAL_MODE);
 
   subtest(sends_it_to_X11) mock_select(send_mode) {
@@ -86,8 +80,30 @@ CTF_TEST_STATIC(setting_mode) {
   }
 }
 
+CTF_TEST_STATIC(
+  release_handler_with_mode_keycode_and_after_handling_different_shortcut_sets_mode_to_insert) {
+  const u8 mode_key = 25;
+  const struct keymap keymap = (struct keymap){
+    .keysyms_per_keycode = 1,
+    .min_keycode = 25,
+    .length = 2,
+    .keysyms = (u32[]){KEY_MODE, 1001},
+  };
+  struct shortcut shortcuts[] = {
+    {FLAGS_NONE, 1001, dummy_function},
+  };
+  init_shortcuts(keymap, shortcuts, 1);
+  handle_shortcut(FLAGS_NONE, 26);
+  set_mode(NORMAL_MODE);
+  release_handler(mode_key);
+  expect(get_mode(), ==, INSERT_MODE);
+}
+
 CTF_GROUP(shortcut_spec) = {
   find_shortcut_returns_NULL_when_shortcut_wasnt_found,
   initializing_with_array_of_shortcuts,
   setting_mode,
+  release_handler_with_mode_keycode_and_after_handling_different_shortcut_sets_mode_to_insert,
 };
+
+CTF_GROUP_SETUP(shortcut_spec) { mock_group(shortcut_x_mocks); }

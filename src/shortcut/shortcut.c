@@ -61,12 +61,17 @@ void (*find_shortcut(u8 flags, u8 keycode))(void) {
   const u8 code_search_size = state.code_search_size;
   for(u8 i = 0; i < code_search_size; i++) {
     if(state.code_search[i] == keycode &&
-       state.flag_filter[i / 2] >> (i % 2 * 4) == flags) {
-      state.mode_return = 1;
+       state.flag_filter[i / 2] >> (i % 2 * 4) == flags)
       return state.f_return[i];
-    }
   }
   return NULL;
+}
+
+void handle_shortcut(u8 flags, u8 keycode) {
+  void (*const f)(void) = find_shortcut(flags, keycode);
+  if(f == NULL) return;
+  if(keycode != state.mode_keycode) state.mode_return = 1;
+  f();
 }
 
 void release_handler(u8 keycode) {

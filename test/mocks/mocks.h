@@ -4,6 +4,7 @@
 #include <ctf/ctf.h>
 #include <types.h>
 
+CTF_MOCK_GROUP_EXTERN(shortcut_x_mocks);
 CTF_MOCK_VOID_EXTERN(grab_keyboard);
 CTF_MOCK_VOID_EXTERN(ungrab_keyboard);
 CTF_MOCK_VOID_RET_EXTERN(grab_key, (u8 key, u8 mod));

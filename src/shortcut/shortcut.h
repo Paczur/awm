@@ -35,10 +35,7 @@ void (*find_shortcut(u8 flags, u8 keycode))(void);
 
 void release_handler(u8 keycode);
 
-static inline void handle_shortcut(u8 flags, u8 keycode) {
-  void (*const f)(void) = find_shortcut(flags, keycode);
-  if(f != NULL) f();
-}
+void handle_shortcut(u8 flags, u8 keycode);
 
 void set_mode(u8 mode);
 u8 get_mode(void);
