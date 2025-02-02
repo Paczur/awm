@@ -14,4 +14,6 @@ typedef int64_t i64;
 
 #define NONE 0
 
+#define LENGTH(x) (sizeof(x) / sizeof(x[0]))
+
 #endif

@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <string.h>
 
+#include "../config.h"
 #include "shortcut_x.h"
 
 static struct {
@@ -52,7 +53,7 @@ normal_mode:
     }
   next:
   }
-  state.mode = query_mode();
+  set_mode(query_mode());
 }
 
 void (*find_shortcut(u8 flags, u8 keycode))(void) {

@@ -1,5 +1,6 @@
 #include "shortcut.h"
 
+#include <config.h>
 #include <shortcut/shortcut.h>
 #include <x/x_p.h>
 
@@ -42,7 +43,10 @@ CTF_TEST_STATIC(initializing_with_array_of_shortcuts) {
   }
 
   subtest(queries_mode_from_X11) mock_select(query_mode) {
-    init_shortcuts(keymap, NULL, 0);
+    subtest(and_sets_it) mock(set_mode, NULL) {
+      init_shortcuts(keymap, NULL, 0);
+      expect(mock_call_count, ==, 1);
+    }
     expect(mock_call_count, ==, 1);
   }
 }

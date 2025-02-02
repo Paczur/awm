@@ -5,7 +5,6 @@
 #include "syms.h"
 
 #define MAX_SHORTCUT_COUNT 100
-#define KEY_MODE KEY_Super_L
 
 #define INSERT_MODE 1
 #define NORMAL_MODE 0
