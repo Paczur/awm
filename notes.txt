@@ -42,6 +42,7 @@ layout:
 - workspaces change name to window name present
 - all windows with border unless only one visible
 - fullscreen mode
+- act on notify
 - think what to do with multi-monitor
 
 bar:
