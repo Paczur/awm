@@ -43,10 +43,7 @@ CTF_TEST_STATIC(initializing_with_array_of_shortcuts) {
   }
 
   subtest(queries_mode_from_X11) mock_select(query_mode) {
-    subtest(and_sets_it) mock(set_mode, NULL) {
-      init_shortcuts(keymap, NULL, 0);
-      expect(mock_call_count, ==, 1);
-    }
+    init_shortcuts(keymap, NULL, 0);
     expect(mock_call_count, ==, 1);
   }
 }

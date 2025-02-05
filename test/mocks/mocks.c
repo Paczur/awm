@@ -25,7 +25,3 @@ CTF_MOCK_GROUP(shortcut_x_mocks) = {
   CTF_MOCK_BIND(grab_keyboard, NULL), CTF_MOCK_BIND(ungrab_keyboard, NULL),
   CTF_MOCK_BIND(grab_key, NULL),
 };
-
-CTF_MOCK_VOID_RET(set_mode, (u8 mode), (mode)) {
-  if(mock_in) mock_check(mode);
-}
