@@ -14,7 +14,7 @@ struct geometry {
   u32 height;
 };
 
-void init_layout(const struct geometry *geoms, u32 monitor_count);
+void init_layout(const struct geometry *geoms, u32 monitor_count, u32 border);
 
 void map_request(u32 window);
 void unmap_notify(u32 window);

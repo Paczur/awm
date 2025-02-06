@@ -13,5 +13,6 @@ static void insert_mode(void) { set_mode(INSERT_MODE); }
     {FLAGS_NONE, KEY_Return, open_terminal}, \
     {FLAGS_NONE, KEY_i, insert_mode},        \
   }
+#define BORDER_SIZE 10
 
 #endif

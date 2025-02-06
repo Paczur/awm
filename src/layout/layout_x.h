@@ -11,6 +11,7 @@ void send_workspace(u32 *windows, u32 w);
 
 void map_window(u32 window);
 void unmap_window(u32 window);
-void configure_window(u32 window, u32 x, u32 y, u32 width, u32 heigth);
+void configure_window(u32 window, u32 x, u32 y, u32 width, u32 heigth,
+                      u32 border);
 
 #endif

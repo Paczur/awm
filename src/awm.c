@@ -61,7 +61,7 @@ static void layout_init(void) {
     free(randr_crtcs[i]);
   }
   for(u32 i = length; i < monitor_count; i++) free(randr_crtcs[i]);
-  init_layout(monitors, monitor_count);
+  init_layout(monitors, monitor_count, BORDER_SIZE);
 }
 
 static void init(void) {

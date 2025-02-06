@@ -6,7 +6,7 @@
 
 CTF_TEST_STATIC(map_request_on) {
   struct geometry monitor = {1, 1, 1920, 1080};
-  init_layout(&monitor, 1);
+  init_layout(&monitor, 1, 0);
   subtest(first_window_in_a_workspace) {
     subtest(configures_it_to_fullscreen_maps_it_and_sends)
       mock_select(configure_window) {
@@ -109,7 +109,7 @@ CTF_TEST_STATIC(map_request_on) {
 
 CTF_TEST_STATIC(unmap_notify_in_order_with) {
   struct geometry monitor = {1, 1, 1920, 1080};
-  init_layout(&monitor, 1);
+  init_layout(&monitor, 1, 0);
   map_request(1);
   map_request(2);
   map_request(3);
