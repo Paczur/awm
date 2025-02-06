@@ -8,7 +8,10 @@
 
 static uint8_t randr_event = -1;
 
-xcb_atom_t AWM_MODE;
+#define X(x) xcb_atom_t x;
+ATOMS
+#undef X
+
 xcb_visualtype_t *visual_type;
 xcb_connection_t *conn;
 const xcb_setup_t *setup;
@@ -53,13 +56,21 @@ static void x_init_visual(void) {
 }
 
 static void intern_atoms(void) {
-  const xcb_intern_atom_cookie_t cookie =
-    xcb_intern_atom(conn, 0, sizeof("AWM_MODE"), "AWM_MODE");
-  xcb_intern_atom_reply_t *reply = xcb_intern_atom_reply(conn, cookie, NULL);
-  if(reply) {
-    AWM_MODE = reply->atom;
-    free(reply);
+#define X(x)                                  \
+  const xcb_intern_atom_cookie_t x##_cookie = \
+    xcb_intern_atom(conn, 0, sizeof(#x), #x);
+  ATOMS
+#undef X
+
+#define X(x)                                       \
+  xcb_intern_atom_reply_t *x##_reply =             \
+    xcb_intern_atom_reply(conn, x##_cookie, NULL); \
+  if(x##_reply) {                                  \
+    x = x##_reply->atom;                           \
+    free(x##_reply);                               \
   }
+  ATOMS
+#undef X
 }
 
 /*
@@ -96,6 +107,28 @@ static void x_init_randr(void) {
   randr_event = extreply->first_event;
   xcb_randr_select_input(conn, screen->root,
                          XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE);
+}
+
+u32 query_cardinal(xcb_atom_t atom, u32 def) {
+  u32 val = def;
+  const xcb_get_property_cookie_t cookie =
+    xcb_get_property(conn, 0, screen->root, atom, XCB_ATOM_CARDINAL, 0, 1);
+  xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, cookie, NULL);
+  if(reply) {
+    val = *(u32 *)xcb_get_property_value(reply);
+    free(reply);
+  }
+  return val;
+}
+
+void send_cardinal(xcb_atom_t atom, u32 val) {
+  xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, atom,
+                      XCB_ATOM_CARDINAL, 32, 1, &val);
+}
+
+void send_cardinal_array(xcb_atom_t atom, u32 *arr, u32 length) {
+  xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, atom,
+                      XCB_ATOM_CARDINAL, 32, length, arr);
 }
 
 void x_init(void) {
