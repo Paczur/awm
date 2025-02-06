@@ -17,9 +17,7 @@ struct geometry {
 void init_layout(const struct geometry *geoms, u32 monitor_count);
 
 void map_request(u32 window);
-void map_notify(u32 window);
 void unmap_notify(u32 window);
-void configure_notify(u32 window, struct geometry);
 void destroy_notify(u32 window);
 void focus_in_notify(u32 window);
 void focus_out_notify(u32 window);
