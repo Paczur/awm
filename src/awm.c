@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "config.h"
@@ -61,7 +62,7 @@ static void layout_init(void) {
     free(randr_crtcs[i]);
   }
   for(u32 i = length; i < monitor_count; i++) free(randr_crtcs[i]);
-  init_layout(monitors, monitor_count, BORDER_SIZE);
+  init_layout(monitors, monitor_count);
 }
 
 static void init(void) {
@@ -80,6 +81,14 @@ static void key_press(const xcb_key_press_event_t *event) {
   handle_shortcut(event->state, event->detail);
 }
 
+static void button_press(const xcb_button_press_event_t *event) {
+  xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, XCB_CURRENT_TIME);
+  if(event->event != screen->root) {
+    focus_window(event->event);
+    set_mode(INSERT_MODE);
+  }
+}
+
 int main(void) {
   xcb_generic_event_t *event;
   init();
@@ -94,11 +103,22 @@ int main(void) {
     case XCB_KEY_RELEASE:
       key_release((xcb_key_release_event_t *)event);
       break;
+    case XCB_BUTTON_PRESS:
+      button_press((xcb_button_press_event_t *)event);
+      break;
     case XCB_MAP_REQUEST:
       map_request(((xcb_map_request_event_t *)event)->window);
       break;
     case XCB_UNMAP_NOTIFY:
       unmap_notify(((xcb_unmap_notify_event_t *)event)->window);
+      break;
+    case XCB_FOCUS_IN:
+      if(((xcb_focus_out_event_t *)event)->mode != XCB_NOTIFY_MODE_GRAB)
+        focus_in_notify(((xcb_focus_in_event_t *)event)->event);
+      break;
+    case XCB_FOCUS_OUT:
+      if(((xcb_focus_out_event_t *)event)->mode != XCB_NOTIFY_MODE_GRAB)
+        focus_out_notify(((xcb_focus_out_event_t *)event)->event);
       break;
     }
     free(event);

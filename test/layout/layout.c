@@ -6,14 +6,16 @@
 
 CTF_TEST_STATIC(map_request_on) {
   struct geometry monitor = {1, 1, 1920, 1080};
-  init_layout(&monitor, 1, 0);
+  init_layout(&monitor, 1);
   subtest(first_window_in_a_workspace) {
     subtest(configures_it_to_fullscreen_maps_it_and_sends)
       mock_select(configure_window) {
       mock_expect_nth(1, x, ==, monitor.x);
       mock_expect_nth(1, y, ==, monitor.y);
-      mock_expect_nth(1, width, ==, monitor.width);
-      mock_expect_nth(1, height, ==, monitor.height);
+      mock_expect_nth(1, width - BORDER_SIZE * 2, ==,
+                      monitor.width - BORDER_SIZE * 2);
+      mock_expect_nth(1, height - BORDER_SIZE * 2, ==,
+                      monitor.height - BORDER_SIZE * 2);
       mock_select(map_window) {
         mock_select(send_workspace) {
           map_request(1);
@@ -31,13 +33,17 @@ CTF_TEST_STATIC(map_request_on) {
       mock_expect_nth(1, window, ==, 1);
       mock_expect_nth(1, x, ==, monitor.x);
       mock_expect_nth(1, y, ==, monitor.y);
-      mock_expect_nth(1, width, ==, monitor.width / 2);
-      mock_expect_nth(1, height, ==, monitor.height);
+      mock_expect_nth(1, width - BORDER_SIZE * 2, ==,
+                      monitor.width - BORDER_SIZE * 2 / 2);
+      mock_expect_nth(1, height - BORDER_SIZE * 2, ==,
+                      monitor.height - BORDER_SIZE * 2);
       mock_expect_nth(2, window, ==, 2);
       mock_expect_nth(2, x, ==, monitor.x + monitor.width / 2);
       mock_expect_nth(2, y, ==, monitor.y);
-      mock_expect_nth(2, width, ==, monitor.width / 2);
-      mock_expect_nth(2, height, ==, monitor.height);
+      mock_expect_nth(2, width - BORDER_SIZE * 2, ==,
+                      monitor.width - BORDER_SIZE * 2 / 2);
+      mock_expect_nth(2, height - BORDER_SIZE * 2, ==,
+                      monitor.height - BORDER_SIZE * 2);
       mock_select(map_window) {
         mock_select(send_workspace) {
           map_request(2);
@@ -54,20 +60,26 @@ CTF_TEST_STATIC(map_request_on) {
       mock_expect_nth(1, window, ==, 1);
       mock_expect_nth(1, x, ==, monitor.x);
       mock_expect_nth(1, y, ==, monitor.y);
-      mock_expect_nth(1, width, ==, monitor.width / 2);
-      mock_expect_nth(1, height, ==, monitor.height);
+      mock_expect_nth(1, width - BORDER_SIZE * 2, ==,
+                      monitor.width - BORDER_SIZE * 2 / 2);
+      mock_expect_nth(1, height - BORDER_SIZE * 2, ==,
+                      monitor.height - BORDER_SIZE * 2);
 
       mock_expect_nth(2, window, ==, 2);
       mock_expect_nth(2, x, ==, monitor.x + monitor.width / 2);
       mock_expect_nth(2, y, ==, monitor.y);
-      mock_expect_nth(2, width, ==, monitor.width / 2);
-      mock_expect_nth(2, height, ==, monitor.height / 2);
+      mock_expect_nth(2, width - BORDER_SIZE * 2, ==,
+                      monitor.width - BORDER_SIZE * 2 / 2);
+      mock_expect_nth(2, height - BORDER_SIZE * 2, ==,
+                      monitor.height - BORDER_SIZE * 2 / 2);
 
       mock_expect_nth(3, window, ==, 4);
       mock_expect_nth(3, x, ==, monitor.x + monitor.width / 2);
       mock_expect_nth(3, y, ==, monitor.y + monitor.height / 2);
-      mock_expect_nth(3, width, ==, monitor.width / 2);
-      mock_expect_nth(3, height, ==, monitor.height / 2);
+      mock_expect_nth(3, width - BORDER_SIZE * 2, ==,
+                      monitor.width - BORDER_SIZE * 2 / 2);
+      mock_expect_nth(3, height - BORDER_SIZE * 2, ==,
+                      monitor.height - BORDER_SIZE * 2 / 2);
       mock_select(map_window) {
         mock_select(send_workspace) {
           map_request(4);
@@ -93,8 +105,10 @@ CTF_TEST_STATIC(map_request_on) {
       mock_expect_nth(4, window, ==, 4);
       mock_expect_nth(4, x, ==, monitor.x + monitor.width / 2);
       mock_expect_nth(4, y, ==, monitor.y + monitor.height / 2);
-      mock_expect(width, ==, monitor.width / 2);
-      mock_expect(height, ==, monitor.height / 2);
+      mock_expect(width - BORDER_SIZE * 2, ==,
+                  monitor.width - BORDER_SIZE * 2 / 2);
+      mock_expect(height - BORDER_SIZE * 2, ==,
+                  monitor.height - BORDER_SIZE * 2 / 2);
       mock_select(map_window) {
         mock_select(send_workspace) {
           map_request(3);
@@ -109,7 +123,7 @@ CTF_TEST_STATIC(map_request_on) {
 
 CTF_TEST_STATIC(unmap_notify_in_order_with) {
   struct geometry monitor = {1, 1, 1920, 1080};
-  init_layout(&monitor, 1, 0);
+  init_layout(&monitor, 1);
   map_request(1);
   map_request(2);
   map_request(3);
@@ -120,20 +134,26 @@ CTF_TEST_STATIC(unmap_notify_in_order_with) {
       mock_expect_nth(1, window, ==, 1);
       mock_expect_nth(1, x, ==, monitor.x);
       mock_expect_nth(1, y, ==, monitor.y);
-      mock_expect_nth(1, width, ==, monitor.width / 2);
-      mock_expect_nth(1, height, ==, monitor.height);
+      mock_expect_nth(1, width - BORDER_SIZE * 2, ==,
+                      monitor.width - BORDER_SIZE * 2 / 2);
+      mock_expect_nth(1, height - BORDER_SIZE * 2, ==,
+                      monitor.height - BORDER_SIZE * 2);
 
       mock_expect_nth(2, window, ==, 2);
       mock_expect_nth(2, x, ==, monitor.x + monitor.width / 2);
       mock_expect_nth(2, y, ==, monitor.y);
-      mock_expect_nth(2, width, ==, monitor.width / 2);
-      mock_expect_nth(2, height, ==, monitor.height / 2);
+      mock_expect_nth(2, width - BORDER_SIZE * 2, ==,
+                      monitor.width - BORDER_SIZE * 2 / 2);
+      mock_expect_nth(2, height - BORDER_SIZE * 2, ==,
+                      monitor.height - BORDER_SIZE * 2 / 2);
 
       mock_expect_nth(3, window, ==, 4);
       mock_expect_nth(3, x, ==, monitor.x + monitor.width / 2);
       mock_expect_nth(3, y, ==, monitor.y + monitor.height / 2);
-      mock_expect_nth(3, width, ==, monitor.width / 2);
-      mock_expect_nth(3, height, ==, monitor.height / 2);
+      mock_expect_nth(3, width - BORDER_SIZE * 2, ==,
+                      monitor.width - BORDER_SIZE * 2 / 2);
+      mock_expect_nth(3, height - BORDER_SIZE * 2, ==,
+                      monitor.height - BORDER_SIZE * 2 / 2);
       mock_select(send_workspace) {
         unmap_notify(3);
         expect(mock_call_count, ==, 1);
@@ -148,13 +168,17 @@ CTF_TEST_STATIC(unmap_notify_in_order_with) {
       mock_expect_nth(1, window, ==, 1);
       mock_expect_nth(1, x, ==, monitor.x);
       mock_expect_nth(1, y, ==, monitor.y);
-      mock_expect_nth(1, width, ==, monitor.width / 2);
-      mock_expect_nth(1, height, ==, monitor.height);
+      mock_expect_nth(1, width - BORDER_SIZE * 2, ==,
+                      monitor.width - BORDER_SIZE * 2 / 2);
+      mock_expect_nth(1, height - BORDER_SIZE * 2, ==,
+                      monitor.height - BORDER_SIZE * 2);
       mock_expect_nth(2, window, ==, 2);
       mock_expect_nth(2, x, ==, monitor.x + monitor.width / 2);
       mock_expect_nth(2, y, ==, monitor.y);
-      mock_expect_nth(2, width, ==, monitor.width / 2);
-      mock_expect_nth(2, height, ==, monitor.height);
+      mock_expect_nth(2, width - BORDER_SIZE * 2, ==,
+                      monitor.width - BORDER_SIZE * 2 / 2);
+      mock_expect_nth(2, height - BORDER_SIZE * 2, ==,
+                      monitor.height - BORDER_SIZE * 2);
       mock_select(send_workspace) {
         unmap_notify(4);
         expect(mock_call_count, ==, 1);
@@ -168,8 +192,10 @@ CTF_TEST_STATIC(unmap_notify_in_order_with) {
       mock_expect_nth(1, window, ==, 1);
       mock_expect_nth(1, x, ==, monitor.x);
       mock_expect_nth(1, y, ==, monitor.y);
-      mock_expect_nth(1, width, ==, monitor.width);
-      mock_expect_nth(1, height, ==, monitor.height);
+      mock_expect_nth(1, width - BORDER_SIZE * 2, ==,
+                      monitor.width - BORDER_SIZE * 2);
+      mock_expect_nth(1, height - BORDER_SIZE * 2, ==,
+                      monitor.height - BORDER_SIZE * 2);
       mock_select(send_workspace) {
         unmap_notify(2);
         expect(mock_call_count, ==, 1);

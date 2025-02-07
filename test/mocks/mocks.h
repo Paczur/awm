@@ -20,5 +20,10 @@ CTF_MOCK_VOID_RET_EXTERN(send_current_workspace, (u32 workspace));
 CTF_MOCK_VOID_ARG_EXTERN(u32, query_current_workspace);
 CTF_MOCK_VOID_RET_EXTERN(send_workspace, (u32 * windows, u32 w));
 CTF_MOCK_GROUP_EXTERN(layout_x_mocks);
+CTF_MOCK_VOID_RET_EXTERN(change_window_border_color, (u32 window, u32 color));
+CTF_MOCK_VOID_RET_EXTERN(listen_to_events, (u32 window));
+CTF_MOCK_VOID_RET_EXTERN(focus_window, (u32 window));
+CTF_MOCK_VOID_RET_EXTERN(send_focused_window, (u32 window));
+CTF_MOCK_VOID_ARG_EXTERN(u32, query_focused_window);
 
 #endif

@@ -6,6 +6,9 @@
 #define WINDOWS_PER_WORKSPACE 4
 #define WORKSPACE_COUNT 10
 #define MAX_MONITOR_COUNT 4
+#define BORDER_SIZE 10
+#define BORDER_FOCUSED "ffffff"
+#define BORDER_UNFOCUSED "333333"
 
 struct geometry {
   u32 x;
@@ -14,13 +17,19 @@ struct geometry {
   u32 height;
 };
 
-void init_layout(const struct geometry *geoms, u32 monitor_count, u32 border);
+void init_layout(const struct geometry *geoms, u32 monitor_count);
 
 void map_request(u32 window);
 void unmap_notify(u32 window);
 void destroy_notify(u32 window);
 void focus_in_notify(u32 window);
 void focus_out_notify(u32 window);
+
+void focus_window(u32 window);
+void focus_window_to_left(void);
+void focus_window_to_right(void);
+void focus_window_above(void);
+void focus_window_below(void);
 
 #endif
 

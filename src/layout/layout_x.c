@@ -86,3 +86,26 @@ void configure_window(u32 window, u32 x, u32 y, u32 width, u32 heigth,
                          XCB_CONFIG_WINDOW_BORDER_WIDTH,
                        values);
 }
+
+void listen_to_events(u32 window) {
+  int values = XCB_EVENT_MASK_FOCUS_CHANGE | XCB_EVENT_MASK_PROPERTY_CHANGE;
+  xcb_change_window_attributes(conn, window, XCB_CW_EVENT_MASK, &values);
+  xcb_grab_button(conn, 1, window, XCB_EVENT_MASK_BUTTON_PRESS,
+                  XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE,
+                  XCB_BUTTON_INDEX_ANY, XCB_MOD_MASK_ANY);
+}
+
+void change_window_border_color(u32 window, u32 color) {
+  xcb_change_window_attributes(conn, window, XCB_CW_BORDER_PIXEL, &color);
+}
+
+void send_focused_window(u32 window) {
+  send_cardinal(_NET_ACTIVE_WINDOW, window);
+}
+
+u32 query_focused_window(void) { return query_cardinal(_NET_ACTIVE_WINDOW, 0); }
+
+void focus_window(u32 window) {
+  xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, window,
+                      XCB_CURRENT_TIME);
+}

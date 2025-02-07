@@ -16,7 +16,8 @@
   X(AWM_WORKSPACE_6)       \
   X(AWM_WORKSPACE_7)       \
   X(AWM_WORKSPACE_8)       \
-  X(AWM_WORKSPACE_9)
+  X(AWM_WORKSPACE_9)       \
+  X(_NET_ACTIVE_WINDOW)
 
 #define X(x) extern xcb_atom_t x;
 ATOMS
