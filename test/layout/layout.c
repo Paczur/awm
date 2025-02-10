@@ -148,7 +148,7 @@ CTF_TEST_STATIC(unmap_notify_in_order_with) {
                       monitor.height - BORDER_SIZE * 2 / 2);
 
       mock_expect_nth(3, window, ==, 4);
-      mock_expect_nth(3, x, ==, monitor.x + monitor.width / 2);
+      mock_expect_nth(3, x, ==, monitor.x);
       mock_expect_nth(3, y, ==, monitor.y + monitor.height / 2);
       mock_expect_nth(3, width - BORDER_SIZE * 2, ==,
                       monitor.width - BORDER_SIZE * 2 / 2);
@@ -205,9 +205,51 @@ CTF_TEST_STATIC(unmap_notify_in_order_with) {
   }
 }
 
+CTF_TEST_STATIC(focus_window_with_3_windows_mapped) {
+  init_layout(&(struct geometry){0, 0, 1920, 1080}, 1);
+  map_request(1);
+  map_request(2);
+  map_request(3);
+  focus_in_notify(3);
+  subtest(above) {
+    mock_select(focus_window) {
+      mock_expect_nth(1, window, ==, 2);
+      focus_window_above();
+      expect(mock_call_count, ==, 1);
+    }
+  }
+  focus_in_notify(3);
+  subtest(below) {
+    mock_select(focus_window) {
+      mock_expect_nth(1, window, ==, 2);
+      focus_window_below();
+      expect(mock_call_count, ==, 1);
+    }
+  }
+  focus_in_notify(3);
+  subtest(to_left) {
+    mock_select(focus_window) {
+      mock_expect_nth(1, window, ==, 1);
+      focus_window_to_left();
+      expect(mock_call_count, ==, 1);
+    }
+  }
+  focus_in_notify(3);
+  subtest(to_right) {
+    mock_select(focus_window) {
+      mock_expect_nth(1, window, ==, 1);
+      focus_window_to_right();
+      expect(mock_call_count, ==, 1);
+    }
+  }
+}
+
 CTF_GROUP(layout_spec) = {
   map_request_on,
   unmap_notify_in_order_with,
+  focus_window_with_3_windows_mapped,
 };
 
 CTF_GROUP_SETUP(layout_spec) { mock_group(layout_x_mocks); }
+
+CTF_GROUP_TEST_SETUP(layout_spec) { reset_layout_state(); }

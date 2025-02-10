@@ -1,5 +1,6 @@
 #include "layout.h"
 
+#include <stdio.h>
 #include <string.h>
 
 #include "layout_x.h"
@@ -10,11 +11,12 @@
 #define POSITION_QUAR 3
 
 static u32 workspaces[WORKSPACE_COUNT][WINDOWS_PER_WORKSPACE];
+static u32 projection[MAX_MONITOR_COUNT][WINDOWS_PER_WORKSPACE];
 static u32 current_workspace;
 static struct geometry monitors[MAX_MONITOR_COUNT];
 static u32 border_focused;
 static u32 border_unfocused;
-static i32 focused_window;
+static i32 focused_window = -1;
 static i32 last_focus = -1;
 
 static u32 hex2color(const char *hex) {
@@ -58,11 +60,27 @@ static void reconfigure_workspace(u32 w) {
   const u32 *const workspace = workspaces[w];
   const u32 window_count =
     !!workspace[0] + !!workspace[1] + !!workspace[2] + !!workspace[3];
+  const u32 monitor = 0;
+  for(u32 i = 0; i < WINDOWS_PER_WORKSPACE; i++)
+    projection[monitor][i] = workspace[i] ? i : WINDOWS_PER_WORKSPACE + 1;
+  for(u32 i = 0; i < WINDOWS_PER_WORKSPACE; i++) {
+    if(projection[monitor][i] != WINDOWS_PER_WORKSPACE + 1) continue;
+    if(projection[monitor][!(i / 2) * 2 + i % 2] == WINDOWS_PER_WORKSPACE + 1)
+      continue;
+    projection[monitor][i] = !(i / 2) * 2 + i % 2;
+  }
+  for(u32 i = 0; i < WINDOWS_PER_WORKSPACE; i++) {
+    if(projection[monitor][i] != WINDOWS_PER_WORKSPACE + 1) continue;
+    if(projection[monitor][i / 2 * 2 + !(i % 2)] == WINDOWS_PER_WORKSPACE + 1)
+      continue;
+    projection[monitor][i] = i / 2 * 2 + !(i % 2);
+  }
   if(window_count == 1) {
-    const u32 index =
-      workspace[0]
-        ? 0
-        : (workspace[1] ? 1 : (workspace[2] ? 2 : (workspace[3] ? 3 : 0)));
+    const u32 index = workspace[0]   ? 0
+                      : workspace[1] ? 1
+                      : workspace[2] ? 2
+                      : workspace[3] ? 3
+                                     : 0;
     position(workspace[index], 0, POSITION_FULLSCREEN);
   } else if(window_count == 4) {
     for(u32 i = 0; i < 4; i++) position(workspace[i], i, POSITION_QUAR);
@@ -119,10 +137,11 @@ void init_layout(const struct geometry *geoms, u32 monitor_count) {
 
 void map_request(u32 window) {
   u32 *const workspace = workspaces[current_workspace];
-  const u32 index =
-    !workspace[0]
-      ? 0
-      : (!workspace[1] ? 1 : (!workspace[3] ? 3 : (!workspace[2] ? 2 : 4)));
+  const u32 index = !workspace[0]   ? 0
+                    : !workspace[1] ? 1
+                    : !workspace[3] ? 3
+                    : !workspace[2] ? 2
+                                    : 4;
   if(index > 3) return;
   workspace[index] = window;
   listen_to_events(window);
@@ -154,6 +173,17 @@ void unmap_notify(u32 window) {
   }
 }
 
+void reset_layout_state(void) {
+  for(u32 i = 0; i < WORKSPACE_COUNT; i++) {
+    for(u32 j = 0; j < WINDOWS_PER_WORKSPACE; j++) {
+      workspaces[i][j] = 0;
+    }
+  }
+  current_workspace = 0;
+  focused_window = -1;
+  last_focus = -1;
+}
+
 void focus_in_notify(u32 window) {
   for(u32 i = 0; i < WINDOWS_PER_WORKSPACE; i++) {
     if(window == workspaces[current_workspace][i]) {
@@ -174,28 +204,28 @@ void focus_out_notify(u32 window) {
 
 void focus_window_to_left(void) {
   if(focused_window == -1) return;
+  const u32 monitor = 0;
   const u32 index = focused_window / 2 * 2 + !(focused_window % 2);
-  if(workspaces[current_workspace][index])
-    focus_window(workspaces[current_workspace][index]);
+  focus_window(workspaces[current_workspace][projection[monitor][index]]);
 }
 
 void focus_window_to_right(void) {
   if(focused_window == -1) return;
+  const u32 monitor = 0;
   const u32 index = focused_window / 2 * 2 + !(focused_window % 2);
-  if(workspaces[current_workspace][index])
-    focus_window(workspaces[current_workspace][index]);
+  focus_window(workspaces[current_workspace][projection[monitor][index]]);
 }
 
 void focus_window_above(void) {
   if(focused_window == -1) return;
+  const u32 monitor = 0;
   const u32 index = !(focused_window / 2) * 2 + focused_window % 2;
-  if(workspaces[current_workspace][index])
-    focus_window(workspaces[current_workspace][index]);
+  focus_window(workspaces[current_workspace][projection[monitor][index]]);
 }
 
 void focus_window_below(void) {
   if(focused_window == -1) return;
+  const u32 monitor = 0;
   const u32 index = !(focused_window / 2) * 2 + focused_window % 2;
-  if(workspaces[current_workspace][index])
-    focus_window(workspaces[current_workspace][index]);
+  focus_window(workspaces[current_workspace][projection[monitor][index]]);
 }

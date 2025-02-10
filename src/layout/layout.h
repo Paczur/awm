@@ -31,5 +31,7 @@ void focus_window_to_right(void);
 void focus_window_above(void);
 void focus_window_below(void);
 
+void reset_layout_state(void);
+
 #endif
 
