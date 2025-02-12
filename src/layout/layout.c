@@ -36,30 +36,10 @@ static u32 hex2color(const char *hex) {
   return ret;
 }
 
-static void position(u32 win, u32 pos, u32 type) {
-  const struct geometry *const monitor = monitors;
-  const u32 x = monitor->x;
-  const u32 y = monitor->y;
-  const u32 width = monitor->width;
-  const u32 height = monitor->height;
-  const u32 position[4][2] = {{x, y},
-                              {x + width / 2, y},
-                              {x, y + height / 2},
-                              {x + width / 2, y + height / 2}};
-  const u32 lay[4][2] = {
-    {width - BORDER_SIZE * 2, height - BORDER_SIZE * 2},
-    {width / 2 - BORDER_SIZE * 2, height - BORDER_SIZE * 2},
-    {width - BORDER_SIZE * 2, height / 2 - BORDER_SIZE * 2},
-    {width / 2 - BORDER_SIZE * 2, height / 2 - BORDER_SIZE * 2},
-  };
-  configure_window(win, position[pos][0], position[pos][1], lay[type][0],
-                   lay[type][1], BORDER_SIZE);
-}
-
 static void reconfigure_workspace(u32 w) {
   const u32 *const workspace = workspaces[w];
-  u8 taken[WINDOWS_PER_WORKSPACE * 2];
   const u32 monitor = 0;
+  u8 taken[WINDOWS_PER_WORKSPACE * 2];
   u8 index;
   struct geometry geom;
   for(u32 i = 0; i < WINDOWS_PER_WORKSPACE; i++) {
@@ -83,15 +63,16 @@ static void reconfigure_workspace(u32 w) {
   }
   for(u32 i = 0; i < WINDOWS_PER_WORKSPACE; i++) {
     if(taken[i * 2] == 0) continue;
-    geom.width = (taken[i * 2] == 2) ? monitors->width : monitors->width / 2;
+    geom.width = (taken[i * 2] == 2) ? monitors[monitor].width
+                                     : monitors[monitor].width / 2;
     geom.x = (i % 2 == 0 || taken[i * 2] == 2)
-               ? monitors->x
-               : monitors->x + monitors->width / 2;
-    geom.height =
-      (taken[i * 2 + 1] == 2) ? monitors->height : monitors->height / 2;
+               ? monitors[monitor].x
+               : monitors[monitor].x + monitors[monitor].width / 2;
+    geom.height = (taken[i * 2 + 1] == 2) ? monitors[monitor].height
+                                          : monitors[monitor].height / 2;
     geom.y = (i / 2 == 0 || taken[i * 2 + 1] == 2)
-               ? monitors->y
-               : monitors->y + monitors->height / 2;
+               ? monitors[monitor].y
+               : monitors[monitor].y + monitors[monitor].height / 2;
     configure_window(workspace[i], geom.x, geom.y, geom.width, geom.height,
                      BORDER_SIZE);
   }
