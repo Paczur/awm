@@ -58,64 +58,42 @@ static void position(u32 win, u32 pos, u32 type) {
 
 static void reconfigure_workspace(u32 w) {
   const u32 *const workspace = workspaces[w];
-  const u32 window_count =
-    !!workspace[0] + !!workspace[1] + !!workspace[2] + !!workspace[3];
+  u8 taken[WINDOWS_PER_WORKSPACE * 2];
   const u32 monitor = 0;
-  for(u32 i = 0; i < WINDOWS_PER_WORKSPACE; i++)
+  u8 index;
+  struct geometry geom;
+  for(u32 i = 0; i < WINDOWS_PER_WORKSPACE; i++) {
     projection[monitor][i] = workspace[i] ? i : WINDOWS_PER_WORKSPACE + 1;
-  for(u32 i = 0; i < WINDOWS_PER_WORKSPACE; i++) {
-    if(projection[monitor][i] != WINDOWS_PER_WORKSPACE + 1) continue;
-    if(projection[monitor][!(i / 2) * 2 + i % 2] == WINDOWS_PER_WORKSPACE + 1)
-      continue;
-    projection[monitor][i] = !(i / 2) * 2 + i % 2;
+    taken[i * 2] = workspace[i] ? 1 : 0;
+    taken[i * 2 + 1] = workspace[i] ? 1 : 0;
   }
   for(u32 i = 0; i < WINDOWS_PER_WORKSPACE; i++) {
     if(projection[monitor][i] != WINDOWS_PER_WORKSPACE + 1) continue;
-    if(projection[monitor][i / 2 * 2 + !(i % 2)] == WINDOWS_PER_WORKSPACE + 1)
-      continue;
-    projection[monitor][i] = i / 2 * 2 + !(i % 2);
+    index = !(i / 2) * 2 + i % 2;
+    if(projection[monitor][index] == WINDOWS_PER_WORKSPACE + 1) continue;
+    taken[projection[monitor][index] * 2 + 1]++;
+    projection[monitor][i] = index;
   }
-  if(window_count == 1) {
-    const u32 index = workspace[0]   ? 0
-                      : workspace[1] ? 1
-                      : workspace[2] ? 2
-                      : workspace[3] ? 3
-                                     : 0;
-    position(workspace[index], 0, POSITION_FULLSCREEN);
-  } else if(window_count == 4) {
-    for(u32 i = 0; i < 4; i++) position(workspace[i], i, POSITION_QUAR);
-  } else if(window_count == 2) {
-    if(!!workspace[0] == !!workspace[2]) {  // one above other
-      const u32 offset = workspace[0] ? 0 : 1;
-      position(workspace[0 + offset], 0, POSITION_HOR);
-      position(workspace[2 + offset], 2, POSITION_HOR);
-    } else {
-      const u32 indexes[2] = {workspace[0] ? 0 : 2, workspace[1] ? 1 : 3};
-      position(workspace[indexes[0]], 0, POSITION_VERT);
-      position(workspace[indexes[1]], 1, POSITION_VERT);
-    }
-  } else if(window_count == 3) {
-    if(!!workspace[0] != !!workspace[2]) {  // left is slice
-      if(workspace[0]) {
-        position(workspace[0], 0, POSITION_VERT);
-        position(workspace[1], 1, POSITION_QUAR);
-        position(workspace[3], 3, POSITION_QUAR);
-      } else {
-        position(workspace[1], 1, POSITION_QUAR);
-        position(workspace[2], 0, POSITION_VERT);
-        position(workspace[3], 3, POSITION_QUAR);
-      }
-    } else {  // right is slice
-      if(workspace[1]) {
-        position(workspace[0], 0, POSITION_QUAR);
-        position(workspace[1], 1, POSITION_VERT);
-        position(workspace[2], 2, POSITION_QUAR);
-      } else {
-        position(workspace[0], 0, POSITION_QUAR);
-        position(workspace[2], 2, POSITION_QUAR);
-        position(workspace[3], 1, POSITION_VERT);
-      }
-    }
+  for(u32 i = 0; i < WINDOWS_PER_WORKSPACE; i++) {
+    if(projection[monitor][i] != WINDOWS_PER_WORKSPACE + 1) continue;
+    index = i / 2 * 2 + !(i % 2);
+    if(projection[monitor][index] == WINDOWS_PER_WORKSPACE + 1) continue;
+    taken[projection[monitor][index] * 2]++;
+    projection[monitor][i] = index;
+  }
+  for(u32 i = 0; i < WINDOWS_PER_WORKSPACE; i++) {
+    if(taken[i * 2] == 0) continue;
+    geom.width = (taken[i * 2] == 2) ? monitors->width : monitors->width / 2;
+    geom.x = (i % 2 == 0 || taken[i * 2] == 2)
+               ? monitors->x
+               : monitors->x + monitors->width / 2;
+    geom.height =
+      (taken[i * 2 + 1] == 2) ? monitors->height : monitors->height / 2;
+    geom.y = (i / 2 == 0 || taken[i * 2 + 1] == 2)
+               ? monitors->y
+               : monitors->y + monitors->height / 2;
+    configure_window(workspace[i], geom.x, geom.y, geom.width, geom.height,
+                     BORDER_SIZE);
   }
 }
 
