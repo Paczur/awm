@@ -74,7 +74,7 @@ static void init(void) {
 static void deinit(void) { x_deinit(); }
 
 static void key_release(const xcb_key_release_event_t *event) {
-  release_handler(event->state);
+  release_handler(event->detail);
 }
 
 static void key_press(const xcb_key_press_event_t *event) {

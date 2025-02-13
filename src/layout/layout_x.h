@@ -4,8 +4,8 @@
 #include "../types.h"
 #include "../x/x_p.h"
 
-void send_current_workspace(u32 workspace);
-u32 query_current_workspace(void);
+void send_visible_workspaces(u32 *workspaces, u32 count);
+void query_visible_workspaces(u32 *workspaces, u32 count);
 void query_workspaces(u32 *workspaces);
 void send_workspace(u32 *windows, u32 w);
 

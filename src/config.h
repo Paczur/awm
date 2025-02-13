@@ -8,7 +8,6 @@
 static void open_terminal(void) { system_run("urxvt"); }
 static void insert_mode(void) { set_mode(INSERT_MODE); }
 
-#define KEY_MODE KEY_Super_L
 #define SHORTCUTS                                       \
   {                                                     \
     {FLAGS_NONE, KEY_Return, open_terminal},            \

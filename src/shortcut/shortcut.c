@@ -3,7 +3,6 @@
 #include <assert.h>
 #include <string.h>
 
-#include "../config.h"
 #include "shortcut_x.h"
 
 static struct {
@@ -43,7 +42,7 @@ normal_mode:
           flag_index = state.code_search_size / 2;
           flag_shift = state.code_search_size % 2 * 4;
           state.code_search[state.code_search_size] = j + keymap.min_keycode;
-          state.flag_filter[flag_index] &= ~(0xFF << flag_shift);
+          state.flag_filter[flag_index] &= ~(0xF << flag_shift);
           state.flag_filter[flag_index] |= shortcuts[i].flags << flag_shift;
           state.f_return[state.code_search_size] = shortcuts[i].f;
           state.code_search_size++;
@@ -57,12 +56,13 @@ normal_mode:
 }
 
 void (*find_shortcut(u8 flags, u8 keycode))(void) {
+  flags &= ~MOD_MODE;
   if(state.mode == INSERT_MODE)
     return flags == FLAGS_NONE ? set_mode_to_normal : NULL;
   const u8 code_search_size = state.code_search_size;
   for(u8 i = 0; i < code_search_size; i++) {
     if(state.code_search[i] == keycode &&
-       state.flag_filter[i / 2] >> (i % 2 * 4) == flags)
+       ((state.flag_filter[i / 2] >> (i % 2 * 4)) & 0xF) == flags)
       return state.f_return[i];
   }
   return NULL;

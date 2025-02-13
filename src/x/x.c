@@ -1,6 +1,7 @@
 #include "x.h"
 
 #include <stdlib.h>
+#include <string.h>
 #include <xcb/randr.h>
 
 #include "../types.h"
@@ -124,6 +125,17 @@ u32 query_cardinal(xcb_atom_t atom, u32 def) {
 void send_cardinal(xcb_atom_t atom, u32 val) {
   xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, atom,
                       XCB_ATOM_CARDINAL, 32, 1, &val);
+}
+
+void query_cardinal_array(xcb_atom_t atom, u32 *arr, u32 length) {
+  const xcb_get_property_cookie_t cookie =
+    xcb_get_property(conn, 0, screen->root, atom, XCB_ATOM_CARDINAL, 0, 1);
+  xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, cookie, NULL);
+  if(reply) {
+    const u32 min = MIN((u32)xcb_get_property_value_length(reply), length);
+    memcpy(arr, (u32 *)xcb_get_property_value(reply), min * 32);
+    free(reply);
+  }
 }
 
 void send_cardinal_array(xcb_atom_t atom, u32 *arr, u32 length) {

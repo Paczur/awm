@@ -15,6 +15,9 @@
 #define MOD_ALT (1 << 3)
 #define AUTO_REPEAT (1 << 1)
 
+#define KEY_MODE KEY_Super_L
+#define MOD_MODE (1 << 6)
+
 struct shortcut {
   u8 flags;
   u32 keysym;

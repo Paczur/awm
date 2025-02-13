@@ -5,12 +5,15 @@
 
 #include "layout.h"
 
-void send_current_workspace(u32 workspace) {
-  send_cardinal(AWM_CURRENT_WORKSPACE, workspace);
+void send_visible_workspaces(u32 *workspaces, u32 count) {
+  send_cardinal_array(AWM_VISIBLE_WORKSPACES, workspaces, count);
 }
 
-u32 query_current_workspace(void) {
-  return query_cardinal(AWM_CURRENT_WORKSPACE, 0);
+void query_visible_workspaces(u32 *workspaces, u32 count) {
+  query_cardinal_array(AWM_VISIBLE_WORKSPACES, workspaces, count);
+  if(count > 0 && workspaces[0] == 0 && workspaces[1] == 0) {
+    for(u32 i = 0; i < count; i++) workspaces[i] = i;
+  }
 }
 
 void query_workspaces(u32 *windows) {
