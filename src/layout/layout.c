@@ -50,26 +50,30 @@ static void reconfigure_workspace(u32 w) {
   for(u32 i = 0; i < WINDOWS_PER_WORKSPACE; i++) {
     if(projection[monitor][i] != WINDOWS_PER_WORKSPACE + 1) continue;
     index = !(i / 2) * 2 + i % 2;
-    if(projection[monitor][index] == WINDOWS_PER_WORKSPACE + 1) continue;
+    if(projection[monitor][index] != index) continue;
     taken[projection[monitor][index] * 2 + 1]++;
-    projection[monitor][i] = index;
+    projection[monitor][i] = projection[monitor][index];
   }
   for(u32 i = 0; i < WINDOWS_PER_WORKSPACE; i++) {
     if(projection[monitor][i] != WINDOWS_PER_WORKSPACE + 1) continue;
     index = i / 2 * 2 + !(i % 2);
-    if(projection[monitor][index] == WINDOWS_PER_WORKSPACE + 1) continue;
+    if(projection[monitor][index] != index) continue;
     taken[projection[monitor][index] * 2]++;
-    projection[monitor][i] = index;
+    projection[monitor][i] = projection[monitor][index];
   }
   for(u32 i = 0; i < WINDOWS_PER_WORKSPACE; i++) {
     if(taken[i * 2] == 0) continue;
-    geom.width = (taken[i * 2] == 2) ? monitors[monitor].width
-                                     : monitors[monitor].width / 2;
+    geom.width =
+      ((taken[i * 2] == 2) ? monitors[monitor].width
+                           : monitors[monitor].width / 2 - GAP_SIZE) -
+      BORDER_SIZE * 2;
     geom.x = (i % 2 == 0 || taken[i * 2] == 2)
                ? monitors[monitor].x
                : monitors[monitor].x + monitors[monitor].width / 2;
-    geom.height = (taken[i * 2 + 1] == 2) ? monitors[monitor].height
-                                          : monitors[monitor].height / 2;
+    geom.height =
+      ((taken[i * 2 + 1] == 2) ? monitors[monitor].height
+                               : monitors[monitor].height / 2 - GAP_SIZE) -
+      BORDER_SIZE * 2;
     geom.y = (i / 2 == 0 || taken[i * 2 + 1] == 2)
                ? monitors[monitor].y
                : monitors[monitor].y + monitors[monitor].height / 2;
@@ -187,4 +191,9 @@ void focus_window_below(void) {
   const u32 monitor = 0;
   const u32 index = !(focused_window / 2) * 2 + focused_window % 2;
   focus_window(workspaces[current_workspace][projection[monitor][index]]);
+}
+
+void delete_focused_window(void) {
+  if(focused_window == -1) return;
+  delete_window(workspaces[current_workspace][focused_window]);
 }

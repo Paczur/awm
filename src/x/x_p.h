@@ -3,6 +3,7 @@
 
 #include <xcb/randr.h>
 #include <xcb/xcb.h>
+#include <xcb/xcb_icccm.h>
 
 #define ATOMS              \
   X(AWM_MODE)              \
@@ -17,6 +18,8 @@
   X(AWM_WORKSPACE_7)       \
   X(AWM_WORKSPACE_8)       \
   X(AWM_WORKSPACE_9)       \
+  X(WM_PROTOCOLS)          \
+  X(WM_DELETE_WINDOW)      \
   X(_NET_ACTIVE_WINDOW)
 
 #define X(x) extern xcb_atom_t x;

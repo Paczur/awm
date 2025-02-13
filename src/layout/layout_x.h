@@ -19,5 +19,6 @@ void send_focused_window(u32 window);
 u32 query_focused_window(void);
 void focus_window(u32 window);
 i32 is_root(u32 window);
+void delete_window(u32 window);
 
 #endif

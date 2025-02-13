@@ -17,6 +17,7 @@ static void insert_mode(void) { set_mode(INSERT_MODE); }
     {FLAGS_NONE, KEY_l, focus_window_to_right}, \
     {FLAGS_NONE, KEY_k, focus_window_above},    \
     {FLAGS_NONE, KEY_j, focus_window_below},    \
+    {FLAGS_NONE, KEY_q, delete_focused_window}, \
   }
 
 #endif

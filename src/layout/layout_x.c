@@ -109,3 +109,28 @@ void focus_window(u32 window) {
   xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, window,
                       XCB_CURRENT_TIME);
 }
+
+void delete_window(u32 window) {
+  u32 count;
+  xcb_icccm_get_wm_protocols_reply_t protocols;
+  const xcb_client_message_event_t message = {
+    XCB_CLIENT_MESSAGE,
+    32,
+    .window = window,
+    WM_PROTOCOLS,
+    {.data32[0] = WM_DELETE_WINDOW, .data32[1] = XCB_CURRENT_TIME}};
+  xcb_get_property_cookie_t cookie =
+    xcb_icccm_get_wm_protocols(conn, window, WM_PROTOCOLS);
+  if(xcb_icccm_get_wm_protocols_reply(conn, cookie, &protocols, NULL)) {
+    count = protocols.atoms_len;
+    for(size_t i = 0; i < count; i++) {
+      if(protocols.atoms[i] == WM_DELETE_WINDOW) {
+        xcb_send_event(conn, 0, window, 0, (char *)&message);
+        xcb_icccm_get_wm_protocols_reply_wipe(&protocols);
+        return;
+      }
+    }
+    xcb_icccm_get_wm_protocols_reply_wipe(&protocols);
+  }
+  xcb_kill_client(conn, window);
+}

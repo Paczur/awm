@@ -7,6 +7,7 @@
 #define WORKSPACE_COUNT 10
 #define MAX_MONITOR_COUNT 4
 #define BORDER_SIZE 10
+#define GAP_SIZE 10
 #define BORDER_FOCUSED "ffffff"
 #define BORDER_UNFOCUSED "333333"
 
@@ -32,6 +33,8 @@ void focus_window_above(void);
 void focus_window_below(void);
 
 void reset_layout_state(void);
+
+void delete_focused_window(void);
 
 #endif
 

@@ -14,7 +14,7 @@ WARN_FLAGS=-Wall -Wextra -Werror -Wno-error=cpp -Wno-unused-function -Wunused-re
 SANTIIZER_FLAGS=-fsanitize=undefined -fsanitize-address-use-after-scope -fstack-check -fno-stack-clash-protection
 DEBUG_FLAGS=$(WARN_FLAGS) $(MEMORY_DEBUG_FLAGS) $(SANITIZER_FLAGS) -Og -ggdb3
 OPTIMIZE_FLAGS=-march=native -O2 -pipe -D NDEBUG
-LINK_FLAGS=$(BASE_CFLAGS) -flto=4 -fwhole-program $(shell pkg-config --cflags --libs xcb xcb-randr xcb-xkb)
+LINK_FLAGS=$(BASE_CFLAGS) -flto=4 -fwhole-program $(shell pkg-config --cflags --libs xcb xcb-icccm xcb-randr xcb-xkb)
 TEST_FLAGS=$(CFLAGS) -Isrc -lctf -Wno-unused-parameter
 BASE_CFLAGS=-std=gnu11 -MMD -MP
 CFLAGS=$(BASE_CFLAGS)
