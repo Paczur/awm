@@ -197,3 +197,51 @@ void delete_focused_window(void) {
   if(focused_window == -1) return;
   delete_window(workspaces[current_workspace][focused_window]);
 }
+
+void swap_focused_window_with_right(void) {
+  if(focused_window == -1) return;
+  u32 *restrict const workspace = workspaces[current_workspace];
+  const u32 monitor = 0;
+  const u32 index = focused_window / 2 * 2 + !(focused_window % 2);
+  const u32 t = workspace[focused_window];
+  workspace[focused_window] = workspace[projection[monitor][index]];
+  workspace[projection[monitor][index]] = t;
+  reconfigure_workspace(current_workspace);
+  focused_window = index;
+}
+
+void swap_focused_window_with_left(void) {
+  if(focused_window == -1) return;
+  u32 *restrict const workspace = workspaces[current_workspace];
+  const u32 monitor = 0;
+  const u32 index = focused_window / 2 * 2 + !(focused_window % 2);
+  const u32 t = workspace[focused_window];
+  workspace[focused_window] = workspace[projection[monitor][index]];
+  workspace[projection[monitor][index]] = t;
+  reconfigure_workspace(current_workspace);
+  focused_window = index;
+}
+
+void swap_focused_window_with_above(void) {
+  if(focused_window == -1) return;
+  u32 *restrict const workspace = workspaces[current_workspace];
+  const u32 monitor = 0;
+  const u32 index = !(focused_window / 2) * 2 + focused_window % 2;
+  const u32 t = workspace[focused_window];
+  workspace[focused_window] = workspace[projection[monitor][index]];
+  workspace[projection[monitor][index]] = t;
+  reconfigure_workspace(current_workspace);
+  focused_window = index;
+}
+
+void swap_focused_window_with_below(void) {
+  if(focused_window == -1) return;
+  u32 *restrict const workspace = workspaces[current_workspace];
+  const u32 monitor = 0;
+  const u32 index = !(focused_window / 2) * 2 + focused_window % 2;
+  const u32 t = workspace[focused_window];
+  workspace[focused_window] = workspace[projection[monitor][index]];
+  workspace[projection[monitor][index]] = t;
+  reconfigure_workspace(current_workspace);
+  focused_window = index;
+}

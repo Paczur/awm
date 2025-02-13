@@ -32,6 +32,11 @@ void focus_window_to_right(void);
 void focus_window_above(void);
 void focus_window_below(void);
 
+void swap_focused_window_with_right(void);
+void swap_focused_window_with_left(void);
+void swap_focused_window_with_above(void);
+void swap_focused_window_with_below(void);
+
 void reset_layout_state(void);
 
 void delete_focused_window(void);
