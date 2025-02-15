@@ -57,7 +57,7 @@ normal_mode:
 
 void (*find_shortcut(u8 flags, u8 keycode))(void) {
   flags &= ~MOD_MODE;
-  if(state.mode == INSERT_MODE)
+  if(state.mode == INSERT_MODE && keycode == state.mode_keycode)
     return flags == FLAGS_NONE ? set_mode_to_normal : NULL;
   const u8 code_search_size = state.code_search_size;
   for(u8 i = 0; i < code_search_size; i++) {
@@ -79,6 +79,8 @@ void release_handler(u8 keycode) {
   if(state.mode_keycode == keycode && state.mode_return) {
     state.mode_return = 0;
     set_mode(INSERT_MODE);
+  } else {
+    state.mode_return = 0;
   }
 }
 

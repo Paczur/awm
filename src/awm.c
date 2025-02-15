@@ -92,6 +92,7 @@ static void button_press(const xcb_button_press_event_t *event) {
 int main(void) {
   xcb_generic_event_t *event;
   init();
+  xcb_flush(conn);
 
   while(1) {
     event = xcb_wait_for_event(conn);

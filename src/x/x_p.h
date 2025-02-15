@@ -8,6 +8,7 @@
 #define ATOMS               \
   X(AWM_MODE)               \
   X(AWM_VISIBLE_WORKSPACES) \
+  X(AWM_FOCUSED_MONITOR)    \
   X(AWM_WORKSPACE_0)        \
   X(AWM_WORKSPACE_1)        \
   X(AWM_WORKSPACE_2)        \

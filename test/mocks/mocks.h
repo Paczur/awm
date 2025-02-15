@@ -27,5 +27,7 @@ CTF_MOCK_VOID_RET_EXTERN(listen_to_events, (u32 window));
 CTF_MOCK_VOID_RET_EXTERN(focus_window, (u32 window));
 CTF_MOCK_VOID_RET_EXTERN(send_focused_window, (u32 window));
 CTF_MOCK_VOID_ARG_EXTERN(u32, query_focused_window);
+CTF_MOCK_VOID_RET_EXTERN(send_focused_monitor, (u32 window));
+CTF_MOCK_VOID_ARG_EXTERN(u32, query_focused_monitor);
 
 #endif

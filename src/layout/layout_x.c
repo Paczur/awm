@@ -108,8 +108,21 @@ void send_focused_window(u32 window) {
 
 u32 query_focused_window(void) { return query_cardinal(_NET_ACTIVE_WINDOW, 0); }
 
+void send_focused_monitor(u32 monitor) {
+  send_cardinal(AWM_FOCUSED_MONITOR, monitor);
+}
+
+u32 query_focused_monitor(void) {
+  return query_cardinal(AWM_FOCUSED_MONITOR, 0);
+}
+
 void focus_window(u32 window) {
   xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, window,
+                      XCB_CURRENT_TIME);
+}
+
+void unfocus_window(void) {
+  xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, XCB_INPUT_FOCUS_NONE,
                       XCB_CURRENT_TIME);
 }
 

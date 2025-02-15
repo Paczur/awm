@@ -17,7 +17,10 @@ void listen_to_events(u32 window);
 void change_window_border_color(u32 window, u32 color);
 void send_focused_window(u32 window);
 u32 query_focused_window(void);
+void send_focused_monitor(u32 monitor);
+u32 query_focused_monitor(void);
 void focus_window(u32 window);
+void unfocus_window(void);
 i32 is_root(u32 window);
 void delete_window(u32 window);
 
