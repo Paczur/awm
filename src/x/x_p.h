@@ -5,23 +5,26 @@
 #include <xcb/xcb.h>
 #include <xcb/xcb_icccm.h>
 
-#define ATOMS               \
-  X(AWM_MODE)               \
-  X(AWM_VISIBLE_WORKSPACES) \
-  X(AWM_FOCUSED_MONITOR)    \
-  X(AWM_WORKSPACE_0)        \
-  X(AWM_WORKSPACE_1)        \
-  X(AWM_WORKSPACE_2)        \
-  X(AWM_WORKSPACE_3)        \
-  X(AWM_WORKSPACE_4)        \
-  X(AWM_WORKSPACE_5)        \
-  X(AWM_WORKSPACE_6)        \
-  X(AWM_WORKSPACE_7)        \
-  X(AWM_WORKSPACE_8)        \
-  X(AWM_WORKSPACE_9)        \
-  X(WM_PROTOCOLS)           \
-  X(WM_DELETE_WINDOW)       \
-  X(_NET_ACTIVE_WINDOW)
+#define ATOMS                \
+  X(AWM_MODE)                \
+  X(AWM_VISIBLE_WORKSPACES)  \
+  X(AWM_FOCUSED_MONITOR)     \
+  X(AWM_FOCUSED_WINDOWS)     \
+  X(AWM_WORKSPACE_0)         \
+  X(AWM_WORKSPACE_1)         \
+  X(AWM_WORKSPACE_2)         \
+  X(AWM_WORKSPACE_3)         \
+  X(AWM_WORKSPACE_4)         \
+  X(AWM_WORKSPACE_5)         \
+  X(AWM_WORKSPACE_6)         \
+  X(AWM_WORKSPACE_7)         \
+  X(AWM_WORKSPACE_8)         \
+  X(AWM_WORKSPACE_9)         \
+  X(WM_PROTOCOLS)            \
+  X(WM_DELETE_WINDOW)        \
+  X(_NET_ACTIVE_WINDOW)      \
+  X(_NET_NUMBER_OF_DESKTOPS) \
+  X(_NET_CURRENT_DESKTOP)
 
 #define X(x) extern xcb_atom_t x;
 ATOMS

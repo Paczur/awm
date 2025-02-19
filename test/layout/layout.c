@@ -211,10 +211,10 @@ CTF_TEST_STATIC(focus_window_with_3_windows_mapped) {
       expect(mock_call_count, ==, 1);
     }
   }
-  focus_in_notify(3);
+  focus_in_notify(2);
   subtest(below) {
     mock_select(focus_window) {
-      mock_expect_nth(1, window, ==, 2);
+      mock_expect_nth(1, window, ==, 3);
       focus_window_below();
       expect(mock_call_count, ==, 1);
     }
@@ -227,10 +227,10 @@ CTF_TEST_STATIC(focus_window_with_3_windows_mapped) {
       expect(mock_call_count, ==, 1);
     }
   }
-  focus_in_notify(3);
+  focus_in_notify(1);
   subtest(to_right) {
     mock_select(focus_window) {
-      mock_expect_nth(1, window, ==, 1);
+      mock_expect_nth(1, window, ==, 2);
       focus_window_to_right();
       expect(mock_call_count, ==, 1);
     }

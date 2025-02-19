@@ -87,9 +87,12 @@ CTF_MOCK_VOID_RET(send_focused_window, (u32 window), (window)) {
   if(mock_in) mock_check(window);
 }
 
-CTF_MOCK_VOID_ARG(u32, query_focused_window) {
-  if(mock_out) mock_check(mock_return_value);
-  return 0;
+CTF_MOCK_VOID_RET(send_focused_windows, (u32 * windows), (windows)) {
+  mock_check(windows);
+}
+
+CTF_MOCK_VOID_RET(query_focused_windows, (u32 * windows), (windows)) {
+  mock_check(windows);
 }
 
 CTF_MOCK_VOID_RET(send_focused_monitor, (u32 monitor), (monitor)) {
@@ -99,6 +102,14 @@ CTF_MOCK_VOID_RET(send_focused_monitor, (u32 monitor), (monitor)) {
 CTF_MOCK_VOID_ARG(u32, query_focused_monitor) {
   if(mock_out) mock_check(mock_return_value);
   return 0;
+}
+
+CTF_MOCK_VOID_RET(send_workspace_count, (u32 count), (count)) {
+  if(mock_in) mock_check(count);
+}
+
+CTF_MOCK_VOID_RET(send_focused_workspace, (u32 w), (w)) {
+  if(mock_in) mock_check(w);
 }
 
 CTF_MOCK_GROUP(layout_x_mocks) = {
@@ -113,7 +124,10 @@ CTF_MOCK_GROUP(layout_x_mocks) = {
   CTF_MOCK_BIND(change_window_border_color, NULL),
   CTF_MOCK_BIND(focus_window, NULL),
   CTF_MOCK_BIND(send_focused_window, NULL),
-  CTF_MOCK_BIND(query_focused_window, NULL),
+  CTF_MOCK_BIND(query_focused_windows, NULL),
+  CTF_MOCK_BIND(send_focused_windows, NULL),
   CTF_MOCK_BIND(send_focused_monitor, NULL),
   CTF_MOCK_BIND(query_focused_monitor, NULL),
+  CTF_MOCK_BIND(send_workspace_count, NULL),
+  CTF_MOCK_BIND(send_focused_workspace, NULL),
 };

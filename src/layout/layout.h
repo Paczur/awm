@@ -41,5 +41,7 @@ void reset_layout_state(void);
 
 void delete_focused_window(void);
 
+void change_workspace(u32 w);
+
 #endif
 

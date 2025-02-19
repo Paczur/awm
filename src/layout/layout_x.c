@@ -106,7 +106,13 @@ void send_focused_window(u32 window) {
   send_cardinal(_NET_ACTIVE_WINDOW, window);
 }
 
-u32 query_focused_window(void) { return query_cardinal(_NET_ACTIVE_WINDOW, 0); }
+void query_focused_windows(u32 *windows) {
+  query_cardinal_array(AWM_FOCUSED_WINDOWS, windows, WORKSPACE_COUNT);
+}
+
+void send_focused_windows(u32 *windows) {
+  send_cardinal_array(AWM_FOCUSED_WINDOWS, windows, WORKSPACE_COUNT);
+}
 
 void send_focused_monitor(u32 monitor) {
   send_cardinal(AWM_FOCUSED_MONITOR, monitor);
@@ -150,3 +156,9 @@ void delete_window(u32 window) {
   }
   xcb_kill_client(conn, window);
 }
+
+void send_workspace_count(u32 count) {
+  send_cardinal(_NET_NUMBER_OF_DESKTOPS, count);
+}
+
+void send_focused_workspace(u32 w) { send_cardinal(_NET_CURRENT_DESKTOP, w); }
