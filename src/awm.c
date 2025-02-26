@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "bar/bar.h"
 #include "config.h"
+#include "const.h"
 #include "layout/layout.h"
 #include "shortcut/shortcut.h"
 #include "x/x.h"
@@ -23,7 +25,7 @@ static void shortcut_init(void) {
   free(reply);
 }
 
-static void layout_init(void) {
+static void monitor_init(void) {
   u32 length;
   u32 monitor_count;
   struct geometry monitors[MAX_MONITOR_COUNT] = {
@@ -62,13 +64,14 @@ static void layout_init(void) {
     free(randr_crtcs[i]);
   }
   for(u32 i = length; i < monitor_count; i++) free(randr_crtcs[i]);
+  // init_bar(monitors, monitor_count);
   init_layout(monitors, monitor_count);
 }
 
 static void init(void) {
   x_init();
   shortcut_init();
-  layout_init();
+  monitor_init();
 }
 
 static void deinit(void) { x_deinit(); }

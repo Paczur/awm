@@ -2,21 +2,10 @@
 #define H_AWM_LAYOUT
 
 #include "../types.h"
-
-#define WINDOWS_PER_WORKSPACE 4
-#define WORKSPACE_COUNT 10
-#define MAX_MONITOR_COUNT 4
 #define BORDER_SIZE 10
 #define GAP_SIZE 10
-#define BORDER_FOCUSED "ffffff"
-#define BORDER_UNFOCUSED "333333"
-
-struct geometry {
-  u32 x;
-  u32 y;
-  u32 width;
-  u32 height;
-};
+#define BORDER_FOCUSED 0xffffff
+#define BORDER_UNFOCUSED 0x333333
 
 void init_layout(const struct geometry *geoms, u32 monitor_count);
 

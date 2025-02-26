@@ -3,10 +3,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../bar/bar.h"
+#include "../const.h"
 #include "layout.h"
 
 void send_visible_workspaces(u32 *workspaces, u32 count) {
   send_cardinal_array(AWM_VISIBLE_WORKSPACES, workspaces, count);
+  update_visible_workspaces(workspaces, count);
 }
 
 void query_visible_workspaces(u32 *workspaces, u32 count) {
@@ -74,6 +77,7 @@ void send_workspace(u32 *windows, u32 w) {
                                         : 10;
   if(w >= WORKSPACE_COUNT) return;
   send_cardinal_array(workspace, windows, WINDOWS_PER_WORKSPACE);
+  update_workspace(windows, w);
 }
 
 void map_window(u32 window) { xcb_map_window(conn, window); }

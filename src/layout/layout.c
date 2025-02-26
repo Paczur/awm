@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "../const.h"
 #include "layout_x.h"
 
 #define POSITION_FULLSCREEN 0
@@ -32,26 +33,7 @@ static struct monitor monitors[MAX_MONITOR_COUNT] = {0};
 static i32 focused_windows[WORKSPACE_COUNT] = {-1, -1, -1, -1, -1,
                                                -1, -1, -1, -1, -1};
 static u32 monitor_count;
-static u32 border_focused;
-static u32 border_unfocused;
 static u32 focused_monitor = -1;
-
-static u32 hex2color(const char *hex) {
-  uint32_t mul = 1;
-  uint32_t ret = 0;
-  size_t end = 6;
-  while(end-- > 0) {
-    if(hex[end] >= 'a') {
-      ret += mul * (hex[end] - 'a' + 10);
-    } else if(hex[end] >= 'A') {
-      ret += mul * (hex[end] - 'A' + 10);
-    } else {
-      ret += mul * (hex[end] - '0');
-    }
-    mul *= 16;
-  }
-  return ret;
-}
 
 static void reconfigure_monitor(u32 monitor) {
   const u32 *const workspace = workspaces[visible_workspaces[monitor]];
@@ -155,8 +137,6 @@ static void focus_monitor(u32 monitor) {
 
 void init_layout(const struct geometry *geoms, u32 m_count) {
   u32 *restrict workspace;
-  border_focused = hex2color(BORDER_FOCUSED);
-  border_unfocused = hex2color(BORDER_UNFOCUSED);
   init_monitors(geoms, m_count);
 
   send_workspace_count(WORKSPACE_COUNT);
@@ -242,7 +222,7 @@ void focus_in_notify(u32 window) {
       send_focused_window(window);
       send_focused_windows((u32 *)focused_windows);
       send_focused_workspace(visible_workspaces[focused_monitor]);
-      change_window_border_color(window, border_focused);
+      change_window_border_color(window, BORDER_FOCUSED);
       return;
     }
   }
@@ -255,7 +235,7 @@ void focus_in_notify(u32 window) {
         send_focused_window(window);
         send_focused_windows((u32 *)focused_windows);
         send_focused_workspace(visible_workspaces[j]);
-        change_window_border_color(window, border_focused);
+        change_window_border_color(window, BORDER_FOCUSED);
         return;
       }
     }
@@ -263,7 +243,7 @@ void focus_in_notify(u32 window) {
 }
 
 void focus_out_notify(u32 window) {
-  change_window_border_color(window, border_unfocused);
+  change_window_border_color(window, BORDER_UNFOCUSED);
   focused_windows[focused_workspace()] = -1;
 }
 

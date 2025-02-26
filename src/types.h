@@ -12,7 +12,12 @@ typedef int16_t i16;
 typedef int32_t i32;
 typedef int64_t i64;
 
-#define NONE 0
+struct geometry {
+  u32 x;
+  u32 y;
+  u32 width;
+  u32 height;
+};
 
 #define LENGTH(x) (sizeof(x) / sizeof(x[0]))
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
