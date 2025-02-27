@@ -6,9 +6,6 @@
 
 #define MAX_SHORTCUT_COUNT 100
 
-#define INSERT_MODE 1
-#define NORMAL_MODE 0
-
 #define FLAGS_NONE 0
 #define MOD_SHIFT (1 << 0)
 #define MOD_CTRL (1 << 2)

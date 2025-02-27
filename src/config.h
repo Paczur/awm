@@ -1,6 +1,7 @@
 #ifndef H_AWM_CONFIG
 #define H_AWM_CONFIG
 
+#include "const.h"
 #include "layout/layout.h"
 #include "shortcut/shortcut.h"
 #include "system/system.h"

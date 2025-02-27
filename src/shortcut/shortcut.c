@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <string.h>
 
+#include "../const.h"
 #include "shortcut_x.h"
 
 static struct {
@@ -71,17 +72,17 @@ void (*find_shortcut(u8 flags, u8 keycode))(void) {
 void handle_shortcut(u8 flags, u8 keycode) {
   void (*const f)(void) = find_shortcut(flags, keycode);
   if(f == NULL) return;
-  if(keycode != state.mode_keycode) state.mode_return = 1;
+  if(keycode == state.mode_keycode) {
+    state.mode_return = 0;
+  } else {
+    state.mode_return = 1;
+  }
   f();
 }
 
 void release_handler(u8 keycode) {
-  if(state.mode_keycode == keycode && state.mode_return) {
-    state.mode_return = 0;
-    set_mode(INSERT_MODE);
-  } else {
-    state.mode_return = 0;
-  }
+  if(state.mode_keycode == keycode && state.mode_return) set_mode(INSERT_MODE);
+  state.mode_return = 0;
 }
 
 void set_mode(u8 mode) {

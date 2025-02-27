@@ -4,8 +4,8 @@
 #include "../types.h"
 #define BORDER_SIZE 10
 #define GAP_SIZE 10
-#define BORDER_FOCUSED 0xffffff
-#define BORDER_UNFOCUSED 0x333333
+#define BORDER_FOCUSED 0xffffffff
+#define BORDER_UNFOCUSED 0xff333333
 
 void init_layout(const struct geometry *geoms, u32 monitor_count);
 

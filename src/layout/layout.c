@@ -145,6 +145,7 @@ void init_layout(const struct geometry *geoms, u32 m_count) {
   query_visible_workspaces(visible_workspaces, m_count);
   send_visible_workspaces(visible_workspaces, m_count);
   query_workspaces((u32 *)workspaces);
+  for(u32 i = 0; i < WORKSPACE_COUNT; i++) send_workspace(workspaces[i], i);
   query_focused_windows((u32 *)focused_windows);
   send_focused_windows((u32 *)focused_windows);
 
@@ -516,11 +517,19 @@ void swap_focused_window_with_below(void) {
 void change_workspace(u32 w) {
   u32 focused = focused_workspace();
   if(focused == w) return;
+  for(u32 i = 0; i < monitor_count; i++) {
+    if(w == visible_workspaces[w]) {
+      // TODO: Swap workspaces on monitors
+      return;
+    }
+  }
   for(u32 i = 0; i < WINDOWS_PER_WORKSPACE; i++)
     unmap_window(workspaces[focused][i]);
   for(u32 i = 0; i < WINDOWS_PER_WORKSPACE; i++) map_window(workspaces[w][i]);
   visible_workspaces[focused_monitor] = w;
   send_visible_workspaces(visible_workspaces, monitor_count);
   reconfigure_monitor(focused_monitor);
-  focus_window(workspaces[w][projection[focused_monitor][focused_windows[w]]]);
+  if(focused_windows[w] >= 0 && focused_windows[w] < WINDOWS_PER_WORKSPACE)
+    focus_window(
+      workspaces[w][projection[focused_monitor][focused_windows[w]]]);
 }

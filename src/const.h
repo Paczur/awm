@@ -5,4 +5,7 @@
 #define MAX_MONITOR_COUNT 4
 #define WINDOWS_PER_WORKSPACE 4
 
+#define INSERT_MODE 1
+#define NORMAL_MODE 0
+
 #endif

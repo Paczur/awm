@@ -8,8 +8,8 @@
 #include "layout.h"
 
 void send_visible_workspaces(u32 *workspaces, u32 count) {
-  send_cardinal_array(AWM_VISIBLE_WORKSPACES, workspaces, count);
   update_visible_workspaces(workspaces, count);
+  send_cardinal_array(AWM_VISIBLE_WORKSPACES, workspaces, count);
 }
 
 void query_visible_workspaces(u32 *workspaces, u32 count) {
@@ -57,7 +57,8 @@ void query_workspaces(u32 *windows) {
     if(replies[i]) {
       if(xcb_get_property_value_length(replies[i]) > 0)
         memcpy(windows + i * WINDOWS_PER_WORKSPACE,
-               xcb_get_property_value(replies[i]), 32 * WINDOWS_PER_WORKSPACE);
+               xcb_get_property_value(replies[i]),
+               sizeof(u32) * WINDOWS_PER_WORKSPACE);
       free(replies[i]);
     }
   }
@@ -79,10 +80,6 @@ void send_workspace(u32 *windows, u32 w) {
   send_cardinal_array(workspace, windows, WINDOWS_PER_WORKSPACE);
   update_workspace(windows, w);
 }
-
-void map_window(u32 window) { xcb_map_window(conn, window); }
-
-void unmap_window(u32 window) { xcb_unmap_window(conn, window); }
 
 void configure_window(u32 window, u32 x, u32 y, u32 width, u32 heigth,
                       u32 border) {

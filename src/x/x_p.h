@@ -40,4 +40,7 @@ void send_cardinal(xcb_atom_t atom, u32 val);
 void query_cardinal_array(xcb_atom_t atom, u32 *arr, u32 length);
 void send_cardinal_array(xcb_atom_t atom, u32 *arr, u32 length);
 
+void map_window(u32 window);
+void unmap_window(u32 window);
+
 #endif

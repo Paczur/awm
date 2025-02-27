@@ -2,12 +2,17 @@
 
 #include <stdlib.h>
 
+#include "../bar/bar.h"
+#include "../const.h"
 #include "../x/x_p.h"
 #include "shortcut.h"
 
 u8 query_mode(void) { return query_cardinal(AWM_MODE, NORMAL_MODE); }
 
-void send_mode(u8 mode) { send_cardinal(AWM_MODE, mode); }
+void send_mode(u8 mode) {
+  send_cardinal(AWM_MODE, mode);
+  update_mode(mode);
+}
 
 void ungrab_keyboard(void) { xcb_ungrab_keyboard(conn, XCB_CURRENT_TIME); }
 

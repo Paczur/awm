@@ -104,7 +104,9 @@ static void x_init_randr(void) {
   extreply = xcb_get_extension_data(conn, &xcb_randr_id);
   while(extreply == NULL)
     extreply = xcb_get_extension_data(conn, &xcb_randr_id);
-  if(!extreply->present) return;
+  if(!extreply->present) {
+    return;
+  }
   randr_event = extreply->first_event;
   xcb_randr_select_input(conn, screen->root,
                          XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE);
@@ -115,10 +117,9 @@ u32 query_cardinal(xcb_atom_t atom, u32 def) {
   const xcb_get_property_cookie_t cookie =
     xcb_get_property(conn, 0, screen->root, atom, XCB_ATOM_CARDINAL, 0, 1);
   xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, cookie, NULL);
-  if(reply) {
+  if(reply && xcb_get_property_value_length(reply) > 0)
     val = *(u32 *)xcb_get_property_value(reply);
-    free(reply);
-  }
+  if(reply) free(reply);
   return val;
 }
 
@@ -129,13 +130,13 @@ void send_cardinal(xcb_atom_t atom, u32 val) {
 
 void query_cardinal_array(xcb_atom_t atom, u32 *arr, u32 length) {
   const xcb_get_property_cookie_t cookie =
-    xcb_get_property(conn, 0, screen->root, atom, XCB_ATOM_CARDINAL, 0, 1);
+    xcb_get_property(conn, 0, screen->root, atom, XCB_ATOM_CARDINAL, 0, length);
   xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, cookie, NULL);
-  if(reply) {
+  if(reply && xcb_get_property_value_length(reply) > 0) {
     const u32 min = MIN((u32)xcb_get_property_value_length(reply), length);
-    memcpy(arr, (u32 *)xcb_get_property_value(reply), min * 32);
-    free(reply);
+    memcpy(arr, xcb_get_property_value(reply), min * sizeof(u32));
   }
+  if(reply) free(reply);
 }
 
 void send_cardinal_array(xcb_atom_t atom, u32 *arr, u32 length) {
@@ -155,3 +156,7 @@ void x_init(void) {
 }
 
 void x_deinit(void) { xcb_disconnect(conn); }
+
+void map_window(u32 id) { xcb_map_window(conn, id); }
+
+void unmap_window(u32 id) { xcb_unmap_window(conn, id); }

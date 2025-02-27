@@ -28,10 +28,8 @@ static void shortcut_init(void) {
 static void monitor_init(void) {
   u32 length;
   u32 monitor_count;
-  struct geometry monitors[MAX_MONITOR_COUNT] = {
-    (struct geometry){0, 0, 1920, 1080},
-    {0},
-  };
+  u32 bar_height;
+  struct geometry monitors[MAX_MONITOR_COUNT];
   xcb_randr_crtc_t *firstCrtc;
   xcb_randr_get_screen_resources_reply_t *reply;
   xcb_randr_get_screen_resources_cookie_t cookie;
@@ -64,14 +62,20 @@ static void monitor_init(void) {
     free(randr_crtcs[i]);
   }
   for(u32 i = length; i < monitor_count; i++) free(randr_crtcs[i]);
-  // init_bar(monitors, monitor_count);
+  init_bar(monitors, monitor_count);
+  xcb_flush(conn);
+  bar_height = get_bar_height();
+  for(u32 i = 0; i < monitor_count; i++) {
+    monitors[i].y += bar_height;
+    monitors[i].height -= bar_height;
+  }
   init_layout(monitors, monitor_count);
 }
 
 static void init(void) {
   x_init();
-  shortcut_init();
   monitor_init();
+  shortcut_init();
 }
 
 static void deinit(void) { x_deinit(); }
@@ -127,6 +131,7 @@ int main(void) {
     }
     free(event);
     xcb_flush(conn);
+    fflush(stdout);
   }
 
   deinit();
