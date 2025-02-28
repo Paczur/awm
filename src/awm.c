@@ -128,6 +128,9 @@ int main(void) {
       if(((xcb_focus_out_event_t *)event)->mode != XCB_NOTIFY_MODE_GRAB)
         focus_out_notify(((xcb_focus_out_event_t *)event)->event);
       break;
+    case XCB_EXPOSE:
+      redraw_bar();
+      break;
     }
     free(event);
     xcb_flush(conn);

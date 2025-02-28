@@ -51,6 +51,12 @@ void reposition_window(u32 id, u32 x) {
   xcb_configure_window(conn, id, mask, &value);
 }
 
+void reconfigure_window(u32 id, u32 x, u32 width) {
+  const u32 mask = XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_WIDTH;
+  const u32 value[2] = {x, width};
+  xcb_configure_window(conn, id, mask, &value);
+}
+
 struct font_metrics query_font_metrics(u32 id) {
   xcb_generic_error_t *err;
   struct font_metrics metrics = {0, 0, 0};
@@ -81,3 +87,5 @@ void change_window_color(u32 window, u32 preset) {
   const u32 window_values = background;
   xcb_change_window_attributes(conn, window, window_mask, &window_values);
 }
+
+void send_changes(void) { xcb_flush(conn); }

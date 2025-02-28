@@ -1,0 +1,42 @@
+#!/bin/env bash
+
+function treshold() {
+  if [ "$1" -gt 90 ]; then
+    echo "$1%"
+  else
+    echo ""
+  fi
+}
+
+function append() {
+  if [ -n "$3" ]; then
+    echo "$1$2 $3 "
+  else
+    echo "$1"
+  fi
+}
+
+query="$(nvidia-smi --format=csv --query-gpu=utilization.gpu)"
+fp=($query)
+
+if [ "$fp" = "Failed" ]; then
+  gpu="Reboot"
+else
+  gpu="$(echo "$query" | sed '1d' | rev | cut -c3- | rev)"
+  gpu="$(treshold "$gpu")"
+fi
+
+cpu="$(mpstat 1 1 | grep Average | sed 's/.* //')"
+cpu="$(echo "scale=0;100-$cpu/1" | bc)"
+cpu="$(treshold "$cpu")"
+
+ram="$(free | grep Mem | awk '{print int($3*100/$2)}')"
+ram="$(treshold "$ram")"
+
+output="$(append "$output" "GPU" "$gpu")"
+output="$(append "$output" "CPU" "$cpu")"
+output="$(append "$output" "RAM" "$ram")"
+echo "$output"
+if [ -n "$output" ]; then
+  exit 1
+fi
