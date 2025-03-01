@@ -160,8 +160,7 @@
   {2, "/etc/awm/scripts/dnd",        -1}, \
   {3, "/etc/awm/scripts/brightness", -1}, \
   {4, "/etc/awm/scripts/battery",    60}, \
-  {8, "/etc/awm/scripts/gpu",        60}, \
-  {5, "/etc/awm/scripts/cpu",        5},  \
+  {5, "/etc/awm/scripts/status",      5},  \
   {6, "date '+󰃶 %a %d' && exit 1",  3600}, \
   {7, "date '+ %H:%M' && exit 1",  30}, \
 }
