@@ -91,6 +91,7 @@ void release_handler(u8 keycode) {
 
 void set_mode(u8 mode) {
   if(mode == state.mode) return;
+  if(mode == INSERT_MODE && !insert_mode_allowed()) return;
   state.mode = mode;
   send_mode(mode);
   if(mode == NORMAL_MODE) {

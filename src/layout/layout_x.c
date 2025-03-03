@@ -5,6 +5,7 @@
 
 #include "../bar/bar.h"
 #include "../const.h"
+#include "../shortcut/shortcut.h"
 #include "layout.h"
 
 void configure_window(u32 window, u32 x, u32 y, u32 width, u32 heigth,
@@ -37,6 +38,7 @@ void focus_window(u32 window) {
 void unfocus_window(void) {
   xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, XCB_INPUT_FOCUS_NONE,
                       XCB_CURRENT_TIME);
+  set_mode(NORMAL_MODE);
 }
 
 void delete_window(u32 window) {

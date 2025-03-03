@@ -9,5 +9,6 @@ void send_mode(u8 mode);
 void ungrab_keyboard(void);
 void grab_keyboard(void);
 void grab_key(u8 key, u8 mod);
+u32 insert_mode_allowed(void);
 
 #endif

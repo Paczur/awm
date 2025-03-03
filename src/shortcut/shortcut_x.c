@@ -4,6 +4,7 @@
 
 #include "../bar/bar.h"
 #include "../const.h"
+#include "../layout/layout.h"  //empty workspace
 #include "../x/x_p.h"
 #include "shortcut.h"
 
@@ -29,3 +30,5 @@ void grab_key(u8 key, u8 mod) {
   xcb_grab_key(conn, 1, screen->root, mod, key, XCB_GRAB_MODE_ASYNC,
                XCB_GRAB_MODE_ASYNC);
 }
+
+u32 insert_mode_allowed(void) { return !is_workspace_empty(); }

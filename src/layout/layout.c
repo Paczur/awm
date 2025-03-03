@@ -98,16 +98,12 @@ static void reconfigure_monitor(u32 monitor) {
       geom.width += BORDER_SIZE * 2;
       configure_window(workspace[i], geom.x, geom.y, geom.width, geom.height,
                        0);
+      break;
     } else {
       configure_window(workspace[i], geom.x, geom.y, geom.width, geom.height,
                        BORDER_SIZE);
     }
   }
-}
-
-static i32 is_workspace_empty(u32 w) {
-  return !workspaces[w][0] && !workspaces[w][1] && !workspaces[w][2] &&
-         !workspaces[w][3];
 }
 
 static u32 focused_workspace(void) {
@@ -179,6 +175,7 @@ static void restore_focus(void) {
 }
 
 void map_request(u32 window) {
+  if(focused_monitor > monitor_count) return;
   const u32 current_workspace = focused_workspace();
   u32 *const workspace = workspaces[current_workspace];
   const u32 index =
@@ -645,4 +642,9 @@ void clean_layout_state(void) {
   }
   for(u32 i = 0; i < minimized_window_count; i++)
     delete_window(minimized_windows[i]);
+}
+
+u32 is_workspace_empty(void) {
+  return focused_monitor > monitor_count ||
+         projection[focused_monitor][0] == WINDOWS_PER_WORKSPACE;
 }

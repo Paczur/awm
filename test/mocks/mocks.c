@@ -22,10 +22,15 @@ CTF_MOCK_VOID_ARG(u8, query_mode) {
   return 0;
 }
 
+CTF_MOCK_VOID_ARG(u32, insert_mode_allowed) {
+  if(mock_out) mock_check(mock_return_value);
+  return 1;
+}
+
 CTF_MOCK_GROUP(shortcut_x_mocks) = {
   CTF_MOCK_BIND(send_mode, NULL),     CTF_MOCK_BIND(query_mode, NULL),
   CTF_MOCK_BIND(grab_keyboard, NULL), CTF_MOCK_BIND(ungrab_keyboard, NULL),
-  CTF_MOCK_BIND(grab_key, NULL),
+  CTF_MOCK_BIND(grab_key, NULL),      CTF_MOCK_BIND(insert_mode_allowed, NULL),
 };
 
 CTF_MOCK_VOID_RET(map_window, (u32 window), (window)) {
@@ -86,10 +91,7 @@ CTF_MOCK_VOID_RET(focus_window, (u32 window), (window)) {
   focus_in_notify(window);
 }
 
-CTF_MOCK_VOID_RET(unfocus_window, (u32 window), (window)) {
-  if(mock_in) mock_check(window);
-  focus_out_notify(window);
-}
+CTF_MOCK_VOID(unfocus_window) {}
 
 CTF_MOCK_VOID_RET(send_focused_window, (u32 window), (window)) {
   if(mock_in) mock_check(window);

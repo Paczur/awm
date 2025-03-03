@@ -34,6 +34,7 @@ void change_workspace(u32 w);
 void minimize_focused_window(void);
 void unminimize_window(u32 index);
 void clean_layout_state(void);
+u32 is_workspace_empty(void);
 
 #endif
 
