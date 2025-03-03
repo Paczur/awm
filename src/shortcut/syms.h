@@ -3,8 +3,6 @@
 
 #include "../types.h"
 
-const char *keysym_to_char(u32 keysym);
-
 #define KEY_VoidSymbol 0xffffff
 #define KEY_BackSpace 0xff08
 #define KEY_Tab 0xff09
@@ -2115,5 +2113,9 @@ const char *keysym_to_char(u32 keysym);
 #define KEY_Sinh_ruu2 0x1000df2
 #define KEY_Sinh_luu2 0x1000df3
 #define KEY_Sinh_kunddaliya 0x1000df4
+
+static inline char keysym_to_char(u32 keysym) {
+  return keysym - KEY_space + ' ';
+}
 
 #endif

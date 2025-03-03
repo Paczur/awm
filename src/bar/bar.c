@@ -60,9 +60,10 @@ static pthread_t thread;
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 static u32 clocked_blocks_offset;
 
+static char launcher_prompt[BAR_LAUNCHER_PROMPT_LENGTH];
 static u32 launcher_visible;
 static u32 launcher_prompt_blocks[MAX_MONITOR_COUNT];
-static u32 launcher_hint_blocks[MAX_MONITOR_COUNT][BAR_HINT_BLOCKS];
+static u32 launcher_hint_blocks[MAX_MONITOR_COUNT][BAR_LAUNCHER_HINT_BLOCKS];
 
 static struct map_entry *get_map_entry(u32 window) {
   u32 index = window % WINDOW_NAME_MAP_SIZE;
@@ -329,7 +330,7 @@ void hide_launcher(void) {
   launcher_visible = 0;
   for(u32 i = 0; i < monitor_count; i++) {
     unmap_window(launcher_prompt_blocks[i]);
-    for(u32 j = 0; j < BAR_HINT_BLOCKS; j++)
+    for(u32 j = 0; j < BAR_LAUNCHER_HINT_BLOCKS; j++)
       unmap_window(launcher_hint_blocks[i][j]);
     map_window(mode_blocks[i]);
     redraw_bar();
@@ -398,7 +399,7 @@ void init_bar(const struct geometry *geoms, u32 m_count) {
     for(u32 j = 0; j < MINIMIZE_QUEUE_SIZE; j++)
       minimized_window_blocks[i][j] = create_window_geom(geom);
     launcher_prompt_blocks[i] = create_window_geom(geom);
-    for(u32 j = 0; j < BAR_HINT_BLOCKS; j++)
+    for(u32 j = 0; j < BAR_LAUNCHER_HINT_BLOCKS; j++)
       launcher_hint_blocks[i][j] = create_window_geom(geom);
     map_window(mode_blocks[i]);
   }
