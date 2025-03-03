@@ -10,6 +10,8 @@
 #define BAR_URGENT_BACKGROUND 0xff111111
 #define BAR_URGENT_FOREGROUND 0xfff3f36e
 
+#define BAR_HINT_BLOCKS 10
+
 #define BAR_INACTIVE 0
 #define BAR_ACTIVE 1
 #define BAR_URGENT 2
@@ -38,6 +40,10 @@ void update_mode(u32 mode);
 void update_minimized_windows(u32 *windows, u32 count);
 void redraw_bar(void);
 
+void launcher_handle_key(u8 flags, u8 keycode);
+void show_launcher(void);
+void hide_launcher(void);
+u32 launcher_showing(void);
 u32 get_bar_height(void);
 void init_bar(const struct geometry *geoms, u32 monitor_count);
 void deinit_bar(void);

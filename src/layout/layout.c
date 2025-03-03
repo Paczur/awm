@@ -156,7 +156,7 @@ static void focus_monitor(u32 monitor) {
   unfocus_window();
 }
 
-static void restore_focus(void) {
+void restore_focus(void) {
   const u32 current_workspace = focused_workspace();
   const i32 current_window = focused_windows[current_workspace];
   if(current_window != -1 &&
@@ -311,13 +311,10 @@ void focus_window_to_right(void) {
     const u32 index = (curr_window == -1)    ? 0
                       : curr_window % 2 == 0 ? curr_window
                                              : curr_window - 1;
-    puts("BEFORE");
     if(projection[right][index] != WINDOWS_PER_WORKSPACE) {
-      puts("FIRST");
       focus_window(
         workspaces[visible_workspaces[right]][projection[right][index]]);
     } else {
-      puts("SECOND");
       focus_monitor(right);
     }
   } else if(curr_window % 2 == 0) {

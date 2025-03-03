@@ -32,6 +32,7 @@ void change_window_border_color(u32 window, u32 color) {
 
 void focus_window(u32 window) {
   xcb_set_input_focus(conn, XCB_INPUT_FOCUS_NONE, window, XCB_CURRENT_TIME);
+  set_mode(INSERT_MODE);
 }
 
 void unfocus_window(void) {

@@ -92,7 +92,11 @@ static void key_release(const xcb_key_release_event_t *event) {
 }
 
 static void key_press(const xcb_key_press_event_t *event) {
-  handle_shortcut(event->state, event->detail);
+  if(launcher_showing()) {
+    launcher_handle_key(event->state, event->detail);
+  } else {
+    handle_shortcut(event->state, event->detail);
+  }
 }
 
 static void button_press(const xcb_button_press_event_t *event) {

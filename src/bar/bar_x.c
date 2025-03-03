@@ -3,6 +3,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "../const.h"
+#include "../layout/layout.h"
+#include "../shortcut/shortcut.h"
 #include "../x/x_p.h"
 #include "bar.h"
 
@@ -107,3 +110,11 @@ void query_window_name(u32 window, char *name, u32 *name_length,
     *name_length = 1;
   }
 }
+
+void focus_launcher(u32 launcher) {
+  xcb_set_input_focus(conn, XCB_INPUT_FOCUS_NONE, launcher, XCB_CURRENT_TIME);
+  xcb_grab_keyboard(conn, 1, launcher, XCB_CURRENT_TIME, XCB_GRAB_MODE_ASYNC,
+                    XCB_GRAB_MODE_ASYNC);
+}
+
+void unfocus_launcher(void) { restore_focus(); }

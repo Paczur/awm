@@ -37,5 +37,7 @@ void map_window(u32 window);
 void unmap_window(u32 window);
 void send_changes(void);
 void query_window_name(u32 window, char *name, u32 *name_length, u32 name_size);
+void focus_launcher(u32 launcher);
+void unfocus_launcher(void);
 
 #endif

@@ -31,4 +31,6 @@ void grab_key(u8 key, u8 mod) {
                XCB_GRAB_MODE_ASYNC);
 }
 
-u32 insert_mode_allowed(void) { return !is_workspace_empty(); }
+u32 insert_mode_allowed(void) {
+  return !is_workspace_empty() || launcher_showing();
+}

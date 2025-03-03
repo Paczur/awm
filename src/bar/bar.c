@@ -24,7 +24,7 @@ struct map_entry {
   char name[BAR_WINDOW_NAME_LENGTH];
 };
 
-static u32 m_count;
+static u32 monitor_count;
 static struct gc gc;
 static struct geometry bars[MAX_MONITOR_COUNT];
 static struct font_metrics font_metrics;
@@ -60,6 +60,10 @@ static pthread_t thread;
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 static u32 clocked_blocks_offset;
 
+static u32 launcher_visible;
+static u32 launcher_prompt_blocks[MAX_MONITOR_COUNT];
+static u32 launcher_hint_blocks[MAX_MONITOR_COUNT][BAR_HINT_BLOCKS];
+
 static struct map_entry *get_map_entry(u32 window) {
   u32 index = window % WINDOW_NAME_MAP_SIZE;
   if(window_name_map_size > 0) {
@@ -81,13 +85,13 @@ static void refresh_workspace_blocks(void) {
   u32 id;
   char text;
   u32 prev_x;
-  for(u32 i = 0; i < m_count; i++) {
+  for(u32 i = 0; i < monitor_count; i++) {
     for(u32 j = 0; j < WORKSPACE_COUNT; j++) {
       if(visible_workspaces[i] != j && !workspace_occupied[j])
         unmap_window(workspace_blocks[i][j]);
     }
   }
-  for(u32 i = 0; i < m_count; i++) {
+  for(u32 i = 0; i < monitor_count; i++) {
     prev_x =
       bars[i].x + mode_block_offset + BAR_OUTER_MARGIN + BAR_INNER_MARGIN;
     for(u32 j = 0; j < WORKSPACE_COUNT; j++) {
@@ -207,7 +211,7 @@ static void *thread_loop(void *unused) {
         if(clocked_blocks_state[i].output_len) {
           offset = clocked_blocks_state[i].output_len * font_metrics.width +
                    BAR_PADDING * 2;
-          for(u32 j = 0; j < m_count; j++) {
+          for(u32 j = 0; j < monitor_count; j++) {
             id = clocked_blocks[j][i];
             reconfigure_window(id, bars[j].x + bars[j].width - x, offset);
             map_window(id);
@@ -226,7 +230,8 @@ static void *thread_loop(void *unused) {
           }
           x -= offset + BAR_INNER_MARGIN;
         } else {
-          for(u32 j = 0; j < m_count; j++) unmap_window(clocked_blocks[j][i]);
+          for(u32 j = 0; j < monitor_count; j++)
+            unmap_window(clocked_blocks[j][i]);
         }
       }
     }
@@ -251,7 +256,7 @@ void update_workspace(u32 *windows, u32 workspace) {
 }
 
 void update_visible_workspaces(u32 *workspaces, u32 count) {
-  u32 min = MIN(MIN(count, WORKSPACE_COUNT), m_count);
+  u32 min = MIN(MIN(count, WORKSPACE_COUNT), monitor_count);
   memcpy(visible_workspaces, workspaces, min * sizeof(u32));
   refresh_workspace_blocks();
 }
@@ -270,7 +275,7 @@ void update_mode(u32 m) {
   }
   change_window_color(mode_blocks[focused_monitor], BAR_ACTIVE);
   draw_text(mode_blocks[focused_monitor], gc.active, font_metrics, &text, 1);
-  for(u32 i = focused_monitor + 1; i < m_count; i++) {
+  for(u32 i = focused_monitor + 1; i < monitor_count; i++) {
     change_window_color(mode_blocks[i], BAR_INACTIVE);
     draw_text(mode_blocks[i], gc.inactive, font_metrics, &text, 1);
   }
@@ -290,7 +295,7 @@ void update_minimized_windows(u32 *windows, u32 count) {
   }
   minimized_window_blocks_width =
     text_length * font_metrics.width + minimized_window_count * 2 * BAR_PADDING;
-  for(u32 i = 0; i < m_count; i++) {
+  for(u32 i = 0; i < monitor_count; i++) {
     x = bars[i].width / 2 + bars[i].x - minimized_window_blocks_width / 2;
     for(u32 j = 0; j < minimized_window_count; j++) {
       w = minimized_window_names[j]->name_length * font_metrics.width +
@@ -307,6 +312,38 @@ void update_minimized_windows(u32 *windows, u32 count) {
   }
 }
 
+void show_launcher(void) {
+  launcher_visible = 1;
+  for(u32 i = 0; i < monitor_count; i++) {
+    unmap_window(mode_blocks[i]);
+    for(u32 j = 0; j < WORKSPACE_COUNT; j++)
+      unmap_window(workspace_blocks[i][j]);
+    for(u32 j = 0; j < MINIMIZE_QUEUE_SIZE; j++)
+      unmap_window(minimized_window_blocks[i][j]);
+    map_window(launcher_prompt_blocks[i]);
+  }
+  focus_launcher(launcher_prompt_blocks[0]);
+}
+
+void hide_launcher(void) {
+  launcher_visible = 0;
+  for(u32 i = 0; i < monitor_count; i++) {
+    unmap_window(launcher_prompt_blocks[i]);
+    for(u32 j = 0; j < BAR_HINT_BLOCKS; j++)
+      unmap_window(launcher_hint_blocks[i][j]);
+    map_window(mode_blocks[i]);
+    redraw_bar();
+  }
+  unfocus_launcher();
+}
+
+void launcher_handle_key(u8 flags, u8 keycode) {
+  (void)flags;
+  (void)keycode;
+}
+
+u32 launcher_showing(void) { return launcher_visible; }
+
 void redraw_bar(void) {
   struct map_entry *minimized_window_names[MINIMIZE_QUEUE_SIZE];
   for(u32 i = 0; i < minimized_window_count; i++)
@@ -318,10 +355,10 @@ void redraw_bar(void) {
   } choice = mode == NORMAL_MODE
                ? (struct choice){BAR_ACTIVE, gc.active, '+'}
                : (struct choice){BAR_INACTIVE, gc.inactive, 'I'};
-  for(u32 i = 0; i < m_count; i++)
+  for(u32 i = 0; i < monitor_count; i++)
     draw_text(mode_blocks[i], choice.color, font_metrics, &choice.text, 1);
   refresh_workspace_blocks();
-  for(u32 i = 0; i < m_count; i++) {
+  for(u32 i = 0; i < monitor_count; i++) {
     for(u32 j = 0; j < minimized_window_count; j++) {
       draw_text(minimized_window_blocks[i][j], gc.active, font_metrics,
                 minimized_window_names[j]->name,
@@ -338,7 +375,7 @@ u32 get_bar_height(void) {
          BAR_OUTER_MARGIN;
 }
 
-void init_bar(const struct geometry *geoms, u32 monitor_count) {
+void init_bar(const struct geometry *geoms, u32 m_count) {
   const u32 font_id = open_font();
   font_metrics = query_font_metrics(font_id);
   struct geometry geom = {
@@ -348,9 +385,9 @@ void init_bar(const struct geometry *geoms, u32 monitor_count) {
     .height = BAR_PADDING * 2 + font_metrics.ascent + font_metrics.descent,
   };
   mode_block_offset = BAR_PADDING * 2 + font_metrics.width;
-  m_count = MIN(monitor_count, MAX_MONITOR_COUNT);
-  memcpy(bars, geoms, m_count * sizeof(struct geometry));
-  for(u32 i = 0; i < m_count; i++) {
+  monitor_count = MIN(m_count, MAX_MONITOR_COUNT);
+  memcpy(bars, geoms, monitor_count * sizeof(struct geometry));
+  for(u32 i = 0; i < monitor_count; i++) {
     geom.y = geoms[i].y + BAR_OUTER_MARGIN;
     geom.x = geoms[i].x + BAR_OUTER_MARGIN;
     mode_blocks[i] = create_window_geom(geom);
@@ -360,6 +397,9 @@ void init_bar(const struct geometry *geoms, u32 monitor_count) {
       clocked_blocks[i][j] = create_window_geom(geom);
     for(u32 j = 0; j < MINIMIZE_QUEUE_SIZE; j++)
       minimized_window_blocks[i][j] = create_window_geom(geom);
+    launcher_prompt_blocks[i] = create_window_geom(geom);
+    for(u32 j = 0; j < BAR_HINT_BLOCKS; j++)
+      launcher_hint_blocks[i][j] = create_window_geom(geom);
     map_window(mode_blocks[i]);
   }
   gc = create_gc(font_id, workspace_blocks[0][0]);

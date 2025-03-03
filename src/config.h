@@ -1,6 +1,7 @@
 #ifndef H_AWM_CONFIG
 #define H_AWM_CONFIG
 
+#include "bar/bar.h"
 #include "const.h"
 #include "global.h"
 #include "layout/layout.h"
@@ -48,6 +49,7 @@ TEN_X
     {FLAGS_NONE, KEY_Return, open_terminal},            \
     {FLAGS_NONE, KEY_b, open_browser},                  \
     {FLAGS_NONE, KEY_m, minimize_focused_window},       \
+    {FLAGS_NONE, KEY_r, show_launcher},                 \
     {MOD_ALT, KEY_q, die},                              \
     {MOD_ALT | MOD_SHIFT, KEY_q, clean_state_and_die},  \
     {FLAGS_NONE, KEY_i, insert_mode},                   \

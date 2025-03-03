@@ -1,6 +1,10 @@
 #ifndef H_AWM_SHORTCUT_SYMS
 #define H_AWM_SHORTCUT_SYMS
 
+#include "../types.h"
+
+const char *keysym_to_char(u32 keysym);
+
 #define KEY_VoidSymbol 0xffffff
 #define KEY_BackSpace 0xff08
 #define KEY_Tab 0xff09
