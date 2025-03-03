@@ -244,10 +244,33 @@ CTF_TEST_STATIC(focus_window_with_3_windows_mapped) {
   }
 }
 
+CTF_TEST_STATIC(changing_workspace) {
+  struct geometry geoms[2] = {
+    {0, 0, 1920, 1080},
+    {1920, 0, 1920, 1080},
+  };
+  init_layout(geoms, 2);
+  map_request(1);
+  focus_window_to_right();
+  map_request(2);
+  focus_window_to_left();
+  subtest(to_one_already_visible_focuses_window) {
+    mock_select(focus_window) {
+      mock_expect(window, ==, 2);
+      mock_select(unfocus_window) {
+        change_workspace(1);
+        expect(mock_call_count, ==, 0);
+      }
+      expect(mock_call_count, ==, 1);
+    }
+  }
+}
+
 CTF_GROUP(layout_spec) = {
   map_request_on,
   unmap_notify_in_order_with,
   focus_window_with_3_windows_mapped,
+  changing_workspace,
 };
 
 CTF_GROUP_SETUP(layout_spec) { mock_group(layout_x_mocks); }

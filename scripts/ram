@@ -1,6 +1,5 @@
 #!/bin/env dash
 ram="$(free | grep Mem | awk '{print int($3*100/$2)}')"
-ram="$(treshold "$ram")"
 
 if [ "$ram" -gt 90 ]; then
   echo "RAM $ram%"

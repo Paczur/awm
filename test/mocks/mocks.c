@@ -1,5 +1,7 @@
 #include "mocks.h"
 
+#include <layout/layout.h>
+
 CTF_MOCK_VOID(grab_keyboard) {}
 
 CTF_MOCK_VOID(ungrab_keyboard) {}
@@ -81,6 +83,12 @@ CTF_MOCK_VOID_RET(change_window_border_color, (u32 window, u32 color),
 
 CTF_MOCK_VOID_RET(focus_window, (u32 window), (window)) {
   if(mock_in) mock_check(window);
+  focus_in_notify(window);
+}
+
+CTF_MOCK_VOID_RET(unfocus_window, (u32 window), (window)) {
+  if(mock_in) mock_check(window);
+  focus_out_notify(window);
 }
 
 CTF_MOCK_VOID_RET(send_focused_window, (u32 window), (window)) {
@@ -140,6 +148,7 @@ CTF_MOCK_GROUP(layout_x_mocks) = {
   CTF_MOCK_BIND(listen_to_events, NULL),
   CTF_MOCK_BIND(change_window_border_color, NULL),
   CTF_MOCK_BIND(focus_window, NULL),
+  CTF_MOCK_BIND(unfocus_window, NULL),
   CTF_MOCK_BIND(send_focused_window, NULL),
   CTF_MOCK_BIND(query_focused_windows, NULL),
   CTF_MOCK_BIND(send_focused_windows, NULL),
