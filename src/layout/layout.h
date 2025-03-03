@@ -2,10 +2,10 @@
 #define H_AWM_LAYOUT
 
 #include "../types.h"
-#define BORDER_SIZE 10
-#define GAP_SIZE 10
-#define BORDER_FOCUSED 0xffffffff
-#define BORDER_UNFOCUSED 0xff333333
+#define BORDER_SIZE 3
+#define GAP_SIZE 5
+#define BORDER_FOCUSED 0xfff3f3f3
+#define BORDER_UNFOCUSED 0xff111111
 
 void init_layout(const struct geometry *geoms, u32 monitor_count);
 
@@ -31,6 +31,9 @@ void reset_layout_state(void);
 void delete_focused_window(void);
 
 void change_workspace(u32 w);
+void minimize_focused_window(void);
+void unminimize_window(u32 index);
+void clean_layout_state(void);
 
 #endif
 

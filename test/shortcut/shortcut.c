@@ -5,7 +5,7 @@
 #include <x/x_p.h>
 
 #include "../mocks/mocks.h"
-#define LENGTH(x) (sizeof(x) / sizeof(x[0]))
+#define LENGTH(x) (sizeof(x) / sizeof((x)[0]))
 
 static void dummy_function(void) {}
 

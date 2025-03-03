@@ -36,7 +36,7 @@ ram="$(treshold "$ram")"
 output="$(append "$output" "GPU" "$gpu")"
 output="$(append "$output" "CPU" "$cpu")"
 output="$(append "$output" "RAM" "$ram")"
-echo "$output"
+echo "$output" | sed 's/ $//'
 if [ -n "$output" ]; then
   exit 1
 fi

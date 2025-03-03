@@ -7,6 +7,10 @@
 #include "../x/x_p.h"
 #include "shortcut.h"
 
+void delete_sent_shortcut_data(void) {
+  xcb_delete_property(conn, screen->root, AWM_MODE);
+}
+
 u8 query_mode(void) { return query_cardinal(AWM_MODE, NORMAL_MODE); }
 
 void send_mode(u8 mode) {

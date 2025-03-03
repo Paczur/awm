@@ -28,6 +28,8 @@ struct keymap {
   u32 *keysyms;
 };
 
+void clean_shortcut_state(void);
+
 void init_shortcuts(struct keymap keymap, struct shortcut *shortcuts, u8 size);
 
 void (*find_shortcut(u8 flags, u8 keycode))(void);

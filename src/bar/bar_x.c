@@ -77,6 +77,12 @@ void draw_text(u32 window, u32 gc, struct font_metrics metrics, const char *str,
                    BAR_PADDING + metrics.ascent, str);
 }
 
+void draw_text_utf16(u32 window, u32 gc, struct font_metrics metrics,
+                     const u16 *str, u32 str_len) {
+  xcb_image_text_16(conn, str_len, window, gc, BAR_PADDING,
+                    BAR_PADDING + metrics.ascent, (const xcb_char2b_t *)str);
+}
+
 void change_window_color(u32 window, u32 preset) {
   const u32 background = (preset == BAR_INACTIVE) ? BAR_INACTIVE_BACKGROUND
                          : (preset == BAR_ACTIVE) ? BAR_ACTIVE_BACKGROUND
@@ -89,3 +95,15 @@ void change_window_color(u32 window, u32 preset) {
 }
 
 void send_changes(void) { xcb_flush(conn); }
+
+void query_window_name(u32 window, char *name, u32 *name_length,
+                       u32 name_size) {
+  query_window_string(window, WM_ICON_NAME, name, name_length, name_size);
+  if(*name_length == 0)
+    query_window_string(window, WM_NAME, name, name_length, name_size);
+  if(*name_length == 0) {
+    name[0] = '?';
+    name[1] = 0;
+    *name_length = 1;
+  }
+}

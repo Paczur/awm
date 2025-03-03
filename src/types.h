@@ -19,7 +19,7 @@ struct geometry {
   u32 height;
 };
 
-#define LENGTH(x) (sizeof(x) / sizeof(x[0]))
+#define LENGTH(x) (sizeof(x) / sizeof((x)[0]))
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
 
 #endif

@@ -18,6 +18,8 @@ static struct {
 
 static void set_mode_to_normal(void) { set_mode(NORMAL_MODE); }
 
+void clean_shortcut_state(void) { delete_sent_shortcut_data(); }
+
 void init_shortcuts(struct keymap keymap, struct shortcut *shortcuts, u8 size) {
   assert(keymap.keysyms != NULL || keymap.length == 0);
   assert(shortcuts != NULL || size == 0);
@@ -81,8 +83,10 @@ void handle_shortcut(u8 flags, u8 keycode) {
 }
 
 void release_handler(u8 keycode) {
-  if(state.mode_keycode == keycode && state.mode_return) set_mode(INSERT_MODE);
-  state.mode_return = 0;
+  if(state.mode_keycode == keycode && state.mode_return) {
+    set_mode(INSERT_MODE);
+    state.mode_return = 0;
+  }
 }
 
 void set_mode(u8 mode) {

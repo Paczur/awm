@@ -32,6 +32,10 @@ CTF_MOCK_VOID_RET_EXTERN(send_focused_workspace, (u32 w));
 CTF_MOCK_VOID_RET_EXTERN(send_focused_windows, (u32 * windows));
 CTF_MOCK_VOID_RET_EXTERN(query_focused_windows, (u32 * windows));
 
+CTF_MOCK_VOID_RET_EXTERN(send_minimized_windows, (u32 * windows, u32 len));
+CTF_MOCK_VOID_RET_EXTERN(query_minimized_windows, (u32 * windows, u32 len));
+CTF_MOCK_VOID_ARG_EXTERN(u32, query_minimized_window_count);
+
 CTF_MOCK_VOID_RET_EXTERN(send_workspace_count, (u32 count));
 
 #endif

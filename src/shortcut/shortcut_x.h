@@ -3,6 +3,7 @@
 
 #include "../types.h"
 
+void delete_sent_shortcut_data(void);
 u8 query_mode(void);
 void send_mode(u8 mode);
 void ungrab_keyboard(void);

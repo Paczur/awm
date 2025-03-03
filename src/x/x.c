@@ -1,5 +1,6 @@
 #include "x.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <xcb/randr.h>
@@ -144,6 +145,21 @@ void send_cardinal_array(xcb_atom_t atom, u32 *arr, u32 length) {
                       XCB_ATOM_CARDINAL, 32, length, arr);
 }
 
+void query_window_string(xcb_window_t window, xcb_atom_t atom, char *str,
+                         u32 *str_len, u32 str_size) {
+  xcb_get_property_cookie_t cookie = xcb_get_property_unchecked(
+    conn, 0, window, atom, XCB_ATOM_STRING, 0, str_size);
+  xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, cookie, NULL);
+  if(!reply) {
+    *str_len = 0;
+    return;
+  }
+  *str_len = xcb_get_property_value_length(reply);
+  *str_len = MIN(*str_len, str_size);
+  memcpy(str, xcb_get_property_value(reply), *str_len);
+  free(reply);
+}
+
 void x_init(void) {
   conn = xcb_connect(NULL, NULL);
   if(xcb_connection_has_error(conn)) return;
@@ -157,6 +173,6 @@ void x_init(void) {
 
 void x_deinit(void) { xcb_disconnect(conn); }
 
-void map_window(u32 id) { xcb_map_window(conn, id); }
+void map_window(xcb_window_t id) { xcb_map_window(conn, id); }
 
-void unmap_window(u32 id) { xcb_unmap_window(conn, id); }
+void unmap_window(xcb_window_t id) { xcb_unmap_window(conn, id); }

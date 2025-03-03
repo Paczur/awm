@@ -1,9 +1,11 @@
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #include "bar/bar.h"
 #include "config.h"
 #include "const.h"
+#include "global.h"
 #include "layout/layout.h"
 #include "shortcut/shortcut.h"
 #include "x/x.h"
@@ -73,12 +75,17 @@ static void monitor_init(void) {
 }
 
 static void init(void) {
+  struct sigaction act = {.sa_handler = signal_usr1};
+  sigaction(SIGUSR1, &act, NULL);
   x_init();
   monitor_init();
   shortcut_init();
 }
 
-static void deinit(void) { x_deinit(); }
+static void deinit(void) {
+  deinit_bar();
+  x_deinit();
+}
 
 static void key_release(const xcb_key_release_event_t *event) {
   release_handler(event->detail);
@@ -101,7 +108,7 @@ int main(void) {
   init();
   xcb_flush(conn);
 
-  while(1) {
+  while(!stop_wm) {
     event = xcb_wait_for_event(conn);
     if(!event) return 1;
     switch(event->response_type & 0x7F) {
