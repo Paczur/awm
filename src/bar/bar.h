@@ -22,11 +22,13 @@
 #define BAR_PADDING 5
 #define BAR_OUTER_MARGIN 5
 #define BAR_INNER_MARGIN 3
-#define BAR_CLOCKED_BLOCKS                            \
-  {                                                   \
-    {"date +%H:%M", 60, BAR_FLAGS_ALWAYS_ACTIVE},     \
-    {"date \"+%a %d\"", 60, BAR_FLAGS_ALWAYS_ACTIVE}, \
-    {"/etc/awm/scripts/status", 5, BAR_FLAGS_NONE},   \
+#define BAR_CLOCKED_BLOCKS                                \
+  {                                                       \
+    {"date +%H:%M", 60, BAR_FLAGS_ALWAYS_ACTIVE},         \
+    {"date \"+%a %d\"", 60, BAR_FLAGS_ALWAYS_ACTIVE},     \
+    {"/etc/awm/scripts/cpu", 5, BAR_FLAGS_ALWAYS_ACTIVE}, \
+    {"/etc/awm/scripts/gpu", 5, BAR_FLAGS_ALWAYS_ACTIVE}, \
+    {"/etc/awm/scripts/ram", 5, BAR_FLAGS_ALWAYS_ACTIVE}, \
   }
 
 void update_workspace(u32 *windows, u32 workspace);

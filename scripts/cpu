@@ -1,8 +1,9 @@
 #!/bin/env dash
 
-ex=0
-value="$(mpstat 1 1 | grep Average | sed 's/.* //' | xargs echo 100- | bc)"
-printf " %.2f%%\n" "$value"
-if [ $(echo "${value} > 90" | bc) -eq 1 ]; then
-  exit 1
+cpu="$(mpstat 1 1 | grep Average | sed 's/.* //')"
+cpu="$(echo "scale=0;100-$cpu/1" | bc)"
+if [ "$cpu" -gt 90 ]; then
+  echo "CPU $cpu%"
+else
+  echo ""
 fi

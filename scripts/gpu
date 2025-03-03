@@ -1,16 +1,15 @@
 #!/bin/env bash
+
 query="$(nvidia-smi --format=csv --query-gpu=utilization.gpu)"
 fp=($query)
-if [ "$fp" = "Failed" ]; then
-  echo " Reboot"
-  exit 2
-else
-  value="$(echo "$query" | sed '1d' | rev | cut -c3- | rev)"
-fi
 
-if [ -n "$value" ]; then
-  echo " $value%"
-  if [ "$value" -gt 90 ]; then
-    exit 1
+if [ "$fp" = "Failed" ]; then
+  gpu="Reboot"
+else
+  gpu="$(echo "$query" | sed '1d' | rev | cut -c3- | rev)"
+  if [ "$gpu" -gt 90 ]; then
+    echo "GPU $gpu%"
+  else
+    echo ""
   fi
 fi
