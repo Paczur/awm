@@ -165,12 +165,6 @@ static void restore_focus(void) {
                            [projection[focused_monitor][current_window]]);
     return;
   }
-  for(u32 i = 0; i < monitor_count; i++) {
-    if(projection[i][0] != WINDOWS_PER_WORKSPACE) {
-      focus_window(workspaces[current_workspace][projection[i][0]]);
-      return;
-    }
-  }
   focus_monitor(focused_monitor);
 }
 
@@ -222,10 +216,22 @@ void unmap_notify(u32 window) {
         reconfigure_monitor(focused_monitor);
         send_workspace(workspace, current_workspace);
         if(visible_workspaces[j] == current_workspace &&
-           projection[focused_monitor][i] == current_window) {
+           projection[focused_monitor][i] != current_window) {
           restore_focus();
         }
         break;
+      }
+    }
+  }
+}
+
+void destroy_notify(u32 window) {
+  for(u32 i = 0; i < WORKSPACE_COUNT; i++) {
+    for(u32 j = 0; j < WINDOWS_PER_WORKSPACE; j++) {
+      if(workspaces[i][j] == window) {
+        workspaces[i][j] = 0;
+        send_workspace(workspaces[i], i);
+        return;
       }
     }
   }
@@ -305,10 +311,13 @@ void focus_window_to_right(void) {
     const u32 index = (curr_window == -1)    ? 0
                       : curr_window % 2 == 0 ? curr_window
                                              : curr_window - 1;
+    puts("BEFORE");
     if(projection[right][index] != WINDOWS_PER_WORKSPACE) {
+      puts("FIRST");
       focus_window(
         workspaces[visible_workspaces[right]][projection[right][index]]);
     } else {
+      puts("SECOND");
       focus_monitor(right);
     }
   } else if(curr_window % 2 == 0) {
@@ -562,9 +571,7 @@ void change_workspace(u32 w) {
   visible_workspaces[focused_monitor] = w;
   send_visible_workspaces(visible_workspaces, monitor_count);
   reconfigure_monitor(focused_monitor);
-  if(focused_windows[w] >= 0 && focused_windows[w] < WINDOWS_PER_WORKSPACE)
-    focus_window(
-      workspaces[w][projection[focused_monitor][focused_windows[w]]]);
+  restore_focus();
 }
 
 void minimize_focused_window(void) {

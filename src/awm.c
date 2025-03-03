@@ -63,7 +63,7 @@ static void monitor_init(void) {
     monitors[i].height = randr_crtcs[i]->height;
     free(randr_crtcs[i]);
   }
-  for(u32 i = length; i < monitor_count; i++) free(randr_crtcs[i]);
+  for(u32 i = monitor_count; i < length; i++) free(randr_crtcs[i]);
   init_bar(monitors, monitor_count);
   xcb_flush(conn);
   bar_height = get_bar_height();
@@ -137,6 +137,9 @@ int main(void) {
       break;
     case XCB_EXPOSE:
       redraw_bar();
+      break;
+    case XCB_DESTROY_NOTIFY:
+      destroy_notify(((xcb_destroy_notify_event_t *)event)->window);
       break;
     }
     free(event);

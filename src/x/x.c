@@ -75,31 +75,6 @@ static void intern_atoms(void) {
 #undef X
 }
 
-/*
-static void x_init_xkb(void) {
-  const xcb_query_extension_reply_t *extreply = NULL;
-  xcb_generic_error_t *err_reply;
-  xcb_xkb_use_extension_cookie_t cookie;
-  xcb_xkb_use_extension_reply_t *reply;
-  extreply = xcb_get_extension_data(conn, &xcb_xkb_id);
-  if(!extreply->present) return;
-  cookie =
-  xcb_xkb_use_extension(conn, XCB_XKB_MAJOR_VERSION, XCB_XKB_MINOR_VERSION);
-  reply = xcb_xkb_use_extension_reply(conn, cookie, &err_reply);
-  free(reply);
-  if(err_reply) return;
-  xcb_xkb_select_events(
-  conn, XCB_XKB_ID_USE_CORE_KBD,
-  XCB_XKB_EVENT_TYPE_STATE_NOTIFY | XCB_XKB_EVENT_TYPE_MAP_NOTIFY |
-  XCB_XKB_EVENT_TYPE_NEW_KEYBOARD_NOTIFY,
-  0,
-  XCB_XKB_EVENT_TYPE_STATE_NOTIFY | XCB_XKB_EVENT_TYPE_MAP_NOTIFY |
-  XCB_XKB_EVENT_TYPE_NEW_KEYBOARD_NOTIFY,
-  0xff, 0xff, NULL);
-  xkb_event = extreply->first_event;
-}
-*/
-
 static void x_init_randr(void) {
   const xcb_query_extension_reply_t *extreply = NULL;
   extreply = xcb_get_extension_data(conn, &xcb_randr_id);

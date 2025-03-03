@@ -24,6 +24,7 @@
   X(9)
 
 static void open_terminal(void) { system_run("urxvt"); }
+static void open_browser(void) { system_run("lb"); }
 static void insert_mode(void) { set_mode(INSERT_MODE); }
 static void die(void) { stop_wm = 1; }
 static void clean_state_and_die(void) {
@@ -45,6 +46,7 @@ TEN_X
 #define SHORTCUTS                                       \
   {                                                     \
     {FLAGS_NONE, KEY_Return, open_terminal},            \
+    {FLAGS_NONE, KEY_b, open_browser},                  \
     {FLAGS_NONE, KEY_m, minimize_focused_window},       \
     {MOD_ALT, KEY_q, die},                              \
     {MOD_ALT | MOD_SHIFT, KEY_q, clean_state_and_die},  \
