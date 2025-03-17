@@ -11,23 +11,7 @@
 #include "x/x.h"
 #include "x/x_p.h"
 
-static void shortcut_init(void) {
-  struct keymap keymap;
-  xcb_get_keyboard_mapping_reply_t *reply = NULL;
-  xcb_get_keyboard_mapping_cookie_t cookie = xcb_get_keyboard_mapping(
-    conn, setup->min_keycode, setup->max_keycode - setup->min_keycode + 1);
-  reply = xcb_get_keyboard_mapping_reply(conn, cookie, NULL);
-  if(reply == NULL) exit(1);
-  keymap.min_keycode = setup->min_keycode;
-  keymap.keysyms_per_keycode = reply->keysyms_per_keycode;
-  keymap.length = xcb_get_keyboard_mapping_keysyms_length(reply);
-  keymap.keysyms = xcb_get_keyboard_mapping_keysyms(reply);
-  init_shortcuts(keymap, (struct shortcut[])SHORTCUTS,
-                 LENGTH((struct shortcut[])SHORTCUTS));
-  free(reply);
-}
-
-static void monitor_init(void) {
+static void request_init(void) {
   u32 length;
   u32 monitor_count;
   u32 bar_height;
@@ -37,6 +21,11 @@ static void monitor_init(void) {
   xcb_randr_get_screen_resources_cookie_t cookie;
   xcb_randr_get_crtc_info_cookie_t randr_cookies[MAX_MONITOR_COUNT];
   xcb_randr_get_crtc_info_reply_t *randr_crtcs[MAX_MONITOR_COUNT];
+  xcb_get_keyboard_mapping_reply_t *key_reply = NULL;
+  xcb_get_keyboard_mapping_cookie_t key_cookie = xcb_get_keyboard_mapping(
+    conn, setup->min_keycode, setup->max_keycode - setup->min_keycode + 1);
+  key_reply = xcb_get_keyboard_mapping_reply(conn, key_cookie, NULL);
+  if(key_reply == NULL) exit(1);
 
   cookie = xcb_randr_get_screen_resources(conn, screen->root);
   reply = xcb_randr_get_screen_resources_reply(conn, cookie, 0);
@@ -72,14 +61,17 @@ static void monitor_init(void) {
     monitors[i].height -= bar_height;
   }
   init_layout(monitors, monitor_count);
+
+  init_shortcuts((struct shortcut[])SHORTCUTS,
+                 LENGTH((struct shortcut[])SHORTCUTS));
+  free(key_reply);
 }
 
 static void init(void) {
   struct sigaction act = {.sa_handler = signal_usr1};
   sigaction(SIGUSR1, &act, NULL);
   x_init();
-  monitor_init();
-  shortcut_init();
+  request_init();
 }
 
 static void deinit(void) {

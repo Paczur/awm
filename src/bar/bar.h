@@ -12,6 +12,7 @@
 
 #define BAR_LAUNCHER_HINT_BLOCKS 10
 #define BAR_LAUNCHER_PROMPT_LENGTH 20
+#define BAR_LAUNCHER_MAX_HINT_LENGTH 50
 
 #define BAR_INACTIVE 0
 #define BAR_ACTIVE 1
@@ -34,6 +35,18 @@
     {"/etc/awm/scripts/ram", 5, BAR_FLAGS_ALWAYS_ACTIVE}, \
   }
 
+#define LAUNCHER_CONTROLS                                             \
+  {                                                                   \
+    {KEY_Escape, hide_launcher},      {KEY_Return, launcher_run},     \
+    {KEY_BackSpace, launcher_erase},  {KEY_Left, launcher_hint_left}, \
+    {KEY_Right, launcher_hint_right},                                 \
+  }
+
+struct launcher_control {
+  u32 keysym;
+  void (*f)(void);
+};
+
 void update_workspace(u32 *windows, u32 workspace);
 void update_visible_workspaces(u32 *workspaces, u32 count);
 void update_focused_monitor(u32 m);
@@ -45,8 +58,12 @@ void launcher_handle_key(u8 flags, u8 keycode);
 void show_launcher(void);
 void hide_launcher(void);
 u32 launcher_showing(void);
+void launcher_run(void);
+void launcher_hint_left(void);
+void launcher_hint_right(void);
+void launcher_erase(void);
 u32 get_bar_height(void);
-void init_bar(const struct geometry *geoms, u32 monitor_count);
+void init_bar(const struct geometry *geoms, u32 m_count);
 void deinit_bar(void);
 
 #endif

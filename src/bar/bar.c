@@ -8,6 +8,7 @@
 #include <unistd.h>
 
 #include "../const.h"
+#include "../syms.h"
 #include "bar_x.h"
 
 #define WINDOW_NAME_MAP_SIZE 1024
@@ -60,8 +61,11 @@ static pthread_t thread;
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 static u32 clocked_blocks_offset;
 
-static char launcher_prompt[BAR_LAUNCHER_PROMPT_LENGTH];
-static u32 launcher_visible;
+// static char launcher_prompt[BAR_LAUNCHER_PROMPT_LENGTH];
+// static char launcher_hints[BAR_LAUNCHER_HINT_BLOCKS]
+//                           [BAR_LAUNCHER_MAX_HINT_LENGTH];
+// static struct launcher_control launcher_controls[] = LAUNCHER_CONTROLS;
+static u32 launcher_visible = 0;
 static u32 launcher_prompt_blocks[MAX_MONITOR_COUNT];
 static u32 launcher_hint_blocks[MAX_MONITOR_COUNT][BAR_LAUNCHER_HINT_BLOCKS];
 

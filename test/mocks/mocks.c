@@ -27,10 +27,38 @@ CTF_MOCK_VOID_ARG(u32, insert_mode_allowed) {
   return 1;
 }
 
+CTF_MOCK(u32, keycode_to_keysyms, (u8 keycode, const u32 **syms),
+         (keycode, syms)) {
+  if(mock_in) {
+    mock_check(keycode);
+  }
+  mock_check(syms);
+  if(mock_out) {
+    mock_check(mock_return_value);
+  }
+  return 0;
+}
+
+CTF_MOCK_VOID_ARG(u8, keymap_min_keycode) {
+  if(mock_out) mock_check(mock_return_value);
+  return 1;
+}
+
+CTF_MOCK_VOID_ARG(u8, keymap_max_keycode) {
+  if(mock_out) mock_check(mock_return_value);
+  return 2;
+}
+
 CTF_MOCK_GROUP(shortcut_x_mocks) = {
-  CTF_MOCK_BIND(send_mode, NULL),     CTF_MOCK_BIND(query_mode, NULL),
-  CTF_MOCK_BIND(grab_keyboard, NULL), CTF_MOCK_BIND(ungrab_keyboard, NULL),
-  CTF_MOCK_BIND(grab_key, NULL),      CTF_MOCK_BIND(insert_mode_allowed, NULL),
+  CTF_MOCK_BIND(send_mode, NULL),
+  CTF_MOCK_BIND(query_mode, NULL),
+  CTF_MOCK_BIND(grab_keyboard, NULL),
+  CTF_MOCK_BIND(ungrab_keyboard, NULL),
+  CTF_MOCK_BIND(grab_key, NULL),
+  CTF_MOCK_BIND(insert_mode_allowed, NULL),
+  CTF_MOCK_BIND(keycode_to_keysyms, NULL),
+  CTF_MOCK_BIND(keymap_min_keycode, NULL),
+  CTF_MOCK_BIND(keymap_max_keycode, NULL),
 };
 
 CTF_MOCK_VOID_RET(map_window, (u32 window), (window)) {

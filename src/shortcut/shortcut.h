@@ -1,10 +1,10 @@
 #ifndef H_AWM_SHORTCUT
 #define H_AWM_SHORTCUT
 
+#include "../syms.h"
 #include "../types.h"
-#include "syms.h"
 
-#define MAX_SHORTCUT_COUNT 100
+#define MAX_SHORTCUT_SIZE 100
 
 #define FLAGS_NONE 0
 #define MOD_SHIFT (1 << 0)
@@ -21,16 +21,9 @@ struct shortcut {
   void (*f)(void);
 };
 
-struct keymap {
-  u8 keysyms_per_keycode;
-  u8 min_keycode;
-  u32 length;
-  u32 *keysyms;
-};
-
 void clean_shortcut_state(void);
 
-void init_shortcuts(struct keymap keymap, struct shortcut *shortcuts, u8 size);
+void init_shortcuts(struct shortcut *shortcuts, u8 size);
 
 void (*find_shortcut(u8 flags, u8 keycode))(void);
 

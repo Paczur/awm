@@ -4,11 +4,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <xcb/randr.h>
+#include <xcb/xkb.h>
+#include <xkbcommon/xkbcommon-x11.h>
 
 #include "../types.h"
 #include "x_p.h"
-
-static uint8_t randr_event = -1;
 
 #define X(x) xcb_atom_t x;
 ATOMS
@@ -18,6 +18,12 @@ xcb_visualtype_t *visual_type;
 xcb_connection_t *conn;
 const xcb_setup_t *setup;
 xcb_screen_t *screen;
+i32 core_device;
+struct xkb_context *ctx;
+struct xkb_keymap *keymap;
+struct xkb_state *state;
+u8 xkb_event;
+u8 randr_event;
 
 static void x_init_root(void) {
   setup = xcb_get_setup(conn);
@@ -88,6 +94,38 @@ static void x_init_randr(void) {
                          XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE);
 }
 
+static void x_init_xkb(void) {
+  xcb_xkb_per_client_flags_reply_t *reply;
+  xcb_xkb_per_client_flags_cookie_t cookie;
+  const uint32_t mask = XCB_XKB_PER_CLIENT_FLAG_GRABS_USE_XKB_STATE |
+                        XCB_XKB_PER_CLIENT_FLAG_DETECTABLE_AUTO_REPEAT;
+  const xcb_query_extension_reply_t *extreply = NULL;
+  extreply = xcb_get_extension_data(conn, &xcb_xkb_id);
+  while(extreply == NULL) extreply = xcb_get_extension_data(conn, &xcb_xkb_id);
+  if(extreply->present) {
+    xcb_xkb_use_extension(conn, XCB_XKB_MAJOR_VERSION, XCB_XKB_MINOR_VERSION);
+    xcb_xkb_select_events(
+      conn, XCB_XKB_ID_USE_CORE_KBD,
+      XCB_XKB_EVENT_TYPE_STATE_NOTIFY | XCB_XKB_EVENT_TYPE_MAP_NOTIFY |
+        XCB_XKB_EVENT_TYPE_NEW_KEYBOARD_NOTIFY,
+      0,
+      XCB_XKB_EVENT_TYPE_STATE_NOTIFY | XCB_XKB_EVENT_TYPE_MAP_NOTIFY |
+        XCB_XKB_EVENT_TYPE_NEW_KEYBOARD_NOTIFY,
+      0xff, 0xff, NULL);
+    xkb_event = extreply->first_event;
+  }
+
+  ctx = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+  core_device = xkb_x11_get_core_keyboard_device_id(conn);
+  cookie = xcb_xkb_per_client_flags(conn, XCB_XKB_ID_USE_CORE_KBD, mask, mask,
+                                    0, 0, 0);
+  reply = xcb_xkb_per_client_flags_reply(conn, cookie, NULL);
+  free(reply);
+  keymap = xkb_x11_keymap_new_from_device(ctx, conn, core_device,
+                                          XKB_KEYMAP_COMPILE_NO_FLAGS);
+  state = xkb_x11_state_new_from_device(keymap, conn, core_device);
+}
+
 u32 query_cardinal(xcb_atom_t atom, u32 def) {
   u32 val = def;
   const xcb_get_property_cookie_t cookie =
@@ -143,11 +181,25 @@ void x_init(void) {
   x_init_wm();
   x_init_visual();
   x_init_randr();
+  x_init_xkb();
   intern_atoms();
 }
 
-void x_deinit(void) { xcb_disconnect(conn); }
+void x_deinit(void) {
+  xkb_state_unref(state);
+  xkb_keymap_unref(keymap);
+  xkb_context_unref(ctx);
+  xcb_disconnect(conn);
+}
 
 void map_window(xcb_window_t id) { xcb_map_window(conn, id); }
 
 void unmap_window(xcb_window_t id) { xcb_unmap_window(conn, id); }
+
+u32 keycode_to_keysyms(u8 keycode, const u32 **syms) {
+  return xkb_state_key_get_syms(state, keycode, syms);
+}
+
+u8 keymap_min_keycode(void) { return xkb_keymap_min_keycode(keymap); }
+
+u8 keymap_max_keycode(void) { return xkb_keymap_max_keycode(keymap); }

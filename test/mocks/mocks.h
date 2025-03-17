@@ -10,6 +10,9 @@ CTF_MOCK_VOID_RET_EXTERN(grab_key, (u8 key, u8 mod));
 CTF_MOCK_VOID_RET_EXTERN(send_mode, (u8 mode));
 CTF_MOCK_VOID_ARG_EXTERN(u8, query_mode);
 CTF_MOCK_VOID_ARG_EXTERN(u32, insert_mode_allowed);
+CTF_MOCK_EXTERN(u32, keycode_to_keysyms, (u8 keycode, const u32 **syms));
+CTF_MOCK_VOID_ARG_EXTERN(u8, keymap_min_keycode);
+CTF_MOCK_VOID_ARG_EXTERN(u8, keymap_max_keycode);
 CTF_MOCK_GROUP_EXTERN(shortcut_x_mocks);
 
 CTF_MOCK_VOID_RET_EXTERN(map_window, (u32 window));

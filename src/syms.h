@@ -1,7 +1,7 @@
 #ifndef H_AWM_SHORTCUT_SYMS
 #define H_AWM_SHORTCUT_SYMS
 
-#include "../types.h"
+#include "types.h"
 
 #define KEY_VoidSymbol 0xffffff
 #define KEY_BackSpace 0xff08
