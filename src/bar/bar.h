@@ -21,18 +21,20 @@
 #define BAR_FLAGS_NONE 0
 #define BAR_FLAGS_ALWAYS_ACTIVE (1 << 0)
 
-#define BAR_WINDOW_NAME_LENGTH 5
+#define BAR_WINDOW_NAME_LENGTH 10
 #define BAR_FONT "-misc-custom-medium-r-normal--14-200-72-72-c-100-iso10646-1"
 #define BAR_PADDING 5
 #define BAR_OUTER_MARGIN 5
 #define BAR_INNER_MARGIN 3
-#define BAR_CLOCKED_BLOCKS                                \
-  {                                                       \
-    {"date +%H:%M", 60, BAR_FLAGS_ALWAYS_ACTIVE},         \
-    {"date \"+%a %d\"", 60, BAR_FLAGS_ALWAYS_ACTIVE},     \
-    {"/etc/awm/scripts/cpu", 5, BAR_FLAGS_ALWAYS_ACTIVE}, \
-    {"/etc/awm/scripts/gpu", 5, BAR_FLAGS_ALWAYS_ACTIVE}, \
-    {"/etc/awm/scripts/ram", 5, BAR_FLAGS_ALWAYS_ACTIVE}, \
+#define BAR_INNER_INSIDE_MARGIN 1
+#define BAR_CLOCKED_BLOCKS                                 \
+  {                                                        \
+    {"date +%H:%M", 60, BAR_FLAGS_ALWAYS_ACTIVE},          \
+    {"date \"+%a %d\"", 60, BAR_FLAGS_ALWAYS_ACTIVE},      \
+    {"/etc/awm/scripts/battery", 60, BAR_FLAGS_NONE},      \
+    {"/etc/awm/scripts/cpu", 30, BAR_FLAGS_ALWAYS_ACTIVE}, \
+    {"/etc/awm/scripts/gpu", 30, BAR_FLAGS_ALWAYS_ACTIVE}, \
+    {"/etc/awm/scripts/ram", 30, BAR_FLAGS_ALWAYS_ACTIVE}, \
   }
 
 #define LAUNCHER_CONTROLS                                             \

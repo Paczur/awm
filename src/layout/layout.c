@@ -159,10 +159,20 @@ static void focus_monitor(u32 monitor) {
 void restore_focus(void) {
   const u32 current_workspace = focused_workspace();
   const i32 current_window = focused_windows[current_workspace];
-  if(current_window != -1 &&
+  if(current_window >= 0 &&
      projection[focused_monitor][current_window] != WINDOWS_PER_WORKSPACE) {
     focus_window(workspaces[current_workspace]
                            [projection[focused_monitor][current_window]]);
+    return;
+  }
+  if(current_window < 0 && projection[focused_monitor][-current_window - 1] !=
+                             WINDOWS_PER_WORKSPACE) {
+    focus_window(workspaces[current_workspace]
+                           [projection[focused_monitor][-current_window - 1]]);
+    return;
+  }
+  if(projection[focused_monitor][0] != WINDOWS_PER_WORKSPACE) {
+    focus_window(workspaces[current_workspace][projection[focused_monitor][0]]);
     return;
   }
   focus_monitor(focused_monitor);
@@ -275,18 +285,19 @@ void focus_in_notify(u32 window) {
 }
 
 void focus_out_notify(u32 window) {
+  const u32 work = focused_workspace();
   change_window_border_color(window, BORDER_UNFOCUSED);
-  focused_windows[focused_workspace()] = -1;
+  focused_windows[work] = -focused_windows[work] - 1;
 }
 
 void focus_window_to_left(void) {
   const i32 curr_window = focused_windows[focused_workspace()];
-  if(curr_window == -1 || curr_window % 2 == 0 ||
+  if(curr_window < 0 || curr_window % 2 == 0 ||
      projection[focused_monitor][curr_window] ==
        projection[focused_monitor][curr_window - 1]) {
     if(!monitors[focused_monitor].has_to_left) return;
     const u32 left = monitors[focused_monitor].to_left;
-    const u32 index = (curr_window == -1)    ? 1
+    const u32 index = (curr_window < 0)      ? 1
                       : curr_window % 2 == 1 ? curr_window
                                              : curr_window + 1;
     if(projection[left][index] != WINDOWS_PER_WORKSPACE) {
@@ -303,12 +314,12 @@ void focus_window_to_left(void) {
 
 void focus_window_to_right(void) {
   const i32 curr_window = focused_windows[focused_workspace()];
-  if(curr_window == -1 || curr_window % 2 ||
+  if(curr_window < 0 || curr_window % 2 ||
      projection[focused_monitor][curr_window] ==
        projection[focused_monitor][curr_window + 1]) {
     if(!monitors[focused_monitor].has_to_right) return;
     const u32 right = monitors[focused_monitor].to_right;
-    const u32 index = (curr_window == -1)    ? 0
+    const u32 index = (curr_window < 0)      ? 0
                       : curr_window % 2 == 0 ? curr_window
                                              : curr_window - 1;
     if(projection[right][index] != WINDOWS_PER_WORKSPACE) {
@@ -325,12 +336,12 @@ void focus_window_to_right(void) {
 
 void focus_window_above(void) {
   const i32 curr_window = focused_windows[focused_workspace()];
-  if(curr_window == -1 || curr_window / 2 == 0 ||
+  if(curr_window < 0 || curr_window / 2 == 0 ||
      projection[focused_monitor][curr_window] ==
        projection[focused_monitor][curr_window - 2]) {
     if(!monitors[focused_monitor].has_above) return;
     const u32 above = monitors[focused_monitor].above;
-    const u32 index = (curr_window == -1)    ? 2
+    const u32 index = (curr_window < 0)      ? 2
                       : curr_window / 2 == 0 ? curr_window
                                              : curr_window - 2;
     if(projection[above][index] != WINDOWS_PER_WORKSPACE) {
@@ -347,12 +358,12 @@ void focus_window_above(void) {
 
 void focus_window_below(void) {
   const i32 curr_window = focused_windows[focused_workspace()];
-  if(curr_window == -1 || curr_window / 2 ||
+  if(curr_window < 0 || curr_window / 2 ||
      projection[focused_monitor][curr_window] ==
        projection[focused_monitor][curr_window + 2]) {
     if(!monitors[focused_monitor].has_below) return;
     const u32 below = monitors[focused_monitor].below;
-    const u32 index = (curr_window == -1)    ? 0
+    const u32 index = (curr_window < 0)      ? 0
                       : curr_window / 2 == 1 ? curr_window
                                              : curr_window + 2;
     if(projection[below][index] != WINDOWS_PER_WORKSPACE) {
@@ -369,20 +380,20 @@ void focus_window_below(void) {
 
 void delete_focused_window(void) {
   const i32 curr_window = focused_windows[focused_workspace()];
-  if(curr_window == -1) return;
+  if(curr_window < 0) return;
   delete_window(workspaces[focused_workspace()][curr_window]);
 }
 
 void swap_focused_window_with_left(void) {
   const u32 curr_workspace = focused_workspace();
   const i32 curr_window = focused_windows[curr_workspace];
-  if(curr_window == -1 || curr_window % 2 == 0 ||
+  if(curr_window < 0 || curr_window % 2 == 0 ||
      projection[focused_monitor][curr_window] ==
        projection[focused_monitor][curr_window - 1]) {
     if(!monitors[focused_monitor].has_to_left) return;
     const u32 left = monitors[focused_monitor].to_left;
     const u32 index =
-      projection[left][(curr_window == -1)    ? 0
+      projection[left][(curr_window < 0)      ? 0
                        : curr_window % 2 == 1 ? curr_window
                                               : curr_window + 1];
     const u32 curr_index = projection[focused_monitor][curr_window];
@@ -419,13 +430,13 @@ void swap_focused_window_with_left(void) {
 void swap_focused_window_with_right(void) {
   const u32 curr_workspace = focused_workspace();
   const i32 curr_window = focused_windows[curr_workspace];
-  if(curr_window == -1 || curr_window % 2 == 1 ||
+  if(curr_window < 0 || curr_window % 2 == 1 ||
      projection[focused_monitor][curr_window] ==
        projection[focused_monitor][curr_window + 1]) {
     if(!monitors[focused_monitor].has_to_right) return;
     const u32 right = monitors[focused_monitor].to_right;
     const u32 index =
-      projection[right][(curr_window == -1)    ? 0
+      projection[right][(curr_window < 0)      ? 0
                         : curr_window % 2 == 0 ? curr_window
                                                : curr_window - 1];
     const u32 curr_index = projection[focused_monitor][curr_window];
@@ -462,13 +473,13 @@ void swap_focused_window_with_right(void) {
 void swap_focused_window_with_above(void) {
   const u32 curr_workspace = focused_workspace();
   const i32 curr_window = focused_windows[curr_workspace];
-  if(curr_window == -1 || curr_window / 2 == 0 ||
+  if(curr_window < 0 || curr_window / 2 == 0 ||
      projection[focused_monitor][curr_window] ==
        projection[focused_monitor][curr_window - 2]) {
     if(!monitors[focused_monitor].has_above) return;
     const u32 above = monitors[focused_monitor].above;
     const u32 index =
-      projection[above][(curr_window == -1)    ? 0
+      projection[above][(curr_window < 0)      ? 0
                         : curr_window / 2 == 1 ? curr_window
                                                : curr_window + 2];
     const u32 curr_index = projection[focused_monitor][curr_window];
@@ -505,13 +516,13 @@ void swap_focused_window_with_above(void) {
 void swap_focused_window_with_below(void) {
   const u32 curr_workspace = focused_workspace();
   const i32 curr_window = focused_windows[curr_workspace];
-  if(curr_window == -1 || curr_window / 2 == 1 ||
+  if(curr_window < 0 || curr_window / 2 == 1 ||
      projection[focused_monitor][curr_window] ==
        projection[focused_monitor][curr_window + 2]) {
     if(!monitors[focused_monitor].has_below) return;
     const u32 below = monitors[focused_monitor].below;
     const u32 index =
-      projection[below][(curr_window == -1)    ? 0
+      projection[below][(curr_window < 0)      ? 0
                         : curr_window / 2 == 0 ? curr_window
                                                : curr_window - 2];
     const u32 curr_index = projection[focused_monitor][curr_window];
@@ -574,10 +585,10 @@ void change_workspace(u32 w) {
 void minimize_focused_window(void) {
   const u32 focused_work = focused_workspace();
   const i32 focused_win =
-    focused_windows[focused_work] == -1
-      ? -1
+    focused_windows[focused_work] < 0
+      ? focused_windows[focused_work]
       : projection[focused_monitor][focused_windows[focused_work]];
-  if(minimized_window_count == MINIMIZE_QUEUE_SIZE || focused_win == -1) return;
+  if(minimized_window_count == MINIMIZE_QUEUE_SIZE || focused_win < 0) return;
   minimized_window_count++;
   for(u32 i = 0; i < minimized_window_count - 1; i++)
     minimized_windows[i + 1] = minimized_windows[i];

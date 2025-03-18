@@ -7,7 +7,7 @@ if [ "$fp" = "Failed" ]; then
   gpu="Reboot"
 else
   gpu="$(echo "$query" | sed '1d' | rev | cut -c3- | rev)"
-  if [ "$gpu" -gt 90 ]; then
+  if [ -n "$gpu" ] && [ "$gpu" -gt 90 ]; then
     echo "GPU $gpu%"
   else
     echo ""

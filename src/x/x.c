@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <xcb/randr.h>
-#include <xcb/xkb.h>
 #include <xkbcommon/xkbcommon-x11.h>
 
 #include "../types.h"
@@ -127,6 +126,7 @@ static void x_init_xkb(void) {
 }
 
 u32 query_cardinal(xcb_atom_t atom, u32 def) {
+  puts("query cardinal");
   u32 val = def;
   const xcb_get_property_cookie_t cookie =
     xcb_get_property(conn, 0, screen->root, atom, XCB_ATOM_CARDINAL, 0, 1);
@@ -138,11 +138,13 @@ u32 query_cardinal(xcb_atom_t atom, u32 def) {
 }
 
 void send_cardinal(xcb_atom_t atom, u32 val) {
+  puts("send cardinal");
   xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, atom,
                       XCB_ATOM_CARDINAL, 32, 1, &val);
 }
 
 void query_cardinal_array(xcb_atom_t atom, u32 *arr, u32 length) {
+  puts("query array");
   const xcb_get_property_cookie_t cookie =
     xcb_get_property(conn, 0, screen->root, atom, XCB_ATOM_CARDINAL, 0, length);
   xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, cookie, NULL);
@@ -154,12 +156,14 @@ void query_cardinal_array(xcb_atom_t atom, u32 *arr, u32 length) {
 }
 
 void send_cardinal_array(xcb_atom_t atom, u32 *arr, u32 length) {
+  puts("send array");
   xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, atom,
                       XCB_ATOM_CARDINAL, 32, length, arr);
 }
 
 void query_window_string(xcb_window_t window, xcb_atom_t atom, char *str,
                          u32 *str_len, u32 str_size) {
+  puts("query string");
   xcb_get_property_cookie_t cookie = xcb_get_property_unchecked(
     conn, 0, window, atom, XCB_ATOM_STRING, 0, str_size);
   xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, cookie, NULL);
@@ -192,9 +196,15 @@ void x_deinit(void) {
   xcb_disconnect(conn);
 }
 
-void map_window(xcb_window_t id) { xcb_map_window(conn, id); }
+void map_window(xcb_window_t id) {
+  puts("map");
+  xcb_map_window(conn, id);
+}
 
-void unmap_window(xcb_window_t id) { xcb_unmap_window(conn, id); }
+void unmap_window(xcb_window_t id) {
+  puts("unmap");
+  xcb_unmap_window(conn, id);
+}
 
 u32 keycode_to_keysyms(u8 keycode, const u32 **syms) {
   return xkb_state_key_get_syms(state, keycode, syms);
@@ -203,3 +213,22 @@ u32 keycode_to_keysyms(u8 keycode, const u32 **syms) {
 u8 keymap_min_keycode(void) { return xkb_keymap_min_keycode(keymap); }
 
 u8 keymap_max_keycode(void) { return xkb_keymap_max_keycode(keymap); }
+
+void xkb_state_notify(xcb_xkb_state_notify_event_t *event) {
+  if(event->xkbType == XCB_XKB_STATE_NOTIFY) {
+    xkb_state_update_mask(state, event->baseMods, event->latchedMods,
+                          event->lockedMods, event->baseGroup,
+                          event->latchedGroup, event->lockedGroup);
+  } else if(event->xkbType == XCB_XKB_NEW_KEYBOARD_NOTIFY ||
+            event->xkbType == XCB_XKB_MAP_NOTIFY) {
+    xkb_state_unref(state);
+    xkb_keymap_unref(keymap);
+    keymap = xkb_x11_keymap_new_from_device(ctx, conn, core_device,
+                                            XKB_KEYMAP_COMPILE_NO_FLAGS);
+    state = xkb_x11_state_new_from_device(keymap, conn, core_device);
+  }
+}
+
+u32 keycode_to_utf8(u8 keycode, u8 *buff, u32 size) {
+  return xkb_state_key_get_utf8(state, keycode, (char *)buff, size);
+}

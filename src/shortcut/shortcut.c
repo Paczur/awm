@@ -5,7 +5,6 @@
 
 #include "../const.h"
 #include "shortcut_x.h"
-
 static struct {
   u8 mode;
   u8 mode_return;
@@ -48,10 +47,8 @@ void (*find_shortcut(u8 flags, u8 keycode))(void) {
   const u32 num = keycode_to_keysyms(keycode, &syms);
   flags &= ~MOD_MODE;
   if(state.mode == INSERT_MODE) {
-    for(u32 i = 0; i < num; i++) {
-      if(syms[i] == KEY_MODE)
-        return flags == FLAGS_NONE ? set_mode_to_normal : NULL;
-    }
+    if(state.mode_keycode == keycode)
+      return flags == FLAGS_NONE ? set_mode_to_normal : NULL;
   } else {
     for(u32 i = 0; i < num; i++) {
       for(u32 j = 0; j < state.shortcut_length; j++) {
@@ -67,20 +64,20 @@ void (*find_shortcut(u8 flags, u8 keycode))(void) {
 
 void handle_shortcut(u8 flags, u8 keycode) {
   void (*const f)(void) = find_shortcut(flags, keycode);
-  if(f == NULL) return;
-  if(f == set_mode_to_normal) {
+  if(keycode == state.mode_keycode) {
     state.mode_return = 0;
   } else {
-    state.mode_return = keycode;
+    state.mode_return = state.mode_keycode;
   }
+  if(f == NULL) return;
   f();
 }
 
 void release_handler(u8 keycode) {
-  if(state.mode == NORMAL_MODE && state.mode_return == keycode) {
-    set_mode(INSERT_MODE);
+  if(state.mode_return == keycode) {
+    if(state.mode == NORMAL_MODE) set_mode(INSERT_MODE);
+    state.mode_return = 0;
   }
-  state.mode_return = 0;
 }
 
 void set_mode(u8 mode) {

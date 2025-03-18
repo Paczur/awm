@@ -14,6 +14,7 @@ u32 create_window(void) {
 }
 
 u32 create_window_geom(struct geometry geom) {
+  puts("create window");
   const u32 window_mask =
     XCB_CW_BACK_PIXEL | XCB_CW_OVERRIDE_REDIRECT | XCB_CW_EVENT_MASK;
   const u32 window_values[3] = {BAR_INACTIVE_BACKGROUND, 1,
@@ -26,6 +27,7 @@ u32 create_window_geom(struct geometry geom) {
 }
 
 struct gc create_gc(u32 font_id, u32 window) {
+  puts("create gc");
   struct gc gc = {xcb_generate_id(conn), xcb_generate_id(conn),
                   xcb_generate_id(conn)};
   const u32 gc_mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND | XCB_GC_FONT;
@@ -41,26 +43,33 @@ struct gc create_gc(u32 font_id, u32 window) {
 }
 
 u32 open_font(void) {
+  puts("open font");
   u32 id = xcb_generate_id(conn);
   xcb_open_font(conn, id, sizeof(BAR_FONT) - 1, BAR_FONT);
   return id;
 }
 
-void close_font(u32 id) { xcb_close_font(conn, id); }
+void close_font(u32 id) {
+  puts("close font");
+  xcb_close_font(conn, id);
+}
 
 void reposition_window(u32 id, u32 x) {
+  puts("reposition window");
   const u32 mask = XCB_CONFIG_WINDOW_X;
   const u32 value = x;
   xcb_configure_window(conn, id, mask, &value);
 }
 
 void reconfigure_window(u32 id, u32 x, u32 width) {
+  puts("reconfigure window");
   const u32 mask = XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_WIDTH;
   const u32 value[2] = {x, width};
   xcb_configure_window(conn, id, mask, &value);
 }
 
 struct font_metrics query_font_metrics(u32 id) {
+  puts("query font metrics");
   xcb_generic_error_t *err;
   struct font_metrics metrics = {0, 0, 0};
   xcb_query_font_cookie_t cookie = xcb_query_font(conn, id);
@@ -76,17 +85,20 @@ struct font_metrics query_font_metrics(u32 id) {
 
 void draw_text(u32 window, u32 gc, struct font_metrics metrics, const char *str,
                u32 str_len) {
+  puts("draw text");
   xcb_image_text_8(conn, str_len, window, gc, BAR_PADDING,
                    BAR_PADDING + metrics.ascent, str);
 }
 
 void draw_text_utf16(u32 window, u32 gc, struct font_metrics metrics,
                      const u16 *str, u32 str_len) {
+  puts("draw text utf16");
   xcb_image_text_16(conn, str_len, window, gc, BAR_PADDING,
                     BAR_PADDING + metrics.ascent, (const xcb_char2b_t *)str);
 }
 
 void change_window_color(u32 window, u32 preset) {
+  puts("change window color");
   const u32 background = (preset == BAR_INACTIVE) ? BAR_INACTIVE_BACKGROUND
                          : (preset == BAR_ACTIVE) ? BAR_ACTIVE_BACKGROUND
                          : (preset == BAR_URGENT) ? BAR_URGENT_BACKGROUND
@@ -97,10 +109,14 @@ void change_window_color(u32 window, u32 preset) {
   xcb_change_window_attributes(conn, window, window_mask, &window_values);
 }
 
-void send_changes(void) { xcb_flush(conn); }
+void send_changes(void) {
+  xcb_flush(conn);
+  fflush(stdout);
+}
 
 void query_window_name(u32 window, char *name, u32 *name_length,
                        u32 name_size) {
+  puts("query window name");
   query_window_string(window, WM_ICON_NAME, name, name_length, name_size);
   if(*name_length == 0)
     query_window_string(window, WM_NAME, name, name_length, name_size);
@@ -112,9 +128,15 @@ void query_window_name(u32 window, char *name, u32 *name_length,
 }
 
 void focus_launcher(u32 launcher) {
+  puts("focus launcher");
+  set_mode(INSERT_MODE);
   xcb_set_input_focus(conn, XCB_INPUT_FOCUS_NONE, launcher, XCB_CURRENT_TIME);
   xcb_grab_keyboard(conn, 1, launcher, XCB_CURRENT_TIME, XCB_GRAB_MODE_ASYNC,
                     XCB_GRAB_MODE_ASYNC);
 }
 
-void unfocus_launcher(void) { restore_focus(); }
+void unfocus_launcher(void) {
+  puts("unfocus launcher");
+  restore_focus();
+  set_mode(NORMAL_MODE);
+}

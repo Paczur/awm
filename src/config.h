@@ -37,6 +37,7 @@ static void signal_usr1(int unused) {
   (void)unused;
   clean_state_and_die();
 }
+static void system_shutdown(void) { system_run("sudo shutdown"); }
 #define X CHANGE_WORKSPACE
 TEN_X
 #undef X
@@ -58,6 +59,7 @@ TEN_X
     {FLAGS_NONE, KEY_k, focus_window_above},            \
     {FLAGS_NONE, KEY_j, focus_window_below},            \
     {FLAGS_NONE, KEY_q, delete_focused_window},         \
+    {MOD_ALT, KEY_s, system_shutdown},                  \
     {MOD_SHIFT, KEY_h, swap_focused_window_with_left},  \
     {MOD_SHIFT, KEY_l, swap_focused_window_with_right}, \
     {MOD_SHIFT, KEY_k, swap_focused_window_with_above}, \

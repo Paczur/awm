@@ -9,19 +9,35 @@ if [ -e "/sys/class/power_supply/BAT1/charge_now" ] &&
 
    if [ -e "/sys/class/power_supply/BAT1/status" ] &&
       [ "$(cat /sys/class/power_supply/BAT1/status)" != "Discharging" ]; then
-     status=""
-   elif [ $percent -le 13 ]; then
-     status=""
+     status=""
+   elif [ $percent -le 8 ]; then
+     status=""
      ex=2
-   elif [ $percent -le 38 ]; then
-     status=""
+   elif [ $percent -le 16 ]; then
+     status=""
+     ex=2
+   elif [ $percent -le 24 ]; then
+     status=""
      ex=1
-   elif [ $percent -le 63 ]; then
-     status=""
+   elif [ $percent -le 32 ]; then
+     status=""
+     ex=1
+   elif [ $percent -le 40 ]; then
+     status=""
+   elif [ $percent -le 48 ]; then
+     status=""
+   elif [ $percent -le 56 ]; then
+     status=""
+   elif [ $percent -le 64 ]; then
+     status=""
+   elif [ $percent -le 72 ]; then
+     status=""
+   elif [ $percent -le 80 ]; then
+     status=""
    elif [ $percent -le 88 ]; then
-     status=""
+     status=""
    else
-     status=""
+     status=""
    fi
 
    echo "$status $percent%"

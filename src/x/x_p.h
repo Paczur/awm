@@ -4,6 +4,7 @@
 #include <xcb/randr.h>
 #include <xcb/xcb.h>
 #include <xcb/xcb_icccm.h>
+#include <xcb/xkb.h>
 
 #define ATOMS                   \
   X(AWM_MODE)                   \
@@ -39,6 +40,8 @@ extern xcb_visualtype_t *visual_type;
 extern xcb_connection_t *conn;
 extern const xcb_setup_t *setup;
 extern xcb_screen_t *screen;
+extern u8 xkb_event;
+extern u8 randr_event;
 
 u32 query_cardinal(xcb_atom_t atom, u32 def);
 void send_cardinal(xcb_atom_t atom, u32 val);
@@ -49,5 +52,8 @@ void query_window_string(xcb_window_t window, xcb_atom_t atom, char *string,
 
 void map_window(xcb_window_t window);
 void unmap_window(xcb_window_t window);
+
+void xkb_state_notify(xcb_xkb_state_notify_event_t *event);
+u32 keycode_to_utf8(u8 keycode, u8 *buff, u32 size);
 
 #endif

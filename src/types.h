@@ -22,4 +22,9 @@ struct geometry {
 #define LENGTH(x) (sizeof(x) / sizeof((x)[0]))
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
 
+#define FLAGS_NONE 0
+#define MOD_SHIFT (1 << 0)
+#define MOD_CTRL (1 << 2)
+#define MOD_ALT (1 << 3)
+
 #endif

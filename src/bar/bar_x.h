@@ -39,5 +39,7 @@ void send_changes(void);
 void query_window_name(u32 window, char *name, u32 *name_length, u32 name_size);
 void focus_launcher(u32 launcher);
 void unfocus_launcher(void);
+u32 keycode_to_keysyms(u8 keycode, const u32 **syms);
+u32 keycode_to_utf8(u8 keycode, u8 *buff, u32 size);
 
 #endif

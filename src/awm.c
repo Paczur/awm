@@ -100,6 +100,7 @@ static void button_press(const xcb_button_press_event_t *event) {
 }
 
 int main(void) {
+  u8 code;
   xcb_generic_event_t *event;
   init();
   xcb_flush(conn);
@@ -107,7 +108,8 @@ int main(void) {
   while(!stop_wm) {
     event = xcb_wait_for_event(conn);
     if(!event) return 1;
-    switch(event->response_type & 0x7F) {
+    code = event->response_type & 0x7F;
+    switch(code) {
     case XCB_KEY_PRESS:
       key_press((xcb_key_press_event_t *)event);
       break;
@@ -136,6 +138,13 @@ int main(void) {
       break;
     case XCB_DESTROY_NOTIFY:
       destroy_notify(((xcb_destroy_notify_event_t *)event)->window);
+      break;
+    default:
+      if(code == xkb_event) {
+        xkb_state_notify((xcb_xkb_state_notify_event_t *)event);
+      } else if(code == randr_event) {
+        stop_wm = 1;
+      }
       break;
     }
     free(event);
