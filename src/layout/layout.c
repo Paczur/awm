@@ -384,6 +384,18 @@ void delete_focused_window(void) {
   delete_window(workspaces[focused_workspace()][curr_window]);
 }
 
+void swap_windows_by_index(u32 n) {
+  const u32 curr_workspace = focused_workspace();
+  const i32 curr_window = focused_windows[curr_workspace];
+  if(curr_window < 0 || n > 3 || n == (u32)curr_window) return;
+  const u32 temp = workspaces[curr_workspace][n];
+  workspaces[curr_workspace][n] = workspaces[curr_workspace][curr_window];
+  workspaces[curr_workspace][curr_window] = temp;
+  send_workspace(workspaces[curr_workspace], curr_workspace);
+  reconfigure_monitor(focused_monitor);
+  focused_windows[curr_workspace] = n;
+}
+
 void swap_focused_window_with_left(void) {
   const u32 curr_workspace = focused_workspace();
   const i32 curr_window = focused_windows[curr_workspace];

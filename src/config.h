@@ -44,46 +44,54 @@ TEN_X
 #define X UNMINIMIZE
 TEN_X
 #undef X
+static void swap_windows_by_index_0(void) { swap_windows_by_index(0); }
+static void swap_windows_by_index_1(void) { swap_windows_by_index(1); }
+static void swap_windows_by_index_2(void) { swap_windows_by_index(2); }
+static void swap_windows_by_index_3(void) { swap_windows_by_index(3); }
 
-#define SHORTCUTS                                       \
-  {                                                     \
-    {FLAGS_NONE, KEY_Return, open_terminal},            \
-    {FLAGS_NONE, KEY_b, open_browser},                  \
-    {FLAGS_NONE, KEY_m, minimize_focused_window},       \
-    {FLAGS_NONE, KEY_r, show_launcher},                 \
-    {MOD_ALT, KEY_q, die},                              \
-    {MOD_ALT | MOD_SHIFT, KEY_q, clean_state_and_die},  \
-    {FLAGS_NONE, KEY_i, insert_mode},                   \
-    {FLAGS_NONE, KEY_h, focus_window_to_left},          \
-    {FLAGS_NONE, KEY_l, focus_window_to_right},         \
-    {FLAGS_NONE, KEY_k, focus_window_above},            \
-    {FLAGS_NONE, KEY_j, focus_window_below},            \
-    {FLAGS_NONE, KEY_q, delete_focused_window},         \
-    {MOD_ALT, KEY_s, system_shutdown},                  \
-    {MOD_SHIFT, KEY_h, swap_focused_window_with_left},  \
-    {MOD_SHIFT, KEY_l, swap_focused_window_with_right}, \
-    {MOD_SHIFT, KEY_k, swap_focused_window_with_above}, \
-    {MOD_SHIFT, KEY_j, swap_focused_window_with_below}, \
-    {FLAGS_NONE, KEY_1, change_workspace_0},            \
-    {FLAGS_NONE, KEY_2, change_workspace_1},            \
-    {FLAGS_NONE, KEY_3, change_workspace_2},            \
-    {FLAGS_NONE, KEY_4, change_workspace_3},            \
-    {FLAGS_NONE, KEY_5, change_workspace_4},            \
-    {FLAGS_NONE, KEY_6, change_workspace_5},            \
-    {FLAGS_NONE, KEY_7, change_workspace_6},            \
-    {FLAGS_NONE, KEY_8, change_workspace_7},            \
-    {FLAGS_NONE, KEY_9, change_workspace_8},            \
-    {FLAGS_NONE, KEY_0, change_workspace_9},            \
-    {MOD_ALT, KEY_1, unminimize_window_0},              \
-    {MOD_ALT, KEY_2, unminimize_window_1},              \
-    {MOD_ALT, KEY_3, unminimize_window_2},              \
-    {MOD_ALT, KEY_4, unminimize_window_3},              \
-    {MOD_ALT, KEY_5, unminimize_window_4},              \
-    {MOD_ALT, KEY_6, unminimize_window_5},              \
-    {MOD_ALT, KEY_7, unminimize_window_6},              \
-    {MOD_ALT, KEY_8, unminimize_window_7},              \
-    {MOD_ALT, KEY_9, unminimize_window_8},              \
-    {MOD_ALT, KEY_0, unminimize_window_9},              \
+#define SHORTCUTS                                         \
+  {                                                       \
+    {FLAGS_NONE, KEY_Return, open_terminal},              \
+    {FLAGS_NONE, KEY_b, open_browser},                    \
+    {FLAGS_NONE, KEY_m, minimize_focused_window},         \
+    {FLAGS_NONE, KEY_r, show_launcher},                   \
+    {MOD_ALT, KEY_q, die},                                \
+    {MOD_ALT | MOD_SHIFT, KEY_q, clean_state_and_die},    \
+    {FLAGS_NONE, KEY_i, insert_mode},                     \
+    {FLAGS_NONE, KEY_h, focus_window_to_left},            \
+    {FLAGS_NONE, KEY_l, focus_window_to_right},           \
+    {FLAGS_NONE, KEY_k, focus_window_above},              \
+    {FLAGS_NONE, KEY_j, focus_window_below},              \
+    {FLAGS_NONE, KEY_q, delete_focused_window},           \
+    {MOD_ALT, KEY_s, system_shutdown},                    \
+    {MOD_SHIFT, KEY_h, swap_focused_window_with_left},    \
+    {MOD_SHIFT, KEY_l, swap_focused_window_with_right},   \
+    {MOD_SHIFT, KEY_k, swap_focused_window_with_above},   \
+    {MOD_SHIFT, KEY_j, swap_focused_window_with_below},   \
+    {FLAGS_NONE, KEY_1, change_workspace_0},              \
+    {FLAGS_NONE, KEY_2, change_workspace_1},              \
+    {FLAGS_NONE, KEY_3, change_workspace_2},              \
+    {FLAGS_NONE, KEY_4, change_workspace_3},              \
+    {FLAGS_NONE, KEY_5, change_workspace_4},              \
+    {FLAGS_NONE, KEY_6, change_workspace_5},              \
+    {FLAGS_NONE, KEY_7, change_workspace_6},              \
+    {FLAGS_NONE, KEY_8, change_workspace_7},              \
+    {FLAGS_NONE, KEY_9, change_workspace_8},              \
+    {FLAGS_NONE, KEY_0, change_workspace_9},              \
+    {MOD_ALT, KEY_1, unminimize_window_0},                \
+    {MOD_ALT, KEY_2, unminimize_window_1},                \
+    {MOD_ALT, KEY_3, unminimize_window_2},                \
+    {MOD_ALT, KEY_4, unminimize_window_3},                \
+    {MOD_ALT, KEY_5, unminimize_window_4},                \
+    {MOD_ALT, KEY_6, unminimize_window_5},                \
+    {MOD_ALT, KEY_7, unminimize_window_6},                \
+    {MOD_ALT, KEY_8, unminimize_window_7},                \
+    {MOD_ALT, KEY_9, unminimize_window_8},                \
+    {MOD_ALT, KEY_0, unminimize_window_9},                \
+    {MOD_SHIFT, KEY_exclam, swap_windows_by_index_0},     \
+    {MOD_SHIFT, KEY_at, swap_windows_by_index_1},         \
+    {MOD_SHIFT, KEY_numbersign, swap_windows_by_index_2}, \
+    {MOD_SHIFT, KEY_dollar, swap_windows_by_index_3},     \
   }
 
 #endif

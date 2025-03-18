@@ -22,6 +22,8 @@ void focus_window_to_right(void);
 void focus_window_above(void);
 void focus_window_below(void);
 
+void swap_windows_by_index(u32 n);
+
 void swap_focused_window_with_right(void);
 void swap_focused_window_with_left(void);
 void swap_focused_window_with_above(void);
