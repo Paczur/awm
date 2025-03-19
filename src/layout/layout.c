@@ -601,9 +601,9 @@ void minimize_focused_window(void) {
       ? focused_windows[focused_work]
       : projection[focused_monitor][focused_windows[focused_work]];
   if(minimized_window_count == MINIMIZE_QUEUE_SIZE || focused_win < 0) return;
+  for(u32 i = minimized_window_count; i > 0; i--)
+    minimized_windows[i] = minimized_windows[i - 1];
   minimized_window_count++;
-  for(u32 i = 0; i < minimized_window_count - 1; i++)
-    minimized_windows[i + 1] = minimized_windows[i];
   minimized_windows[0] = workspaces[focused_work][focused_win];
   send_minimized_windows(minimized_windows, minimized_window_count);
   unmap_window(workspaces[focused_work][focused_win]);
@@ -650,14 +650,20 @@ void init_layout(const struct geometry *geoms, u32 m_count) {
   query_minimized_windows(minimized_windows, minimized_window_count);
   send_minimized_windows(minimized_windows, minimized_window_count);
 
+  for(u32 i = 0; i < WORKSPACE_COUNT; i++) {
+    for(u32 j = 0; j < WINDOWS_PER_WORKSPACE; j++) {
+      if(workspaces[i][j] > 0) listen_to_events(workspaces[i][j]);
+    }
+  }
+
   for(u32 j = 0; j < monitor_count; j++) {
     workspace = workspaces[visible_workspaces[j]];
     for(u32 i = 0; i < WINDOWS_PER_WORKSPACE; i++) {
-      listen_to_events(workspace[i]);
       map_window(workspace[i]);
     }
     reconfigure_monitor(j);
   }
+  setup_root();
 }
 
 void clean_layout_state(void) {

@@ -1,17 +1,23 @@
 #include "bar.h"
 
+#include <dirent.h>
 #include <iconv.h>
 #include <pthread.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
 #include "../const.h"
 #include "../syms.h"
+#include "../system/system.h"
 #include "bar_x.h"
 
-#define WINDOW_NAME_MAP_SIZE 1024
+#define WINDOW_NAME_SIZE 1024
+#define MAX_PATH_ENTRIES 10240
+#define MAX_PATH_ENTRY_SIZE 64
 
 struct clocked_block {
   const char *cmd;
@@ -19,18 +25,10 @@ struct clocked_block {
   u32 flags;
 };
 
-struct map_entry {
-  u32 window;
-  u32 name_length;
-  char name[BAR_WINDOW_NAME_LENGTH];
-};
-
 static u32 monitor_count;
 static struct gc gc;
 static struct geometry bars[MAX_MONITOR_COUNT];
 static struct font_metrics font_metrics;
-static struct map_entry window_name_map[WINDOW_NAME_MAP_SIZE];
-static u32 window_name_map_size;
 
 static u32 mode_blocks[MAX_MONITOR_COUNT];
 static u32 mode = 2;
@@ -47,6 +45,8 @@ static u32 minimized_window_blocks[MAX_MONITOR_COUNT][MINIMIZE_QUEUE_SIZE];
 static u32 minimized_windows[MINIMIZE_QUEUE_SIZE];
 static u32 minimized_window_count;
 static u32 minimized_window_blocks_width;
+static char minimized_window_names[MINIMIZE_QUEUE_SIZE][WINDOW_NAME_SIZE];
+static u32 minimized_window_name_len[MINIMIZE_QUEUE_SIZE];
 
 static struct clocked_block clocked_blocks_data[] = BAR_CLOCKED_BLOCKS;
 static u32 clocked_blocks[MAX_MONITOR_COUNT][LENGTH(clocked_blocks_data)];
@@ -64,30 +64,141 @@ static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t launcher_mutex = PTHREAD_MUTEX_INITIALIZER;
 static u32 clocked_blocks_offset;
 
-static u16 launcher_prompt[BAR_LAUNCHER_PROMPT_LENGTH];
-static u32 launcher_prompt_length;
-// static char launcher_hints[BAR_LAUNCHER_HINT_BLOCKS]
-//                           [BAR_LAUNCHER_MAX_HINT_LENGTH];
-static struct launcher_control launcher_controls[] = LAUNCHER_CONTROLS;
 static u32 launcher_visible = 0;
-static u32 launcher_prompt_blocks[MAX_MONITOR_COUNT];
-static u32 launcher_hint_blocks[MAX_MONITOR_COUNT][BAR_LAUNCHER_HINT_BLOCKS];
+static struct launcher_control launcher_controls[] = LAUNCHER_CONTROLS;
+static char launcher_path_entries[MAX_PATH_ENTRIES][MAX_PATH_ENTRY_SIZE];
+static u32 launcher_path_entry_count;
 
-static struct map_entry *get_map_entry(u32 window) {
-  u32 index = window % WINDOW_NAME_MAP_SIZE;
-  if(window_name_map_size > 0) {
-    while(window_name_map[index].window != 0) {
-      if(window_name_map[index].window == window)
-        return window_name_map + index;
-      index = (index + 1) % WINDOW_NAME_MAP_SIZE;
+static char launcher_prompt[BAR_LAUNCHER_PROMPT_LENGTH];
+static u32 launcher_prompt_length;
+static u32 launcher_prompt_offset;
+static u32 launcher_prompt_blocks[MAX_MONITOR_COUNT];
+static char launcher_hints[BAR_LAUNCHER_HINT_BLOCKS][MAX_PATH_ENTRY_SIZE];
+static u32 launcher_hint_selected;
+static u32 launcher_hint_count;
+static u32 launcher_hint_blocks[MAX_MONITOR_COUNT][BAR_LAUNCHER_HINT_BLOCKS];
+static u8 launcher_hint_blocks_mapped[MAX_MONITOR_COUNT]
+                                     [BAR_LAUNCHER_HINT_BLOCKS];
+
+static void populate_path(void) {
+  char string[512];
+  DIR *stream;
+  struct dirent *ent;
+  struct stat buf = {0};
+  size_t len;
+  char *path = getenv("PATH");
+  for(size_t i = 0, j = 0;; i++) {
+    if(path[i] == ':' || path[i] == 0) {
+      string[j] = 0;
+      stream = opendir(string);
+      while((ent = readdir(stream)) != NULL) {
+        len = strlen(ent->d_name);
+        string[j] = '/';
+        memcpy(string + j + 1, ent->d_name, len);
+        string[j + len + 1] = 0;
+        stat(string, &buf);
+        if(!S_ISDIR(buf.st_mode) && buf.st_mode & S_IXUSR) {
+          strlcpy(launcher_path_entries[launcher_path_entry_count++],
+                  ent->d_name, MAX_PATH_ENTRY_SIZE);
+        }
+      }
+      closedir(stream);
+      if(path[i] == 0) break;
+      j = 0;
+    } else {
+      string[j++] = path[i];
     }
   }
-  window_name_map[index].window = window;
-  query_window_name(window, window_name_map[index].name,
-                    &window_name_map[index].name_length,
-                    BAR_WINDOW_NAME_LENGTH);
-  printf("%s\n", window_name_map[index].name);
-  return window_name_map + index;
+}
+
+static u8 prefix_matches(char *prefix, char *arr, u32 size) {
+  for(u32 i = 0; i < size; i++) {
+    if(prefix[i] != arr[i]) return 0;
+  }
+  return 1;
+}
+
+static u8 comp_strings(char *a, char *b) {
+  u32 a_len = strlen(a);
+  u32 b_len = strlen(b);
+  u32 min = MIN(a_len, b_len);
+  u32 val;
+  for(u32 i = 0; i < min; i++) {
+    val = (a[i] < b[i]) - (a[i] > b[i]);
+    if(val) return val;
+  }
+  return (a_len < b_len) - (a_len > b_len);
+}
+
+static void calc_prompt_offset(void) {
+  launcher_prompt_offset =
+    launcher_prompt_length == 0
+      ? (u32)font_metrics.width * 6 + BAR_PADDING * 2
+      : font_metrics.width * launcher_prompt_length + BAR_PADDING * 2;
+}
+
+static void refresh_hints(void) {
+  u32 id;
+  u32 prev_x;
+  u32 w;
+  calc_prompt_offset();
+  for(u32 i = launcher_hint_count; i < BAR_LAUNCHER_HINT_BLOCKS; i++) {
+    for(u32 j = 0; j < monitor_count; j++) {
+      if(!launcher_hint_blocks_mapped[j][i]) continue;
+      unmap_window(launcher_hint_blocks[j][i]);
+      launcher_hint_blocks_mapped[j][i] = 0;
+    }
+  }
+  for(u32 i = 0; i < monitor_count; i++) {
+    prev_x =
+      bars[i].x + launcher_prompt_offset + BAR_OUTER_MARGIN + BAR_INNER_MARGIN;
+    for(u32 j = 0; j < launcher_hint_count; j++) {
+      id = launcher_hint_blocks[i][j];
+      w = font_metrics.width * strlen(launcher_hints[j]) + BAR_PADDING * 2;
+      reconfigure_window(id, prev_x, w);
+      if(!launcher_hint_blocks_mapped[i][j]) {
+        map_window(id);
+        launcher_hint_blocks_mapped[i][j] = 1;
+      }
+      prev_x += w + BAR_INNER_INSIDE_MARGIN;
+    }
+  }
+  for(u32 i = 0; i < monitor_count; i++) {
+    for(u32 j = 0; j < launcher_hint_count; j++) {
+      if(launcher_hint_selected == j) {
+        draw_text(launcher_hint_blocks[i][j], gc.active, font_metrics,
+                  launcher_hints[j], strlen(launcher_hints[j]));
+      } else {
+        draw_text(launcher_hint_blocks[i][j], gc.inactive, font_metrics,
+                  launcher_hints[j], strlen(launcher_hints[j]));
+      }
+    }
+  }
+}
+
+static void regenerate_hints(void) {
+  u32 w = 0;
+  u32 max_w = 0;
+  launcher_hint_count = 0;
+  for(u32 i = 0; i < launcher_path_entry_count; i++) {
+    if(!prefix_matches(launcher_prompt, launcher_path_entries[i],
+                       launcher_prompt_length))
+      continue;
+    if(launcher_hint_count < BAR_LAUNCHER_HINT_BLOCKS) {
+      strlcpy(launcher_hints[launcher_hint_count++], launcher_path_entries[i],
+              MAX_PATH_ENTRY_SIZE);
+    }
+  }
+  for(u32 i = 0; i < monitor_count; i++)
+    if(bars[i].width > max_w) max_w = bars[i].width;
+  for(u32 i = 0; i < launcher_hint_count; i++) {
+    w += BAR_PADDING * 2 + font_metrics.width * strlen(launcher_hints[i]);
+    if(w > max_w) {
+      launcher_hint_count = i;
+      break;
+    }
+  }
+  refresh_hints();
 }
 
 static void refresh_workspace_blocks(void) {
@@ -137,21 +248,20 @@ static void refresh_workspace_blocks(void) {
 }
 
 static void refresh_prompt_blocks(void) {
-  u32 w = font_metrics.width * launcher_prompt_length + BAR_PADDING * 2;
+  calc_prompt_offset();
   if(launcher_prompt_length == 0) {
-    w = font_metrics.width * 6 + BAR_PADDING * 2;
     for(u32 i = 0; i < monitor_count; i++) {
       reconfigure_window(launcher_prompt_blocks[i],
-                         bars[i].x + BAR_OUTER_MARGIN, w);
+                         bars[i].x + BAR_OUTER_MARGIN, launcher_prompt_offset);
       draw_text(launcher_prompt_blocks[i], gc.inactive, font_metrics, "prompt",
                 6);
     }
   } else {
     for(u32 i = 0; i < monitor_count; i++) {
       reconfigure_window(launcher_prompt_blocks[i],
-                         bars[i].x + BAR_OUTER_MARGIN, w);
-      draw_text_utf16(launcher_prompt_blocks[i], gc.active, font_metrics,
-                      launcher_prompt, launcher_prompt_length);
+                         bars[i].x + BAR_OUTER_MARGIN, launcher_prompt_offset);
+      draw_text(launcher_prompt_blocks[i], gc.active, font_metrics,
+                launcher_prompt, launcher_prompt_length);
     }
   }
 }
@@ -345,12 +455,12 @@ void update_minimized_windows(u32 *windows, u32 count) {
   u32 x;
   u32 id;
   u32 w;
-  struct map_entry *minimized_window_names[MINIMIZE_QUEUE_SIZE];
   minimized_window_count = MIN(count, MINIMIZE_QUEUE_SIZE);
   memcpy(minimized_windows, windows, minimized_window_count * sizeof(u32));
   for(u32 i = 0; i < minimized_window_count; i++) {
-    minimized_window_names[i] = get_map_entry(minimized_windows[i]);
-    text_length += minimized_window_names[i]->name_length;
+    query_window_name(minimized_windows[i], minimized_window_names[i],
+                      minimized_window_name_len + i, BAR_WINDOW_NAME_LENGTH);
+    text_length += minimized_window_name_len[i];
   }
   minimized_window_blocks_width =
     text_length * font_metrics.width + minimized_window_count * 2 * BAR_PADDING;
@@ -358,17 +468,20 @@ void update_minimized_windows(u32 *windows, u32 count) {
   for(u32 i = 0; i < monitor_count; i++) {
     x = bars[i].width / 2 + bars[i].x - minimized_window_blocks_width / 2;
     for(u32 j = 0; j < minimized_window_count; j++) {
-      w = minimized_window_names[j]->name_length * font_metrics.width +
-          BAR_PADDING * 2;
+      w = minimized_window_name_len[j] * font_metrics.width + BAR_PADDING * 2;
       id = minimized_window_blocks[i][j];
       reconfigure_window(id, x, w);
       map_window(id);
-      draw_text(id, gc.active, font_metrics, minimized_window_names[j]->name,
-                minimized_window_names[j]->name_length);
+
       x += w + BAR_INNER_INSIDE_MARGIN;
     }
     for(u32 j = minimized_window_count; j < MINIMIZE_QUEUE_SIZE; j++)
       unmap_window(minimized_window_blocks[i][j]);
+  }
+  for(u32 i = 0; i < monitor_count; i++) {
+    for(u32 j = 0; j < minimized_window_count; j++)
+      draw_text(minimized_window_blocks[i][j], gc.active, font_metrics,
+                minimized_window_names[j], minimized_window_name_len[j]);
   }
 }
 
@@ -376,7 +489,10 @@ void show_launcher(void) {
   pthread_mutex_lock(&launcher_mutex);
   launcher_visible = 1;
   launcher_prompt_length = 0;
+  launcher_hint_selected = 0;
   for(u32 i = 0; i < monitor_count; i++) {
+    for(u32 j = 0; j < BAR_LAUNCHER_HINT_BLOCKS; j++)
+      launcher_hint_blocks_mapped[i][j] = 0;
     unmap_window(mode_blocks[i]);
     for(u32 j = 0; j < WORKSPACE_COUNT; j++) {
       unmap_window(workspace_blocks[i][j]);
@@ -401,6 +517,8 @@ void hide_launcher(void) {
     unmap_window(launcher_prompt_blocks[i]);
     for(u32 j = 0; j < BAR_LAUNCHER_HINT_BLOCKS; j++)
       unmap_window(launcher_hint_blocks[i][j]);
+    for(u32 j = 0; j < BAR_LAUNCHER_HINT_BLOCKS; j++)
+      unmap_window(launcher_hint_blocks[i][j]);
     map_window(mode_blocks[i]);
     for(u32 j = 0; j < minimized_window_count; j++)
       map_window(minimized_window_blocks[i][j]);
@@ -414,8 +532,6 @@ void hide_launcher(void) {
 void launcher_handle_key(u8 flags, u8 keycode) {
   const u32 *syms;
   const u32 num = keycode_to_keysyms(keycode, &syms);
-  u8 utf8_buff[10];
-  u32 written;
   if(flags == FLAGS_NONE) {
     for(u32 i = 0; i < num; i++) {
       for(u32 j = 0; j < LENGTH(launcher_controls); j++) {
@@ -426,34 +542,44 @@ void launcher_handle_key(u8 flags, u8 keycode) {
       }
     }
   }
-  written = keycode_to_utf8(keycode, utf8_buff, 5);
   if(launcher_prompt_length < BAR_LAUNCHER_PROMPT_LENGTH) {
-    launcher_prompt_length += utf8_to_utf16(
-      launcher_prompt + launcher_prompt_length,
-      BAR_LAUNCHER_PROMPT_LENGTH - launcher_prompt_length, utf8_buff, written);
+    launcher_prompt_length +=
+      keycode_to_utf8(keycode, launcher_prompt + launcher_prompt_length,
+                      BAR_LAUNCHER_PROMPT_LENGTH - launcher_prompt_length);
+    launcher_hint_selected = 0;
+    regenerate_hints();
     refresh_prompt_blocks();
   }
 }
 
 u32 launcher_showing(void) { return launcher_visible; }
 
-void launcher_run(void) {}
+void launcher_run(void) {
+  system_run(launcher_hint_count == 0 ? launcher_prompt
+                                      : launcher_hints[launcher_hint_selected]);
+  hide_launcher();
+}
 
 void launcher_erase(void) {
   if(launcher_prompt_length == 0) return;
   launcher_prompt_length--;
+  regenerate_hints();
   refresh_prompt_blocks();
 }
 
-void launcher_hint_left(void) {}
+void launcher_hint_left(void) {
+  launcher_hint_selected =
+    (launcher_hint_selected + launcher_hint_count - 1) % launcher_hint_count;
+  refresh_hints();
+}
 
-void launcher_hint_right(void) {}
+void launcher_hint_right(void) {
+  launcher_hint_selected = (launcher_hint_selected + 1) % launcher_hint_count;
+  refresh_hints();
+}
 
 void redraw_bar(void) {
-  struct map_entry *minimized_window_names[MINIMIZE_QUEUE_SIZE];
   if(launcher_visible) return;
-  for(u32 i = 0; i < minimized_window_count; i++)
-    minimized_window_names[i] = get_map_entry(minimized_windows[i]);
   const struct choice {
     u32 preset;
     u32 color;
@@ -467,8 +593,7 @@ void redraw_bar(void) {
   for(u32 i = 0; i < monitor_count; i++) {
     for(u32 j = 0; j < minimized_window_count; j++) {
       draw_text(minimized_window_blocks[i][j], gc.active, font_metrics,
-                minimized_window_names[j]->name,
-                minimized_window_names[j]->name_length);
+                minimized_window_names[j], minimized_window_name_len[j]);
     }
   }
   pthread_mutex_lock(&mutex);
@@ -510,6 +635,7 @@ void init_bar(const struct geometry *geoms, u32 m_count) {
   }
   gc = create_gc(font_id, workspace_blocks[0][0]);
   close_font(font_id);
+  populate_path();
   pthread_create(&thread, NULL, thread_loop, NULL);
 }
 

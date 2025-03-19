@@ -65,7 +65,7 @@ static void x_init_visual(void) {
 static void intern_atoms(void) {
 #define X(x)                                  \
   const xcb_intern_atom_cookie_t x##_cookie = \
-    xcb_intern_atom(conn, 0, sizeof(#x), #x);
+    xcb_intern_atom(conn, 0, sizeof(#x) - 1, #x);
   ATOMS
 #undef X
 
@@ -229,6 +229,6 @@ void xkb_state_notify(xcb_xkb_state_notify_event_t *event) {
   }
 }
 
-u32 keycode_to_utf8(u8 keycode, u8 *buff, u32 size) {
-  return xkb_state_key_get_utf8(state, keycode, (char *)buff, size);
+u32 keycode_to_utf8(u8 keycode, char *buff, u32 size) {
+  return xkb_state_key_get_utf8(state, keycode, buff, size);
 }

@@ -32,4 +32,6 @@ void send_workspace_count(u32 count);
 void send_focused_workspace(u32 w);
 void send_focused_window(u32 window);
 
+void setup_root(void);
+
 #endif

@@ -153,5 +153,6 @@ int main(void) {
   }
 
   deinit();
+  fflush(stdout);
   return 0;
 }

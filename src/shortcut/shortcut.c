@@ -9,6 +9,7 @@ static struct {
   u8 mode;
   u8 mode_return;
   u8 mode_keycode;
+  u8 last_keycode;
   u32 shortcut_length;
   struct shortcut shortcuts[MAX_SHORTCUT_SIZE];
 } state = {.mode = 2};
@@ -53,7 +54,11 @@ void (*find_shortcut(u8 flags, u8 keycode))(void) {
     for(u32 i = 0; i < num; i++) {
       for(u32 j = 0; j < state.shortcut_length; j++) {
         if(syms[i] == state.shortcuts[j].keysym &&
-           flags == state.shortcuts[j].flags) {
+           flags == (state.shortcuts[j].flags & ~AUTO_REPEAT)) {
+          if(state.last_keycode == keycode &&
+             !(state.shortcuts[j].flags & AUTO_REPEAT))
+            return NULL;
+          state.last_keycode = keycode;
           return state.shortcuts[j].f;
         }
       }
@@ -69,11 +74,13 @@ void handle_shortcut(u8 flags, u8 keycode) {
   } else {
     state.mode_return = state.mode_keycode;
   }
+  state.last_keycode = keycode;
   if(f == NULL) return;
   f();
 }
 
 void release_handler(u8 keycode) {
+  state.last_keycode = keycode;
   if(state.mode_return == keycode) {
     if(state.mode == NORMAL_MODE) set_mode(INSERT_MODE);
     state.mode_return = 0;

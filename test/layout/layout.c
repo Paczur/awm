@@ -266,13 +266,47 @@ CTF_TEST_STATIC(changing_workspace) {
   }
 }
 
+CTF_TEST_STATIC(minimizing_windows) {
+  struct geometry geoms[2] = {
+    {0, 0, 1920, 1080},
+    {1920, 0, 1920, 1080},
+  };
+  u32 arr[3];
+  init_layout(geoms, 2);
+  map_request(1);
+  map_request(2);
+  map_request(3);
+  subtest(adds_it_to_queue) {
+    subtest(first_time) mock_select(send_minimized_windows) {
+      arr[0] = 3;
+      mock_expect_mem(windows, ==, arr, 1);
+      minimize_focused_window();
+    }
+    subtest(second_time) mock_select(send_minimized_windows) {
+      arr[0] = 2;
+      arr[1] = 3;
+      mock_expect_mem(windows, ==, arr, 2);
+      minimize_focused_window();
+    }
+    subtest(third_time) mock_select(send_minimized_windows) {
+      arr[0] = 1;
+      arr[1] = 2;
+      arr[2] = 3;
+      mock_expect_mem(windows, ==, arr, 3);
+      minimize_focused_window();
+    }
+  }
+}
+
 CTF_GROUP(layout_spec) = {
   map_request_on,
   unmap_notify_in_order_with,
   focus_window_with_3_windows_mapped,
   changing_workspace,
+  minimizing_windows,
 };
 
-CTF_GROUP_SETUP(layout_spec) { mock_group(layout_x_mocks); }
-
-CTF_GROUP_TEST_SETUP(layout_spec) { reset_layout_state(); }
+CTF_GROUP_TEST_SETUP(layout_spec) {
+  mock_group(layout_x_mocks);
+  reset_layout_state();
+}

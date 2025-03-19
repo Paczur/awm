@@ -32,6 +32,8 @@
     {"date +%H:%M", 60, BAR_FLAGS_ALWAYS_ACTIVE},          \
     {"date \"+%a %d\"", 60, BAR_FLAGS_ALWAYS_ACTIVE},      \
     {"/etc/awm/scripts/battery", 60, BAR_FLAGS_NONE},      \
+    {"/etc/awm/scripts/volume", 3600, BAR_FLAGS_NONE},     \
+    {"/etc/awm/scripts/brightness", 3600, BAR_FLAGS_NONE}, \
     {"/etc/awm/scripts/cpu", 30, BAR_FLAGS_ALWAYS_ACTIVE}, \
     {"/etc/awm/scripts/gpu", 30, BAR_FLAGS_ALWAYS_ACTIVE}, \
     {"/etc/awm/scripts/ram", 30, BAR_FLAGS_ALWAYS_ACTIVE}, \

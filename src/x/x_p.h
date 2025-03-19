@@ -23,11 +23,17 @@
   X(AWM_WORKSPACE_7)            \
   X(AWM_WORKSPACE_8)            \
   X(AWM_WORKSPACE_9)            \
+  X(UTF8_STRING)                \
   X(WM_PROTOCOLS)               \
   X(WM_DELETE_WINDOW)           \
+  X(WM_CLIENT_MACHINE)          \
+  X(WM_CLASS)                   \
   X(_NET_ACTIVE_WINDOW)         \
   X(_NET_NUMBER_OF_DESKTOPS)    \
-  X(_NET_CURRENT_DESKTOP)
+  X(_NET_CURRENT_DESKTOP)       \
+  X(_NET_SUPPORTED)             \
+  X(_NET_WM_NAME)               \
+  X(_NET_SUPPORTING_WM_CHECK)
 
 #define WM_NAME XCB_ATOM_WM_NAME
 #define WM_ICON_NAME XCB_ATOM_WM_ICON_NAME
@@ -54,6 +60,6 @@ void map_window(xcb_window_t window);
 void unmap_window(xcb_window_t window);
 
 void xkb_state_notify(xcb_xkb_state_notify_event_t *event);
-u32 keycode_to_utf8(u8 keycode, u8 *buff, u32 size);
+u32 keycode_to_utf8(u8 keycode, char *buff, u32 size);
 
 #endif

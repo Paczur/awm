@@ -1,7 +1,9 @@
 #include "layout_x.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "../bar/bar.h"
 #include "../const.h"
@@ -53,7 +55,7 @@ void delete_window(u32 window) {
     xcb_icccm_get_wm_protocols(conn, window, WM_PROTOCOLS);
   if(xcb_icccm_get_wm_protocols_reply(conn, cookie, &protocols, NULL)) {
     count = protocols.atoms_len;
-    for(size_t i = 0; i < count; i++) {
+    for(u32 i = 0; i < count; i++) {
       if(protocols.atoms[i] == WM_DELETE_WINDOW) {
         xcb_send_event(conn, 0, window, 0, (char *)&message);
         xcb_icccm_get_wm_protocols_reply_wipe(&protocols);
@@ -199,4 +201,41 @@ void send_focused_window(u32 window) {
 
 void send_workspace_count(u32 count) {
   send_cardinal(_NET_NUMBER_OF_DESKTOPS, count);
+}
+
+void setup_root(void) {
+  const char wm_name[] = "LG3D";
+  const char wm_class[] = "awm\0awm";
+  const xcb_atom_t supported[] = {
+    _NET_ACTIVE_WINDOW,
+    _NET_NUMBER_OF_DESKTOPS,
+    _NET_CURRENT_DESKTOP,
+  };
+  char hostname[100];
+  gethostname(hostname, 100);
+  const u32 hostname_length = strlen(hostname);
+  u32 supporting_wm_window = xcb_generate_id(conn);
+  xcb_icccm_set_wm_protocols(conn, screen->root, WM_PROTOCOLS, 1,
+                             &WM_DELETE_WINDOW);
+  xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, _NET_SUPPORTED,
+                      XCB_ATOM_ATOM, 32, LENGTH(supported), supported);
+  xcb_create_window(conn, screen->root_depth, supporting_wm_window,
+                    screen->root, 0, 0, 1, 1, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT,
+                    screen->root_visual, 0, NULL);
+  xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root,
+                      _NET_SUPPORTING_WM_CHECK, XCB_ATOM_WINDOW, 32, 1,
+                      &supporting_wm_window);
+  xcb_change_property(conn, XCB_PROP_MODE_REPLACE, supporting_wm_window,
+                      _NET_SUPPORTING_WM_CHECK, XCB_ATOM_WINDOW, 32, 1,
+                      &supporting_wm_window);
+  xcb_change_property(conn, XCB_PROP_MODE_REPLACE, supporting_wm_window,
+                      WM_CLIENT_MACHINE, XCB_ATOM_STRING, 8, hostname_length,
+                      hostname);
+  xcb_change_property(conn, XCB_PROP_MODE_REPLACE, supporting_wm_window,
+                      WM_NAME, XCB_ATOM_STRING, 8, sizeof(wm_name) - 1,
+                      wm_name);
+  xcb_change_property(conn, XCB_PROP_MODE_REPLACE, supporting_wm_window,
+                      WM_CLASS, XCB_ATOM_STRING, 8, sizeof(wm_class), wm_class);
+  xcb_change_property(conn, XCB_PROP_MODE_REPLACE, supporting_wm_window,
+                      _NET_WM_NAME, UTF8_STRING, 8, sizeof(wm_name), wm_name);
 }
