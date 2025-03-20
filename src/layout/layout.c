@@ -36,6 +36,7 @@ static u32 monitor_count;
 static u32 focused_monitor = -1;
 static u32 minimized_windows[MINIMIZE_QUEUE_SIZE];
 static u32 minimized_window_count;
+static i32 window_size_offsets[WORKSPACE_COUNT][2] = {0};
 
 static void expand_height(u32 monitor, u8 *taken, u8 index) {
   for(u32 i = 0; i < WINDOWS_PER_WORKSPACE; i++) {
@@ -58,9 +59,11 @@ static void expand_width(u32 monitor, u8 *taken, u8 index) {
 }
 
 static void reconfigure_monitor(u32 monitor) {
-  const u32 *const workspace = workspaces[visible_workspaces[monitor]];
+  const u32 curr_workspace = visible_workspaces[monitor];
+  const u32 *const workspace = workspaces[curr_workspace];
   u8 taken[WINDOWS_PER_WORKSPACE * 2];
   u8 index;
+  u32 offsets_changed = 0;
   struct geometry geom;
   for(u32 i = 0; i < WINDOWS_PER_WORKSPACE; i++) {
     projection[monitor][i] = workspace[i] ? i : WINDOWS_PER_WORKSPACE;
@@ -76,22 +79,49 @@ static void reconfigure_monitor(u32 monitor) {
   }
   for(u32 i = 0; i < WINDOWS_PER_WORKSPACE; i++) {
     if(taken[i * 2] == 0) continue;
-    geom.width =
-      ((taken[i * 2] == 2) ? monitors[monitor].width - GAP_SIZE * 2
-                           : monitors[monitor].width / 2 - GAP_SIZE * 1.5) -
-      BORDER_SIZE * 2;
     geom.x =
       (i % 2 == 0 || taken[i * 2] == 2)
         ? monitors[monitor].x + GAP_SIZE
         : monitors[monitor].x + monitors[monitor].width / 2 + GAP_SIZE / 2;
-    geom.height = ((taken[i * 2 + 1] == 2)
-                     ? monitors[monitor].height - GAP_SIZE * 2
-                     : monitors[monitor].height / 2 - GAP_SIZE * 1.5) -
-                  BORDER_SIZE * 2;
+    geom.width =
+      ((taken[i * 2] == 2) ? monitors[monitor].width - GAP_SIZE * 2
+                           : monitors[monitor].width / 2 - GAP_SIZE * 1.5) -
+      BORDER_SIZE * 2;
     geom.y =
       (i / 2 == 0 || taken[i * 2 + 1] == 2)
         ? monitors[monitor].y + GAP_SIZE
         : monitors[monitor].y + monitors[monitor].height / 2 + GAP_SIZE / 2;
+    geom.height = ((taken[i * 2 + 1] == 2)
+                     ? monitors[monitor].height - GAP_SIZE * 2
+                     : monitors[monitor].height / 2 - GAP_SIZE * 1.5) -
+                  BORDER_SIZE * 2;
+    if(taken[i * 2] != 2) {
+      if(i % 2) {
+        geom.x += window_size_offsets[curr_workspace][1];
+        geom.width -= window_size_offsets[curr_workspace][1];
+      } else {
+        geom.width += window_size_offsets[curr_workspace][1];
+      }
+    }
+    if(taken[i * 2 + 1] != 2) {
+      if(i / 2) {
+        geom.y += window_size_offsets[curr_workspace][0];
+        geom.height -= window_size_offsets[curr_workspace][0];
+      } else {
+        geom.height += window_size_offsets[curr_workspace][0];
+      }
+    }
+
+    if(taken[i * 2] == 2 && window_size_offsets[curr_workspace][1]) {
+      window_size_offsets[curr_workspace][1] = 0;
+      offsets_changed = 1;
+    }
+
+    if(taken[i * 2 + 1] == 2 && window_size_offsets[curr_workspace][0]) {
+      window_size_offsets[curr_workspace][0] = 0;
+      offsets_changed = 1;
+    }
+
     if(taken[i * 2] == 2 && taken[i * 2 + 1] == 2) {
       for(u32 j = 0; j < WINDOWS_PER_WORKSPACE; j++) projection[monitor][j] = i;
       geom.height += BORDER_SIZE * 2;
@@ -104,6 +134,7 @@ static void reconfigure_monitor(u32 monitor) {
                        BORDER_SIZE);
     }
   }
+  if(offsets_changed) send_size_offsets((i32 *)window_size_offsets);
 }
 
 static u32 focused_workspace(void) {
@@ -568,6 +599,22 @@ void swap_focused_window_with_below(void) {
   }
 }
 
+void change_size_offset(i32 x, i32 y) {
+  const u32 curr_workspace = focused_workspace();
+  window_size_offsets[curr_workspace][0] += x;
+  window_size_offsets[curr_workspace][1] += y;
+  reconfigure_monitor(focused_monitor);
+  send_size_offsets((i32 *)window_size_offsets);
+}
+
+void reset_size_offset(void) {
+  const u32 curr_workspace = focused_workspace();
+  window_size_offsets[curr_workspace][0] = 0;
+  window_size_offsets[curr_workspace][1] = 0;
+  reconfigure_monitor(focused_monitor);
+  send_size_offsets((i32 *)window_size_offsets);
+}
+
 void change_workspace(u32 w) {
   u32 focused = focused_workspace();
   if(focused == w) return;
@@ -649,6 +696,8 @@ void init_layout(const struct geometry *geoms, u32 m_count) {
   minimized_window_count = MIN(minimized_window_count, MINIMIZE_QUEUE_SIZE);
   query_minimized_windows(minimized_windows, minimized_window_count);
   send_minimized_windows(minimized_windows, minimized_window_count);
+  query_size_offsets((i32 *)window_size_offsets);
+  send_size_offsets((i32 *)window_size_offsets);
 
   for(u32 i = 0; i < WORKSPACE_COUNT; i++) {
     for(u32 j = 0; j < WINDOWS_PER_WORKSPACE; j++) {

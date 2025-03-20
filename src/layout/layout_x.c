@@ -203,6 +203,14 @@ void send_workspace_count(u32 count) {
   send_cardinal(_NET_NUMBER_OF_DESKTOPS, count);
 }
 
+void query_size_offsets(i32 *offsets) {
+  query_cardinal_array(AWM_SIZE_OFFSETS, (u32 *)offsets, 20);
+}
+
+void send_size_offsets(i32 *offsets) {
+  send_cardinal_array(AWM_SIZE_OFFSETS, (u32 *)offsets, 20);
+}
+
 void setup_root(void) {
   const char wm_name[] = "LG3D";
   const char wm_class[] = "awm\0awm";

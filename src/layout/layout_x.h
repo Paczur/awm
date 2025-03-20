@@ -32,6 +32,9 @@ void send_workspace_count(u32 count);
 void send_focused_workspace(u32 w);
 void send_focused_window(u32 window);
 
+void query_size_offsets(i32 *offsets);
+void send_size_offsets(i32 *offsets);
+
 void setup_root(void);
 
 #endif

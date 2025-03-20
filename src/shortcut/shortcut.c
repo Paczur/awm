@@ -80,7 +80,7 @@ void handle_shortcut(u8 flags, u8 keycode) {
 }
 
 void release_handler(u8 keycode) {
-  state.last_keycode = keycode;
+  state.last_keycode = 0;
   if(state.mode_return == keycode) {
     if(state.mode == NORMAL_MODE) set_mode(INSERT_MODE);
     state.mode_return = 0;

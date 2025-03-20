@@ -86,9 +86,9 @@ static void populate_path(void) {
   DIR *stream;
   struct dirent *ent;
   struct stat buf = {0};
-  size_t len;
+  u32 len;
   char *path = getenv("PATH");
-  for(size_t i = 0, j = 0;; i++) {
+  for(u32 i = 0, j = 0;; i++) {
     if(path[i] == ':' || path[i] == 0) {
       string[j] = 0;
       stream = opendir(string);
@@ -99,8 +99,12 @@ static void populate_path(void) {
         string[j + len + 1] = 0;
         stat(string, &buf);
         if(!S_ISDIR(buf.st_mode) && buf.st_mode & S_IXUSR) {
+          for(u32 k = 0; k < launcher_path_entry_count; k++) {
+            if(strcmp(launcher_path_entries[k], ent->d_name) == 0) goto skip;
+          }
           strlcpy(launcher_path_entries[launcher_path_entry_count++],
                   ent->d_name, MAX_PATH_ENTRY_SIZE);
+        skip:
         }
       }
       closedir(stream);
@@ -167,9 +171,11 @@ static void refresh_hints(void) {
   for(u32 i = 0; i < monitor_count; i++) {
     for(u32 j = 0; j < launcher_hint_count; j++) {
       if(launcher_hint_selected == j) {
+        change_window_color(launcher_hint_blocks[i][j], BAR_ACTIVE);
         draw_text(launcher_hint_blocks[i][j], gc.active, font_metrics,
                   launcher_hints[j], strlen(launcher_hints[j]));
       } else {
+        change_window_color(launcher_hint_blocks[i][j], BAR_INACTIVE);
         draw_text(launcher_hint_blocks[i][j], gc.inactive, font_metrics,
                   launcher_hints[j], strlen(launcher_hints[j]));
       }
@@ -398,8 +404,15 @@ static void *thread_loop(void *unused) {
             id = clocked_blocks[j][i];
             reconfigure_window(id, bars[j].x + bars[j].width - x, offset);
             if(!clocked_blocks_state[i].mapped) map_window(id);
-            if(clocked_blocks_state[i].status ||
-               clocked_blocks_data[i].flags & BAR_FLAGS_ALWAYS_ACTIVE) {
+            if(clocked_blocks_state[i].status > 1 ||
+               (clocked_blocks_state[i].status == 1 &&
+                clocked_blocks_data[i].flags & BAR_FLAGS_ALWAYS_ACTIVE)) {
+              change_window_color(id, BAR_URGENT);
+              draw_text_utf16(id, gc.urgent, font_metrics,
+                              clocked_blocks_state[i].output,
+                              clocked_blocks_state[i].output_len);
+            } else if(clocked_blocks_state[i].status == 1 ||
+                      clocked_blocks_data[i].flags & BAR_FLAGS_ALWAYS_ACTIVE) {
               change_window_color(id, BAR_ACTIVE);
               draw_text_utf16(id, gc.active, font_metrics,
                               clocked_blocks_state[i].output,

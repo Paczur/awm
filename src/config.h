@@ -61,6 +61,10 @@ static void screenshot(void) {
     "/home/paczur/Multimedia/Pictures/Screenshots/Scrot/"
     "%d-%m-%Y_%H-%M-%S_%wx%H.png");
 }
+static void resize_up(void) { change_size_offset(-5, 0); }
+static void resize_down(void) { change_size_offset(5, 0); }
+static void resize_left(void) { change_size_offset(0, -5); }
+static void resize_right(void) { change_size_offset(0, 5); }
 
 #define SHORTCUTS                                              \
   {                                                            \
@@ -82,6 +86,11 @@ static void screenshot(void) {
     {MOD_SHIFT, KEY_l, swap_focused_window_with_right},        \
     {MOD_SHIFT, KEY_k, swap_focused_window_with_above},        \
     {MOD_SHIFT, KEY_j, swap_focused_window_with_below},        \
+    {MOD_ALT | AUTO_REPEAT, KEY_h, resize_left},               \
+    {MOD_ALT | AUTO_REPEAT, KEY_l, resize_right},              \
+    {MOD_ALT | AUTO_REPEAT, KEY_k, resize_up},                 \
+    {MOD_ALT | AUTO_REPEAT, KEY_j, resize_down},               \
+    {FLAGS_NONE, KEY_equal, reset_size_offset},                \
     {FLAGS_NONE, KEY_1, change_workspace_0},                   \
     {FLAGS_NONE, KEY_2, change_workspace_1},                   \
     {FLAGS_NONE, KEY_3, change_workspace_2},                   \

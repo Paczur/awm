@@ -40,5 +40,8 @@ void clean_layout_state(void);
 u32 is_workspace_empty(void);
 void restore_focus(void);
 
+void change_size_offset(i32 x, i32 y);
+void reset_size_offset(void);
+
 #endif
 

@@ -20,7 +20,6 @@ To Be Done:
 - Urgency display
 - Fullscreen
 - Runtime switchable colorschemes
-- Resizing windows
 
 ## Installation
 awm uses Makefiles for compilation so simple `make && make install` should work.
