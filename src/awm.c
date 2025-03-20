@@ -11,11 +11,12 @@
 #include "x/x.h"
 #include "x/x_p.h"
 
+static struct geometry monitors[MAX_MONITOR_COUNT] = {0};
+static u32 monitor_count;
+
 static void request_init(void) {
   u32 length;
-  u32 monitor_count;
   u32 bar_height;
-  struct geometry monitors[MAX_MONITOR_COUNT];
   xcb_randr_crtc_t *firstCrtc;
   xcb_randr_get_screen_resources_reply_t *reply;
   xcb_randr_get_screen_resources_cookie_t cookie;
@@ -65,6 +66,45 @@ static void request_init(void) {
   init_shortcuts((struct shortcut[])SHORTCUTS,
                  LENGTH((struct shortcut[])SHORTCUTS));
   free(key_reply);
+}
+
+static u32 diff_monitors(void) {
+  u32 temp_monitor_count;
+  u32 length;
+  xcb_randr_crtc_t *firstCrtc;
+  xcb_randr_get_screen_resources_reply_t *reply;
+  xcb_randr_get_screen_resources_cookie_t cookie;
+  xcb_randr_get_crtc_info_cookie_t randr_cookies[MAX_MONITOR_COUNT];
+  xcb_randr_get_crtc_info_reply_t *randr_crtcs[MAX_MONITOR_COUNT];
+  cookie = xcb_randr_get_screen_resources(conn, screen->root);
+  reply = xcb_randr_get_screen_resources_reply(conn, cookie, 0);
+  length = xcb_randr_get_screen_resources_crtcs_length(reply);
+  if(length > MAX_MONITOR_COUNT) length = MAX_MONITOR_COUNT;
+  firstCrtc = xcb_randr_get_screen_resources_crtcs(reply);
+  for(u32 i = 0; i < length; i++)
+    randr_cookies[i] = xcb_randr_get_crtc_info(conn, *(firstCrtc + i), 0);
+  free(reply);
+  for(u32 i = 0; i < length; i++) {
+    randr_crtcs[i] = xcb_randr_get_crtc_info_reply(conn, randr_cookies[i], 0);
+  }
+  temp_monitor_count = length;
+  for(size_t i = 0; i < length; i++) {
+    if(randr_crtcs[i]->width == 0) {
+      temp_monitor_count = i;
+      break;
+    }
+  }
+  if(temp_monitor_count != monitor_count) return 1;
+  for(u32 i = 0; i < temp_monitor_count; i++) {
+    if((u32)randr_crtcs[i]->x != monitors[i].x ||
+       (u32)randr_crtcs[i]->y != monitors[i].y ||
+       randr_crtcs[i]->width != monitors[i].width ||
+       randr_crtcs[i]->height != monitors[i].height)
+      return 1;
+    free(randr_crtcs[i]);
+  }
+  for(u32 i = temp_monitor_count; i < length; i++) free(randr_crtcs[i]);
+  return 0;
 }
 
 static void init(void) {
@@ -143,7 +183,7 @@ int main(void) {
       if(code == xkb_event) {
         xkb_state_notify((xcb_xkb_state_notify_event_t *)event);
       } else if(code == randr_event) {
-        stop_wm = 1;
+        if(diff_monitors()) stop_wm = 1;
       }
       break;
     }

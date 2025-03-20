@@ -74,6 +74,7 @@ static u32 launcher_prompt_length;
 static u32 launcher_prompt_offset;
 static u32 launcher_prompt_blocks[MAX_MONITOR_COUNT];
 static char launcher_hints[BAR_LAUNCHER_HINT_BLOCKS][MAX_PATH_ENTRY_SIZE];
+static u32 launcher_hint_lengths[BAR_LAUNCHER_HINT_BLOCKS];
 static u32 launcher_hint_selected;
 static u32 launcher_hint_count;
 static u32 launcher_hint_blocks[MAX_MONITOR_COUNT][BAR_LAUNCHER_HINT_BLOCKS];
@@ -179,14 +180,30 @@ static void refresh_hints(void) {
 static void regenerate_hints(void) {
   u32 w = 0;
   u32 max_w = 0;
+  u32 len;
   launcher_hint_count = 0;
   for(u32 i = 0; i < launcher_path_entry_count; i++) {
     if(!prefix_matches(launcher_prompt, launcher_path_entries[i],
                        launcher_prompt_length))
       continue;
+    len = strlen(launcher_path_entries[i]);
     if(launcher_hint_count < BAR_LAUNCHER_HINT_BLOCKS) {
-      strlcpy(launcher_hints[launcher_hint_count++], launcher_path_entries[i],
-              MAX_PATH_ENTRY_SIZE);
+      launcher_hint_lengths[launcher_hint_count] = len;
+      strcpy(launcher_hints[launcher_hint_count++], launcher_path_entries[i]);
+    } else {
+      if(launcher_hint_lengths[launcher_hint_count - 1] > len) {
+        for(u32 j = 0; j < launcher_hint_count; j++) {
+          if(launcher_hint_lengths[j] > len) {
+            for(u32 k = launcher_hint_count - 1; k > j; k--) {
+              launcher_hint_lengths[k] = launcher_hint_lengths[k - 1];
+              strcpy(launcher_hints[k], launcher_hints[k - 1]);
+            }
+            launcher_hint_lengths[j] = len;
+            strcpy(launcher_hints[j], launcher_path_entries[i]);
+            break;
+          }
+        }
+      }
     }
   }
   for(u32 i = 0; i < monitor_count; i++)
