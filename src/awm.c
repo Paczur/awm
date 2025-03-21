@@ -71,6 +71,7 @@ static void request_init(void) {
 static u32 diff_monitors(void) {
   u32 temp_monitor_count;
   u32 length;
+  u32 ret = 0;
   xcb_randr_crtc_t *firstCrtc;
   xcb_randr_get_screen_resources_reply_t *reply;
   xcb_randr_get_screen_resources_cookie_t cookie;
@@ -94,17 +95,18 @@ static u32 diff_monitors(void) {
       break;
     }
   }
-  if(temp_monitor_count != monitor_count) return 1;
+  if(temp_monitor_count != monitor_count) ret = 1;
   for(u32 i = 0; i < temp_monitor_count; i++) {
     if((u32)randr_crtcs[i]->x != monitors[i].x ||
        (u32)randr_crtcs[i]->y != monitors[i].y ||
        randr_crtcs[i]->width != monitors[i].width ||
-       randr_crtcs[i]->height != monitors[i].height)
-      return 1;
-    free(randr_crtcs[i]);
+       randr_crtcs[i]->height != monitors[i].height) {
+      ret = 1;
+      break;
+    }
   }
-  for(u32 i = temp_monitor_count; i < length; i++) free(randr_crtcs[i]);
-  return 0;
+  for(u32 i = 0; i < length; i++) free(randr_crtcs[i]);
+  return ret;
 }
 
 static void init(void) {

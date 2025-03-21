@@ -167,6 +167,14 @@ CTF_MOCK_VOID_ARG(u32, query_minimized_window_count) {
   return 0;
 }
 
+CTF_MOCK_VOID_RET(query_size_offsets, (i32 * offsets), (offsets)) {
+  mock_check(offsets);
+}
+
+CTF_MOCK_VOID_RET(send_size_offsets, (i32 * offsets), (offsets)) {
+  mock_check(offsets);
+}
+
 CTF_MOCK_VOID(setup_root) {}
 
 CTF_MOCK_GROUP(layout_x_mocks) = {
@@ -191,5 +199,7 @@ CTF_MOCK_GROUP(layout_x_mocks) = {
   CTF_MOCK_BIND(send_minimized_windows, NULL),
   CTF_MOCK_BIND(query_minimized_windows, NULL),
   CTF_MOCK_BIND(query_minimized_window_count, NULL),
+  CTF_MOCK_BIND(query_size_offsets, NULL),
+  CTF_MOCK_BIND(send_size_offsets, NULL),
   CTF_MOCK_BIND(setup_root, NULL),
 };

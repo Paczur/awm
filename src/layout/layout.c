@@ -95,6 +95,8 @@ static void reconfigure_monitor(u32 monitor) {
                      ? monitors[monitor].height - GAP_SIZE * 2
                      : monitors[monitor].height / 2 - GAP_SIZE * 1.5) -
                   BORDER_SIZE * 2;
+
+    // resize check
     if(taken[i * 2] != 2) {
       if(i % 2) {
         geom.x += window_size_offsets[curr_workspace][1];
@@ -102,6 +104,9 @@ static void reconfigure_monitor(u32 monitor) {
       } else {
         geom.width += window_size_offsets[curr_workspace][1];
       }
+    } else if(window_size_offsets[curr_workspace][1]) {
+      window_size_offsets[curr_workspace][1] = 0;
+      offsets_changed = 1;
     }
     if(taken[i * 2 + 1] != 2) {
       if(i / 2) {
@@ -110,18 +115,12 @@ static void reconfigure_monitor(u32 monitor) {
       } else {
         geom.height += window_size_offsets[curr_workspace][0];
       }
-    }
-
-    if(taken[i * 2] == 2 && window_size_offsets[curr_workspace][1]) {
-      window_size_offsets[curr_workspace][1] = 0;
-      offsets_changed = 1;
-    }
-
-    if(taken[i * 2 + 1] == 2 && window_size_offsets[curr_workspace][0]) {
+    } else if(window_size_offsets[curr_workspace][0]) {
       window_size_offsets[curr_workspace][0] = 0;
       offsets_changed = 1;
     }
 
+    // remove border on only window
     if(taken[i * 2] == 2 && taken[i * 2 + 1] == 2) {
       for(u32 j = 0; j < WINDOWS_PER_WORKSPACE; j++) projection[monitor][j] = i;
       geom.height += BORDER_SIZE * 2;
@@ -233,6 +232,14 @@ void map_request(u32 window) {
     minimized_windows[0] = window;
     send_minimized_windows(minimized_windows, minimized_window_count);
     return;
+  }
+  for(u32 i = 0; i < WORKSPACE_COUNT; i++) {
+    for(u32 j = 0; j < WINDOWS_PER_WORKSPACE; j++) {
+      if(workspaces[i][j] == window) {
+        workspaces[i][j] = 0;
+        send_workspace(workspaces[i], i);
+      }
+    }
   }
   workspace[index] = window;
   listen_to_events(window);

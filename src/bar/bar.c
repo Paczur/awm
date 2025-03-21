@@ -87,6 +87,8 @@ static void populate_path(void) {
   struct dirent *ent;
   struct stat buf = {0};
   u32 len;
+  u32 len2;
+  u32 swapped;
   char *path = getenv("PATH");
   for(u32 i = 0, j = 0;; i++) {
     if(path[i] == ':' || path[i] == 0) {
@@ -113,6 +115,23 @@ static void populate_path(void) {
     } else {
       string[j++] = path[i];
     }
+  }
+
+  for(u32 i = 0; i < launcher_path_entry_count - 1; i++) {
+    swapped = 0;
+    for(u32 j = 0; j < launcher_path_entry_count - 1 - i; j++) {
+      len = strlen(launcher_path_entries[j]);
+      len2 = strlen(launcher_path_entries[j + 1]);
+      if(len > len2 ||
+         (len == len2 &&
+          strcmp(launcher_path_entries[j], launcher_path_entries[j + 1]) > 0)) {
+        strcpy(string, launcher_path_entries[j]);
+        strcpy(launcher_path_entries[j], launcher_path_entries[j + 1]);
+        strcpy(launcher_path_entries[j + 1], string);
+        swapped = 1;
+      }
+    }
+    if(!swapped) break;
   }
 }
 
@@ -196,22 +215,9 @@ static void regenerate_hints(void) {
     if(launcher_hint_count < BAR_LAUNCHER_HINT_BLOCKS) {
       launcher_hint_lengths[launcher_hint_count] = len;
       strcpy(launcher_hints[launcher_hint_count++], launcher_path_entries[i]);
-    } else {
-      if(launcher_hint_lengths[launcher_hint_count - 1] > len) {
-        for(u32 j = 0; j < launcher_hint_count; j++) {
-          if(launcher_hint_lengths[j] > len) {
-            for(u32 k = launcher_hint_count - 1; k > j; k--) {
-              launcher_hint_lengths[k] = launcher_hint_lengths[k - 1];
-              strcpy(launcher_hints[k], launcher_hints[k - 1]);
-            }
-            launcher_hint_lengths[j] = len;
-            strcpy(launcher_hints[j], launcher_path_entries[i]);
-            break;
-          }
-        }
-      }
     }
   }
+
   for(u32 i = 0; i < monitor_count; i++)
     if(bars[i].width > max_w) max_w = bars[i].width;
   for(u32 i = 0; i < launcher_hint_count; i++) {
@@ -537,6 +543,8 @@ void show_launcher(void) {
     map_window(launcher_prompt_blocks[i]);
   }
   pthread_mutex_unlock(&launcher_mutex);
+  refresh_prompt_blocks();
+  regenerate_hints();
   refresh_prompt_blocks();
   focus_launcher(launcher_prompt_blocks[0]);
 }
