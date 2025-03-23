@@ -35,6 +35,11 @@ void send_focused_window(u32 window);
 void query_size_offsets(i32 *offsets);
 void send_size_offsets(i32 *offsets);
 
+void query_fullscreen_windows(u32 *windows);
+void send_fullscreen_windows(u32 *windows);
+
+void bar_visibility(u32 val);
+
 void setup_root(void);
 
 #endif

@@ -15,6 +15,7 @@ static struct geometry monitors[MAX_MONITOR_COUNT] = {0};
 static u32 monitor_count;
 
 static void request_init(void) {
+  struct geometry fullscreen[MAX_MONITOR_COUNT] = {0};
   u32 length;
   u32 bar_height;
   xcb_randr_crtc_t *firstCrtc;
@@ -46,22 +47,25 @@ static void request_init(void) {
       break;
     }
   }
+
   for(u32 i = 0; i < monitor_count; i++) {
-    monitors[i].x = randr_crtcs[i]->x;
-    monitors[i].y = randr_crtcs[i]->y;
-    monitors[i].width = randr_crtcs[i]->width;
-    monitors[i].height = randr_crtcs[i]->height;
+    fullscreen[i].x = randr_crtcs[i]->x;
+    fullscreen[i].y = randr_crtcs[i]->y;
+    fullscreen[i].width = randr_crtcs[i]->width;
+    fullscreen[i].height = randr_crtcs[i]->height;
     free(randr_crtcs[i]);
   }
   for(u32 i = monitor_count; i < length; i++) free(randr_crtcs[i]);
-  init_bar(monitors, monitor_count);
+  init_bar(fullscreen, monitor_count);
   xcb_flush(conn);
   bar_height = get_bar_height();
   for(u32 i = 0; i < monitor_count; i++) {
-    monitors[i].y += bar_height;
-    monitors[i].height -= bar_height;
+    monitors[i].x = fullscreen[i].x;
+    monitors[i].y = fullscreen[i].y + bar_height;
+    monitors[i].width = fullscreen[i].width;
+    monitors[i].height = fullscreen[i].height - bar_height;
   }
-  init_layout(monitors, monitor_count);
+  init_layout(monitors, fullscreen, monitor_count);
 
   init_shortcuts((struct shortcut[])SHORTCUTS,
                  LENGTH((struct shortcut[])SHORTCUTS));

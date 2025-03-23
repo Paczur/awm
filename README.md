@@ -18,7 +18,6 @@ To Be Done:
 - Floating windows
 - Clickable bar
 - Urgency display
-- Fullscreen
 - Runtime switchable colorschemes
 
 ## Installation

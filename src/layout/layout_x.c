@@ -204,11 +204,19 @@ void send_workspace_count(u32 count) {
 }
 
 void query_size_offsets(i32 *offsets) {
-  query_cardinal_array(AWM_SIZE_OFFSETS, (u32 *)offsets, 20);
+  query_cardinal_array(AWM_SIZE_OFFSETS, (u32 *)offsets, WORKSPACE_COUNT * 2);
 }
 
 void send_size_offsets(i32 *offsets) {
-  send_cardinal_array(AWM_SIZE_OFFSETS, (u32 *)offsets, 20);
+  send_cardinal_array(AWM_SIZE_OFFSETS, (u32 *)offsets, WORKSPACE_COUNT * 2);
+}
+
+void query_fullscreen_windows(u32 *windows) {
+  query_cardinal_array(AWM_FULLSCREEN_WINDOWS, windows, WORKSPACE_COUNT);
+}
+
+void send_fullscreen_windows(u32 *windows) {
+  send_cardinal_array(AWM_FULLSCREEN_WINDOWS, windows, WORKSPACE_COUNT);
 }
 
 void setup_root(void) {

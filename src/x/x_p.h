@@ -14,6 +14,7 @@
   X(AWM_MINIMIZED_WINDOWS)      \
   X(AWM_MINIMIZED_WINDOW_COUNT) \
   X(AWM_SIZE_OFFSETS)           \
+  X(AWM_FULLSCREEN_WINDOWS)     \
   X(AWM_WORKSPACE_0)            \
   X(AWM_WORKSPACE_1)            \
   X(AWM_WORKSPACE_2)            \

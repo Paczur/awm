@@ -7,7 +7,8 @@
 #define BORDER_FOCUSED 0xfff3f3f3
 #define BORDER_UNFOCUSED 0xff111111
 
-void init_layout(const struct geometry *geoms, u32 monitor_count);
+void init_layout(const struct geometry *normal,
+                 const struct geometry *fullscreen, u32 monitor_count);
 
 void map_request(u32 window);
 void unmap_notify(u32 window);
@@ -42,6 +43,8 @@ void restore_focus(void);
 
 void change_size_offset(i32 x, i32 y);
 void reset_size_offset(void);
+
+void toggle_fullscreen_window(void);
 
 #endif
 

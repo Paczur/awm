@@ -81,6 +81,7 @@ static void resize_right(void) { change_size_offset(0, 5); }
     {FLAGS_NONE, KEY_j, focus_window_below},                   \
     {FLAGS_NONE, KEY_q, delete_focused_window},                \
     {FLAGS_NONE, KEY_p, screenshot},                           \
+    {FLAGS_NONE, KEY_f, toggle_fullscreen_window},             \
     {MOD_ALT, KEY_s, system_shutdown},                         \
     {MOD_SHIFT, KEY_h, swap_focused_window_with_left},         \
     {MOD_SHIFT, KEY_l, swap_focused_window_with_right},        \

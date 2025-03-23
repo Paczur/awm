@@ -69,5 +69,6 @@ void launcher_erase(void);
 u32 get_bar_height(void);
 void init_bar(const struct geometry *geoms, u32 m_count);
 void deinit_bar(void);
+void bar_visibility(u32 val);
 
 #endif
