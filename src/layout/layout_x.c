@@ -10,6 +10,15 @@
 #include "../shortcut/shortcut.h"
 #include "layout.h"
 
+void configure_and_raise(u32 window, u32 x, u32 y, u32 width, u32 height) {
+  const u32 values[5] = {x, y, width, height, XCB_STACK_MODE_TOP_IF};
+  xcb_configure_window(conn, window,
+                       XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y |
+                         XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT |
+                         XCB_CONFIG_WINDOW_STACK_MODE,
+                       values);
+}
+
 void configure_window(u32 window, u32 x, u32 y, u32 width, u32 heigth,
                       u32 border) {
   const u32 values[5] = {x, y, width, heigth, border};
@@ -217,6 +226,30 @@ void query_fullscreen_windows(u32 *windows) {
 
 void send_fullscreen_windows(u32 *windows) {
   send_cardinal_array(AWM_FULLSCREEN_WINDOWS, windows, WORKSPACE_COUNT);
+}
+
+void set_window_fullscreen(u32 window) {
+  append_window_atom_array(window, _NET_WM_STATE, _NET_WM_STATE_FULLSCREEN);
+}
+
+void reset_window_fullscreen(u32 window) {
+  xcb_atom_t atoms[15];
+  u32 len = query_window_atom_array(window, _NET_WM_STATE, atoms, 15);
+  for(u32 i = 0; i < len; i++) {
+    if(atoms[i] == _NET_WM_STATE_FULLSCREEN) {
+      if(len == 1) {
+        delete_window_property(window, _NET_WM_STATE);
+      } else {
+        while(i < len) {
+          atoms[i] = atoms[i + 1];
+          i++;
+        }
+        len--;
+        send_window_atom_array(window, _NET_WM_STATE, atoms, len);
+      }
+      break;
+    }
+  }
 }
 
 void setup_root(void) {

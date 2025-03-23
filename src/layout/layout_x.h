@@ -6,6 +6,7 @@
 
 void map_window(u32 window);
 void unmap_window(u32 window);
+void configure_and_raise(u32 window, u32 x, u32 y, u32 width, u32 height);
 void configure_window(u32 window, u32 x, u32 y, u32 width, u32 heigth,
                       u32 border);
 void listen_to_events(u32 window);
@@ -37,6 +38,9 @@ void send_size_offsets(i32 *offsets);
 
 void query_fullscreen_windows(u32 *windows);
 void send_fullscreen_windows(u32 *windows);
+
+void set_window_fullscreen(u32 window);
+void reset_window_fullscreen(u32 window);
 
 void bar_visibility(u32 val);
 

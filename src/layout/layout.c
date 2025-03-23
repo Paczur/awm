@@ -69,13 +69,12 @@ static void reconfigure_monitor(u32 monitor) {
   struct geometry geom;
 
   if(fullscreen_windows[curr_workspace]) {
-    configure_window(fullscreen_windows[curr_workspace], fullscreen[monitor].x,
-                     fullscreen[monitor].y, fullscreen[monitor].width,
-                     fullscreen[monitor].height, 0);
+    configure_and_raise(fullscreen_windows[curr_workspace],
+                        fullscreen[monitor].x, fullscreen[monitor].y,
+                        fullscreen[monitor].width, fullscreen[monitor].height);
     bar_visibility(0);
     return;
   }
-  bar_visibility(1);
 
   for(u32 i = 0; i < WINDOWS_PER_WORKSPACE; i++) {
     projection[monitor][i] = workspace[i] ? i : WINDOWS_PER_WORKSPACE;
@@ -143,6 +142,7 @@ static void reconfigure_monitor(u32 monitor) {
                        BORDER_SIZE);
     }
   }
+  bar_visibility(1);
   if(offsets_changed) send_size_offsets((i32 *)window_size_offsets);
 }
 
@@ -763,9 +763,13 @@ void toggle_fullscreen_window(void) {
       ? focused_windows[focused_work]
       : projection[focused_monitor][focused_windows[focused_work]];
   if(focused_win < 0) return;
-  fullscreen_windows[focused_work] = fullscreen_windows[focused_work]
-                                       ? 0
-                                       : workspaces[focused_work][focused_win];
+  if(fullscreen_windows[focused_work]) {
+    reset_window_fullscreen(fullscreen_windows[focused_work]);
+    fullscreen_windows[focused_work] = 0;
+  } else {
+    fullscreen_windows[focused_work] = workspaces[focused_work][focused_win];
+    set_window_fullscreen(fullscreen_windows[focused_work]);
+  }
   send_fullscreen_windows(fullscreen_windows);
   reconfigure_monitor(focused_monitor);
 }

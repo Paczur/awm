@@ -35,7 +35,9 @@
   X(_NET_CURRENT_DESKTOP)       \
   X(_NET_SUPPORTED)             \
   X(_NET_WM_NAME)               \
-  X(_NET_SUPPORTING_WM_CHECK)
+  X(_NET_SUPPORTING_WM_CHECK)   \
+  X(_NET_WM_STATE)              \
+  X(_NET_WM_STATE_FULLSCREEN)
 
 #define WM_NAME XCB_ATOM_WM_NAME
 #define WM_ICON_NAME XCB_ATOM_WM_ICON_NAME
@@ -53,7 +55,22 @@ extern u8 randr_event;
 
 u32 query_cardinal(xcb_atom_t atom, u32 def);
 void send_cardinal(xcb_atom_t atom, u32 val);
-void query_cardinal_array(xcb_atom_t atom, u32 *arr, u32 length);
+
+void delete_window_property(u32 window, xcb_atom_t atom);
+
+u32 query_window_cardinal_array(u32 window, xcb_atom_t atom, u32 *arr,
+                                u32 length);
+void send_window_cardinal_array(u32 window, xcb_atom_t atom, u32 *arr,
+                                u32 length);
+void append_window_cardinal_array(u32 window, xcb_atom_t atom, u32 val);
+
+u32 query_window_atom_array(u32 window, xcb_atom_t atom, xcb_atom_t *arr,
+                            u32 length);
+void send_window_atom_array(u32 window, xcb_atom_t atom, xcb_atom_t *arr,
+                            u32 length);
+void append_window_atom_array(u32 window, xcb_atom_t atom, xcb_atom_t val);
+
+u32 query_cardinal_array(xcb_atom_t atom, u32 *arr, u32 length);
 void send_cardinal_array(xcb_atom_t atom, u32 *arr, u32 length);
 void query_window_string(xcb_window_t window, xcb_atom_t atom, char *string,
                          u32 *string_len, u32 string_size);
