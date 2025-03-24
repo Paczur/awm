@@ -10,18 +10,20 @@
 #include "../shortcut/shortcut.h"
 #include "layout.h"
 
-void configure_and_raise(u32 window, u32 x, u32 y, u32 width, u32 height) {
-  const u32 values[5] = {x, y, width, height, XCB_STACK_MODE_TOP_IF};
+void configure_and_raise(u32 window, u32 x, u32 y, u32 width, u32 height,
+                         u32 border) {
+  const u32 values[] = {x, y, width, height, border, XCB_STACK_MODE_TOP_IF};
   xcb_configure_window(conn, window,
                        XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y |
                          XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT |
+                         XCB_CONFIG_WINDOW_BORDER_WIDTH |
                          XCB_CONFIG_WINDOW_STACK_MODE,
                        values);
 }
 
 void configure_window(u32 window, u32 x, u32 y, u32 width, u32 heigth,
                       u32 border) {
-  const u32 values[5] = {x, y, width, heigth, border};
+  const u32 values[] = {x, y, width, heigth, border};
   xcb_configure_window(conn, window,
                        XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y |
                          XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT |
@@ -206,6 +208,26 @@ void send_focused_workspace(u32 w) { send_cardinal(_NET_CURRENT_DESKTOP, w); }
 
 void send_focused_window(u32 window) {
   send_cardinal(_NET_ACTIVE_WINDOW, window);
+  append_window_atom_array(window, _NET_WM_STATE, _NET_WM_STATE_FOCUSED);
+}
+
+void send_unfocused_window(u32 window) {
+  xcb_atom_t atoms[15];
+  u32 len = query_window_atom_array(window, _NET_WM_STATE, atoms, 15);
+  for(u32 i = 0; i < len;) {
+    if(atoms[i] == _NET_WM_STATE_FOCUSED) {
+      len--;
+      if(!len) break;
+      for(u32 j = i; j < len; j++) atoms[j] = atoms[j + 1];
+    } else {
+      i++;
+    }
+  }
+  if(!len) {
+    delete_window_property(window, _NET_WM_STATE);
+  } else {
+    send_window_atom_array(window, _NET_WM_STATE, atoms, len);
+  }
 }
 
 void send_workspace_count(u32 count) {
@@ -235,20 +257,42 @@ void set_window_fullscreen(u32 window) {
 void reset_window_fullscreen(u32 window) {
   xcb_atom_t atoms[15];
   u32 len = query_window_atom_array(window, _NET_WM_STATE, atoms, 15);
-  for(u32 i = 0; i < len; i++) {
+  for(u32 i = 0; i < len;) {
     if(atoms[i] == _NET_WM_STATE_FULLSCREEN) {
-      if(len == 1) {
-        delete_window_property(window, _NET_WM_STATE);
-      } else {
-        while(i < len) {
-          atoms[i] = atoms[i + 1];
-          i++;
-        }
-        len--;
-        send_window_atom_array(window, _NET_WM_STATE, atoms, len);
-      }
-      break;
+      len--;
+      if(!len) break;
+      for(u32 j = i; j < len; j++) atoms[j] = atoms[j + 1];
+    } else {
+      i++;
     }
+  }
+  if(len == 0) {
+    delete_window_property(window, _NET_WM_STATE);
+  } else {
+    send_window_atom_array(window, _NET_WM_STATE, atoms, len);
+  }
+}
+
+void set_window_minimized(u32 window) {
+  append_window_atom_array(window, _NET_WM_STATE, _NET_WM_STATE_HIDDEN);
+}
+
+void reset_window_minimized(u32 window) {
+  xcb_atom_t atoms[15];
+  u32 len = query_window_atom_array(window, _NET_WM_STATE, atoms, 15);
+  for(u32 i = 0; i < len;) {
+    if(atoms[i] == _NET_WM_STATE_HIDDEN) {
+      len--;
+      if(!len) break;
+      for(u32 j = i; j < len; j++) atoms[j] = atoms[j + 1];
+    } else {
+      i++;
+    }
+  }
+  if(len == 0) {
+    delete_window_property(window, _NET_WM_STATE);
+  } else {
+    send_window_atom_array(window, _NET_WM_STATE, atoms, len);
   }
 }
 

@@ -71,7 +71,8 @@ static void reconfigure_monitor(u32 monitor) {
   if(fullscreen_windows[curr_workspace]) {
     configure_and_raise(fullscreen_windows[curr_workspace],
                         fullscreen[monitor].x, fullscreen[monitor].y,
-                        fullscreen[monitor].width, fullscreen[monitor].height);
+                        fullscreen[monitor].width, fullscreen[monitor].height,
+                        0);
     bar_visibility(0);
     return;
   }
@@ -273,6 +274,10 @@ void unmap_notify(u32 window) {
   u32 *workspace;
   for(u32 j = 0; j < monitor_count; j++) {
     workspace = workspaces[visible_workspaces[j]];
+    if(fullscreen_windows[j] == window) {
+      fullscreen_windows[j] = 0;
+      send_fullscreen_windows(fullscreen_windows);
+    }
     for(u32 i = 0; i < WINDOWS_PER_WORKSPACE; i++) {
       if(workspace[i] == window) {
         workspace[i] = 0;
@@ -341,6 +346,7 @@ void focus_out_notify(u32 window) {
   const u32 work = focused_workspace();
   change_window_border_color(window, BORDER_UNFOCUSED);
   focused_windows[work] = -focused_windows[work] - 1;
+  send_unfocused_window(window);
 }
 
 void focus_window_to_left(void) {
@@ -675,6 +681,7 @@ void minimize_focused_window(void) {
   minimized_window_count++;
   minimized_windows[0] = workspaces[focused_work][focused_win];
   send_minimized_windows(minimized_windows, minimized_window_count);
+  set_window_minimized(workspaces[focused_work][focused_win]);
   unmap_window(workspaces[focused_work][focused_win]);
   workspaces[focused_work][focused_win] = 0;
   send_workspace(workspaces[focused_work], focused_work);
@@ -699,6 +706,7 @@ void unminimize_window(u32 index) {
   minimized_window_count--;
   send_minimized_windows(minimized_windows, minimized_window_count);
   map_request(window);
+  reset_window_minimized(window);
 }
 
 void init_layout(const struct geometry *norm, const struct geometry *full,

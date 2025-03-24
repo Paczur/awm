@@ -143,7 +143,7 @@ u32 query_window_cardinal_array(u32 window, xcb_atom_t atom, u32 *arr,
     xcb_get_property(conn, 0, window, atom, XCB_ATOM_CARDINAL, 0, length);
   xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, cookie, NULL);
   if(reply && xcb_get_property_value_length(reply) > 0) {
-    min = MIN((u32)xcb_get_property_value_length(reply), length);
+    min = MIN((u32)xcb_get_property_value_length(reply) / 4, length);
     memcpy(arr, xcb_get_property_value(reply), min * sizeof(u32));
   }
   if(reply) free(reply);
@@ -159,13 +159,14 @@ void send_window_cardinal_array(u32 window, xcb_atom_t atom, u32 *arr,
 
 u32 query_window_atom_array(u32 window, xcb_atom_t atom, xcb_atom_t *arr,
                             u32 length) {
+  xcb_generic_error_t *err;
   u32 min = 0;
   puts("query array");
   const xcb_get_property_cookie_t cookie =
     xcb_get_property(conn, 0, window, atom, XCB_ATOM_ATOM, 0, length);
-  xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, cookie, NULL);
-  if(reply && xcb_get_property_value_length(reply) > 0) {
-    min = MIN((u32)xcb_get_property_value_length(reply), length);
+  xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, cookie, &err);
+  if(reply && !err && xcb_get_property_value_length(reply) > 0) {
+    min = MIN((u32)xcb_get_property_value_length(reply) / 4, length);
     memcpy(arr, xcb_get_property_value(reply), min * sizeof(u32));
   }
   if(reply) free(reply);
@@ -219,7 +220,7 @@ void query_window_string(xcb_window_t window, xcb_atom_t atom, char *str,
     *str_len = 0;
     return;
   }
-  *str_len = xcb_get_property_value_length(reply);
+  *str_len = xcb_get_property_value_length(reply) / 4;
   *str_len = MIN(*str_len, str_size);
   memcpy(str, xcb_get_property_value(reply), *str_len);
   free(reply);
