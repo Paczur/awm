@@ -4,6 +4,10 @@
 #include "../types.h"
 #include "../x/x_p.h"
 
+#define WINDOW_STATE_NONE 0
+#define WINDOW_STATE_FULLSCREEN 1
+
+u32 requested_window_state(u32 window);
 void map_window(u32 window);
 void unmap_window(u32 window);
 void configure_and_raise(u32 window, u32 x, u32 y, u32 width, u32 height,
@@ -49,5 +53,6 @@ void reset_window_minimized(u32 window);
 void bar_visibility(u32 val);
 
 void setup_root(void);
+void send_changes(void);
 
 #endif

@@ -3,7 +3,7 @@
 Work in progress tiling X11 window manager featuring modal keybindings.
 
 ## Disclaimer
-As it is pre-alpha software, functionality is not finnished and bugs are to be
+As it is pre-release software, functionality is not finnished and bugs are to be
 expected.
 
 ## Features
@@ -19,7 +19,6 @@ To Be Done:
 - Clickable bar
 - Urgency display
 - Runtime switchable colorschemes
-- Honor some EWMH/ICCM requests
 
 ## Installation
 awm uses Makefiles for compilation so simple `make && make install` should work.

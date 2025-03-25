@@ -44,7 +44,9 @@
   X(_NET_WM_ACTION_FULLSCREEN)  \
   X(_NET_WM_ACTION_MINIMIZE)    \
   X(_NET_WM_ACTION_CLOSE)       \
-  X(_NET_CLOSE_WINDOW)
+  X(_NET_CLOSE_WINDOW)          \
+  X(_NET_WM_SYNC_REQUEST)       \
+  X(_NET_WM_SYNC_REQUEST_COUNTER)
 
 #define WM_NAME XCB_ATOM_WM_NAME
 #define WM_ICON_NAME XCB_ATOM_WM_ICON_NAME
@@ -87,5 +89,7 @@ void unmap_window(xcb_window_t window);
 
 void xkb_state_notify(xcb_xkb_state_notify_event_t *event);
 u32 keycode_to_utf8(u8 keycode, char *buff, u32 size);
+
+void send_changes(void);
 
 #endif

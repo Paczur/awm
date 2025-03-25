@@ -281,3 +281,8 @@ void xkb_state_notify(xcb_xkb_state_notify_event_t *event) {
 u32 keycode_to_utf8(u8 keycode, char *buff, u32 size) {
   return xkb_state_key_get_utf8(state, keycode, buff, size);
 }
+
+void send_changes(void) {
+  xcb_flush(conn);
+  fflush(stdout);
+}

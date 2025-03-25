@@ -109,11 +109,6 @@ void change_window_color(u32 window, u32 preset) {
   xcb_change_window_attributes(conn, window, window_mask, &window_values);
 }
 
-void send_changes(void) {
-  xcb_flush(conn);
-  fflush(stdout);
-}
-
 void query_window_name(u32 window, char *name, u32 *name_length,
                        u32 name_size) {
   puts("query window name");

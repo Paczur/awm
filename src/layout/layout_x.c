@@ -10,9 +10,36 @@
 #include "../shortcut/shortcut.h"
 #include "layout.h"
 
+static void sync_configure(u32 window) {
+  u32 count;
+  xcb_icccm_get_wm_protocols_reply_t protocols;
+  xcb_client_message_event_t message = {
+    XCB_CLIENT_MESSAGE,
+    32,
+    .window = window,
+    WM_PROTOCOLS,
+    {.data32[0] = _NET_WM_SYNC_REQUEST, .data32[1] = XCB_CURRENT_TIME}};
+  xcb_get_property_cookie_t cookie =
+    xcb_icccm_get_wm_protocols(conn, window, WM_PROTOCOLS);
+  if(xcb_icccm_get_wm_protocols_reply(conn, cookie, &protocols, NULL)) {
+    count = protocols.atoms_len;
+    for(u32 i = 0; i < count; i++) {
+      if(protocols.atoms[i] == _NET_WM_SYNC_REQUEST) {
+        query_cardinal_array(_NET_WM_SYNC_REQUEST_COUNTER,
+                             message.data.data32 + 2, 2);
+        xcb_send_event(conn, 0, window, 0, (char *)&message);
+        xcb_icccm_get_wm_protocols_reply_wipe(&protocols);
+        return;
+      }
+    }
+    xcb_icccm_get_wm_protocols_reply_wipe(&protocols);
+  }
+}
+
 void configure_and_raise(u32 window, u32 x, u32 y, u32 width, u32 height,
                          u32 border) {
   const u32 values[] = {x, y, width, height, border, XCB_STACK_MODE_TOP_IF};
+  sync_configure(window);
   xcb_configure_window(conn, window,
                        XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y |
                          XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT |
@@ -24,11 +51,22 @@ void configure_and_raise(u32 window, u32 x, u32 y, u32 width, u32 height,
 void configure_window(u32 window, u32 x, u32 y, u32 width, u32 heigth,
                       u32 border) {
   const u32 values[] = {x, y, width, heigth, border};
+  sync_configure(window);
   xcb_configure_window(conn, window,
                        XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y |
                          XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT |
                          XCB_CONFIG_WINDOW_BORDER_WIDTH,
                        values);
+}
+
+u32 requested_window_state(u32 window) {
+  xcb_atom_t atoms[15];
+  u32 ret;
+  const u32 len = query_window_atom_array(window, _NET_WM_STATE, atoms, 15);
+  for(u32 i = 0; i < len; i++) {
+    if(atoms[i] == _NET_WM_STATE_FULLSCREEN) ret |= WINDOW_STATE_FULLSCREEN;
+  }
+  return ret;
 }
 
 void listen_to_events(u32 window) {

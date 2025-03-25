@@ -225,6 +225,7 @@ void restore_focus(void) {
 }
 
 void map_request(u32 window) {
+  u32 state;
   if(focused_monitor > monitor_count) return;
   const u32 current_workspace = focused_workspace();
   u32 *const workspace = workspaces[current_workspace];
@@ -259,6 +260,9 @@ void map_request(u32 window) {
   }
   workspace[index] = window;
   listen_to_events(window);
+  state = requested_window_state(window);
+  if(state | WINDOW_STATE_FULLSCREEN)
+    fullscreen_windows[current_workspace] = window;
   reconfigure_monitor(focused_monitor);
   send_workspace(workspace, current_workspace);
   map_window(window);
