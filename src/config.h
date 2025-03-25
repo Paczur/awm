@@ -52,6 +52,9 @@ static void brightness_up(void) { system_run("/etc/awm/scripts/brightness 2"); }
 static void brightness_down(void) {
   system_run("/etc/awm/scripts/brightness -2");
 }
+static void volume_up(void) { system_run("volume +"); }
+static void volume_down(void) { system_run("volume -"); }
+static void volume_mute(void) { system_run("volume m"); }
 static void screenshot(void) {
   system_run(
     "scrot -s -q 100 -e "
@@ -79,14 +82,14 @@ static void resize_right(void) { change_size_offset(0, 5); }
     {FLAGS_NONE, KEY_l, focus_window_to_right},                \
     {FLAGS_NONE, KEY_k, focus_window_above},                   \
     {FLAGS_NONE, KEY_j, focus_window_below},                   \
-    {FLAGS_NONE, KEY_q, delete_focused_window},                \
+    {FLAGS_NONE, KEY_q, close_focused_window},                 \
     {FLAGS_NONE, KEY_p, screenshot},                           \
-    {FLAGS_NONE, KEY_f, toggle_fullscreen_window},             \
+    {FLAGS_NONE, KEY_f, toggle_fullscreen_on_focused_window},  \
     {MOD_ALT, KEY_s, system_shutdown},                         \
-    {MOD_SHIFT, KEY_h, swap_focused_window_with_left},         \
-    {MOD_SHIFT, KEY_l, swap_focused_window_with_right},        \
-    {MOD_SHIFT, KEY_k, swap_focused_window_with_above},        \
-    {MOD_SHIFT, KEY_j, swap_focused_window_with_below},        \
+    {MOD_SHIFT, KEY_H, swap_focused_window_with_left},         \
+    {MOD_SHIFT, KEY_L, swap_focused_window_with_right},        \
+    {MOD_SHIFT, KEY_K, swap_focused_window_with_above},        \
+    {MOD_SHIFT, KEY_J, swap_focused_window_with_below},        \
     {MOD_ALT | AUTO_REPEAT, KEY_h, resize_left},               \
     {MOD_ALT | AUTO_REPEAT, KEY_l, resize_right},              \
     {MOD_ALT | AUTO_REPEAT, KEY_k, resize_up},                 \
@@ -120,6 +123,12 @@ static void resize_right(void) { change_size_offset(0, 5); }
     {AUTO_REPEAT, KEY_F2, brightness_up},                      \
     {AUTO_REPEAT, KEY_XF86MonBrightnessDown, brightness_down}, \
     {AUTO_REPEAT, KEY_XF86MonBrightnessUp, brightness_up},     \
+    {AUTO_REPEAT, KEY_F4, volume_mute},                        \
+    {AUTO_REPEAT, KEY_F5, volume_down},                        \
+    {AUTO_REPEAT, KEY_F6, volume_up},                          \
+    {AUTO_REPEAT, KEY_XF86AudioMute, volume_mute},             \
+    {AUTO_REPEAT, KEY_XF86AudioLowerVolume, volume_down},      \
+    {AUTO_REPEAT, KEY_XF86AudioRaiseVolume, volume_up},        \
   }
 
 #endif

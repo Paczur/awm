@@ -274,8 +274,8 @@ void unmap_notify(u32 window) {
   u32 *workspace;
   for(u32 j = 0; j < monitor_count; j++) {
     workspace = workspaces[visible_workspaces[j]];
-    if(fullscreen_windows[j] == window) {
-      fullscreen_windows[j] = 0;
+    if(fullscreen_windows[visible_workspaces[j]] == window) {
+      fullscreen_windows[visible_workspaces[j]] = 0;
       send_fullscreen_windows(fullscreen_windows);
     }
     for(u32 i = 0; i < WINDOWS_PER_WORKSPACE; i++) {
@@ -316,14 +316,13 @@ void reset_layout_state(void) {
 void focus_in_notify(u32 window) {
   const u32 workspace_num = focused_workspace();
   const u32 *const restrict workspace = workspaces[workspace_num];
+  u32 monitor;
+  u32 window_i;
   for(u32 i = 0; i < WINDOWS_PER_WORKSPACE; i++) {
     if(window == workspace[i]) {
-      focused_windows[workspace_num] = projection[focused_monitor][i];
-      send_focused_window(window);
-      send_focused_windows((u32 *)focused_windows);
-      send_focused_workspace(visible_workspaces[focused_monitor]);
-      change_window_border_color(window, BORDER_FOCUSED);
-      return;
+      monitor = focused_monitor;
+      window_i = i;
+      goto finish;
     }
   }
   for(u32 j = 0; j < monitor_count; j++) {
@@ -331,15 +330,18 @@ void focus_in_notify(u32 window) {
       if(window == workspaces[visible_workspaces[j]][i]) {
         focused_monitor = j;
         send_focused_monitor(j);
-        focused_windows[j] = projection[j][i];
-        send_focused_window(window);
-        send_focused_windows((u32 *)focused_windows);
-        send_focused_workspace(visible_workspaces[j]);
-        change_window_border_color(window, BORDER_FOCUSED);
-        return;
+        monitor = j;
+        window_i = i;
+        goto finish;
       }
     }
   }
+finish:
+  focused_windows[visible_workspaces[monitor]] = projection[monitor][window_i];
+  send_focused_window(window);
+  send_focused_windows((u32 *)focused_windows);
+  send_focused_workspace(visible_workspaces[monitor]);
+  change_window_border_color(window, BORDER_FOCUSED);
 }
 
 void focus_out_notify(u32 window) {
@@ -437,11 +439,13 @@ void focus_window_below(void) {
   }
 }
 
-void delete_focused_window(void) {
+void close_focused_window(void) {
   const i32 curr_window = focused_windows[focused_workspace()];
   if(curr_window < 0) return;
   delete_window(workspaces[focused_workspace()][curr_window]);
 }
+
+void close_window(u32 window) { delete_window(window); }
 
 void swap_windows_by_index(u32 n) {
   const u32 curr_workspace = focused_workspace();
@@ -669,6 +673,41 @@ void change_workspace(u32 w) {
   restore_focus();
 }
 
+void set_minimized_window(u32 window, u32 state) {
+  if(state && minimized_window_count < MINIMIZE_QUEUE_SIZE) {
+    for(u32 i = 0; i < WORKSPACE_COUNT; i++) {
+      for(u32 j = 0; j < WINDOWS_PER_WORKSPACE; j++) {
+        if(workspaces[i][j] == window) {
+          for(u32 k = minimized_window_count; k > 0; k--)
+            minimized_windows[k] = minimized_windows[k - 1];
+          minimized_window_count++;
+          minimized_windows[0] = window;
+          send_minimized_windows(minimized_windows, minimized_window_count);
+          set_window_minimized(window);
+          workspaces[i][j] = 0;
+          send_workspace(workspaces[i], i);
+          for(u32 k = 0; k < monitor_count; k++) {
+            if(visible_workspaces[k] == i) {
+              unmap_window(window);
+              reconfigure_monitor(focused_monitor);
+              restore_focus();
+              return;
+            }
+          }
+        }
+      }
+    }
+  }
+  if(state != 1 && minimized_window_count > 0) {
+    for(u32 i = 0; i < minimized_window_count; i++) {
+      if(minimized_windows[i] == window) {
+        unminimize_window(i);
+        return;
+      }
+    }
+  }
+}
+
 void minimize_focused_window(void) {
   const u32 focused_work = focused_workspace();
   const i32 focused_win =
@@ -691,9 +730,10 @@ void minimize_focused_window(void) {
 
 void unminimize_window(u32 index) {
   u32 full = 1;
+  u32 workspace = focused_workspace();
   if(minimized_window_count == 0) return;
   for(u32 i = 0; i < WINDOWS_PER_WORKSPACE; i++) {
-    if(workspaces[focused_workspace()][i] == 0) {
+    if(workspaces[workspace][i] == 0) {
       full = 0;
       break;
     }
@@ -764,7 +804,40 @@ u32 is_workspace_empty(void) {
          projection[focused_monitor][0] == WINDOWS_PER_WORKSPACE;
 }
 
-void toggle_fullscreen_window(void) {
+void set_fullscreen_window(u32 window, u32 state) {
+  u32 workspace;
+  u32 window_i;
+  for(u32 i = 0; i < WORKSPACE_COUNT; i++) {
+    for(u32 j = 0; j < WINDOWS_PER_WORKSPACE; j++) {
+      if(workspaces[i][j] == window) {
+        workspace = i;
+        window_i = j;
+        goto found_workspace;
+      }
+    }
+  }
+  return;
+found_workspace:
+  if(state != 1 && fullscreen_windows[workspace]) {
+    reset_window_fullscreen(fullscreen_windows[workspace]);
+    fullscreen_windows[workspace] = 0;
+  } else if(state &&
+            fullscreen_windows[workspace] != workspaces[workspace][window_i]) {
+    fullscreen_windows[workspace] = workspaces[workspace][window_i];
+    set_window_fullscreen(fullscreen_windows[workspace]);
+  } else {
+    return;
+  }
+  send_fullscreen_windows(fullscreen_windows);
+  for(u32 i = 0; i < monitor_count; i++) {
+    if(visible_workspaces[i] == workspace) {
+      reconfigure_monitor(i);
+      return;
+    }
+  }
+}
+
+void toggle_fullscreen_on_focused_window(void) {
   const u32 focused_work = focused_workspace();
   const i32 focused_win =
     focused_windows[focused_work] < 0

@@ -220,7 +220,7 @@ void query_window_string(xcb_window_t window, xcb_atom_t atom, char *str,
     *str_len = 0;
     return;
   }
-  *str_len = xcb_get_property_value_length(reply) / 4;
+  *str_len = xcb_get_property_value_length(reply);
   *str_len = MIN(*str_len, str_size);
   memcpy(str, xcb_get_property_value(reply), *str_len);
   free(reply);

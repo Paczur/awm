@@ -145,6 +145,21 @@ static void button_press(const xcb_button_press_event_t *event) {
   }
 }
 
+static void client_message(const xcb_client_message_event_t *event) {
+  if(event->type == _NET_WM_STATE) {
+    if(event->data.data32[1] == _NET_WM_STATE_FULLSCREEN ||
+       event->data.data32[2] == _NET_WM_STATE_FULLSCREEN) {
+      set_fullscreen_window(event->window, event->data.data32[0]);
+    }
+    if(event->data.data32[1] == _NET_WM_STATE_HIDDEN ||
+       event->data.data32[2] == _NET_WM_STATE_HIDDEN) {
+      set_minimized_window(event->window, event->data.data32[0]);
+    }
+  } else if(event->type == _NET_CLOSE_WINDOW) {
+    close_window(event->window);
+  }
+}
+
 int main(void) {
   u8 code;
   xcb_generic_event_t *event;
@@ -184,6 +199,9 @@ int main(void) {
       break;
     case XCB_DESTROY_NOTIFY:
       destroy_notify(((xcb_destroy_notify_event_t *)event)->window);
+      break;
+    case XCB_CLIENT_MESSAGE:
+      client_message((xcb_client_message_event_t *)event);
       break;
     default:
       if(code == xkb_event) {

@@ -32,9 +32,11 @@ void swap_focused_window_with_below(void);
 
 void reset_layout_state(void);
 
-void delete_focused_window(void);
+void close_window(u32 window);
+void close_focused_window(void);
 
 void change_workspace(u32 w);
+void set_minimized_window(u32 window, u32 state);
 void minimize_focused_window(void);
 void unminimize_window(u32 index);
 void clean_layout_state(void);
@@ -44,7 +46,8 @@ void restore_focus(void);
 void change_size_offset(i32 x, i32 y);
 void reset_size_offset(void);
 
-void toggle_fullscreen_window(void);
+void set_fullscreen_window(u32 window, u32 state);
+void toggle_fullscreen_on_focused_window(void);
 
 #endif
 

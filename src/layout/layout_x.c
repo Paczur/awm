@@ -33,7 +33,10 @@ void configure_window(u32 window, u32 x, u32 y, u32 width, u32 heigth,
 
 void listen_to_events(u32 window) {
   int values = XCB_EVENT_MASK_FOCUS_CHANGE | XCB_EVENT_MASK_PROPERTY_CHANGE;
+  xcb_atom_t atoms[] = {_NET_WM_ACTION_FULLSCREEN, _NET_WM_ACTION_MINIMIZE,
+                        _NET_WM_ACTION_CLOSE};
   xcb_change_window_attributes(conn, window, XCB_CW_EVENT_MASK, &values);
+  send_cardinal_array(_NET_WM_ALLOWED_ACTIONS, atoms, LENGTH(atoms));
   xcb_grab_button(conn, 1, window, XCB_EVENT_MASK_BUTTON_PRESS,
                   XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE,
                   XCB_BUTTON_INDEX_ANY, XCB_MOD_MASK_ANY);
