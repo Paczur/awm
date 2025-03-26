@@ -24,6 +24,13 @@
   X(8)        \
   X(9)
 
+#define X CHANGE_WORKSPACE
+TEN_X
+#undef X
+#define X UNMINIMIZE
+TEN_X
+#undef X
+
 static void open_terminal(void) { system_run("urxvt"); }
 static void open_browser(void) { system_run("lb"); }
 static void insert_mode(void) { set_mode(INSERT_MODE); }
@@ -38,16 +45,6 @@ static void signal_usr1(int unused) {
   clean_state_and_die();
 }
 static void system_shutdown(void) { system_run("sudo shutdown"); }
-#define X CHANGE_WORKSPACE
-TEN_X
-#undef X
-#define X UNMINIMIZE
-TEN_X
-#undef X
-static void swap_windows_by_index_0(void) { swap_windows_by_index(0); }
-static void swap_windows_by_index_1(void) { swap_windows_by_index(1); }
-static void swap_windows_by_index_2(void) { swap_windows_by_index(2); }
-static void swap_windows_by_index_3(void) { swap_windows_by_index(3); }
 static void brightness_up(void) { system_run("/etc/awm/scripts/brightness 2"); }
 static void brightness_down(void) {
   system_run("/etc/awm/scripts/brightness -2");
@@ -64,10 +61,24 @@ static void screenshot(void) {
     "/home/paczur/Multimedia/Pictures/Screenshots/Scrot/"
     "%d-%m-%Y_%H-%M-%S_%wx%H.png");
 }
+
 static void resize_up(void) { change_size_offset(-5, 0); }
 static void resize_down(void) { change_size_offset(5, 0); }
 static void resize_left(void) { change_size_offset(0, -5); }
 static void resize_right(void) { change_size_offset(0, 5); }
+
+static void focus_left(void) { focus_window_direction(LEFT); }
+static void focus_right(void) { focus_window_direction(RIGHT); }
+static void focus_up(void) { focus_window_direction(UP); }
+static void focus_down(void) { focus_window_direction(DOWN); }
+static void swap_left(void) { swap_focused_window_with_direction(LEFT); }
+static void swap_right(void) { swap_focused_window_with_direction(RIGHT); }
+static void swap_up(void) { swap_focused_window_with_direction(UP); }
+static void swap_down(void) { swap_focused_window_with_direction(DOWN); }
+static void swap_windows_by_index_0(void) { swap_windows_by_index(0); }
+static void swap_windows_by_index_1(void) { swap_windows_by_index(1); }
+static void swap_windows_by_index_2(void) { swap_windows_by_index(2); }
+static void swap_windows_by_index_3(void) { swap_windows_by_index(3); }
 
 #define SHORTCUTS                                              \
   {                                                            \
@@ -78,18 +89,18 @@ static void resize_right(void) { change_size_offset(0, 5); }
     {MOD_ALT, KEY_q, die},                                     \
     {MOD_ALT | MOD_SHIFT, KEY_q, clean_state_and_die},         \
     {FLAGS_NONE, KEY_i, insert_mode},                          \
-    {FLAGS_NONE, KEY_h, focus_window_to_left},                 \
-    {FLAGS_NONE, KEY_l, focus_window_to_right},                \
-    {FLAGS_NONE, KEY_k, focus_window_above},                   \
-    {FLAGS_NONE, KEY_j, focus_window_below},                   \
+    {FLAGS_NONE, KEY_h, focus_left},                           \
+    {FLAGS_NONE, KEY_l, focus_right},                          \
+    {FLAGS_NONE, KEY_k, focus_up},                             \
+    {FLAGS_NONE, KEY_j, focus_down},                           \
     {FLAGS_NONE, KEY_q, close_focused_window},                 \
     {FLAGS_NONE, KEY_p, screenshot},                           \
     {FLAGS_NONE, KEY_f, toggle_fullscreen_on_focused_window},  \
     {MOD_ALT, KEY_s, system_shutdown},                         \
-    {MOD_SHIFT, KEY_H, swap_focused_window_with_left},         \
-    {MOD_SHIFT, KEY_L, swap_focused_window_with_right},        \
-    {MOD_SHIFT, KEY_K, swap_focused_window_with_above},        \
-    {MOD_SHIFT, KEY_J, swap_focused_window_with_below},        \
+    {MOD_SHIFT, KEY_H, swap_left},                             \
+    {MOD_SHIFT, KEY_L, swap_right},                            \
+    {MOD_SHIFT, KEY_K, swap_up},                               \
+    {MOD_SHIFT, KEY_J, swap_down},                             \
     {MOD_ALT | AUTO_REPEAT, KEY_h, resize_left},               \
     {MOD_ALT | AUTO_REPEAT, KEY_l, resize_right},              \
     {MOD_ALT | AUTO_REPEAT, KEY_k, resize_up},                 \

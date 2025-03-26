@@ -7,6 +7,13 @@
 #define BORDER_FOCUSED 0xfff3f3f3
 #define BORDER_UNFOCUSED 0xff111111
 
+#define UP 0
+#define ABOVE 0
+#define LEFT 1
+#define RIGHT 3
+#define BELOW 4
+#define DOWN 4
+
 void init_layout(const struct geometry *normal,
                  const struct geometry *fullscreen, u32 monitor_count);
 
@@ -18,17 +25,9 @@ void focus_out_notify(u32 window);
 void destroy_notify(u32 window);
 
 void focus_window(u32 window);
-void focus_window_to_left(void);
-void focus_window_to_right(void);
-void focus_window_above(void);
-void focus_window_below(void);
-
+void focus_window_direction(u32 direction);
 void swap_windows_by_index(u32 n);
-
-void swap_focused_window_with_right(void);
-void swap_focused_window_with_left(void);
-void swap_focused_window_with_above(void);
-void swap_focused_window_with_below(void);
+void swap_focused_window_with_direction(u32 direction);
 
 void reset_layout_state(void);
 

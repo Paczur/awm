@@ -16,21 +16,15 @@ struct monitor {
   u32 y;
   u32 width;
   u32 height;
-  u8 has_above : 1;
-  u8 has_below : 1;
-  u8 has_to_right : 1;
-  u8 has_to_left : 1;
-  u8 above;
-  u8 below;
-  u8 to_right;
-  u8 to_left;
+  u8 has[5];
+  u8 to[5];
 };
 
 static u32 workspaces[WORKSPACE_COUNT][WINDOWS_PER_WORKSPACE];
 static u8 projection[MAX_MONITOR_COUNT][WINDOWS_PER_WORKSPACE];
 static u32 visible_workspaces[MAX_MONITOR_COUNT];
 static struct monitor normal[MAX_MONITOR_COUNT] = {0};
-static struct monitor fullscreen[MAX_MONITOR_COUNT] = {0};
+static struct geometry fullscreen[MAX_MONITOR_COUNT] = {0};
 static i32 focused_windows[WORKSPACE_COUNT] = {-1, -1, -1, -1, -1,
                                                -1, -1, -1, -1, -1};
 static u32 monitor_count;
@@ -170,26 +164,26 @@ static void init_monitors(const struct geometry *restrict norm,
     for(u32 j = 0; j < m_count; j++) {
       if(i == j) continue;
       if(normal[i].y == normal[j].y + normal[j].height) {
-        normal[i].above = j;
-        normal[j].below = i;
-        normal[i].has_above = 1;
-        normal[j].has_below = 1;
+        normal[i].to[ABOVE] = j;
+        normal[j].to[BELOW] = i;
+        normal[i].has[ABOVE] = 1;
+        normal[j].has[BELOW] = 1;
       } else if(normal[i].y + normal[i].height == normal[j].y) {
-        normal[i].below = j;
-        normal[j].above = i;
-        normal[i].has_below = 1;
-        normal[j].has_above = 1;
+        normal[i].to[BELOW] = j;
+        normal[j].to[ABOVE] = i;
+        normal[i].has[BELOW] = 1;
+        normal[j].has[ABOVE] = 1;
       }
       if(normal[i].x == normal[j].x + normal[j].width) {
-        normal[i].to_left = j;
-        normal[j].to_right = i;
-        normal[i].has_to_left = 1;
-        normal[j].has_to_right = 1;
+        normal[i].to[LEFT] = j;
+        normal[j].to[RIGHT] = i;
+        normal[i].has[LEFT] = 1;
+        normal[j].has[RIGHT] = 1;
       } else if(normal[i].x + normal[i].width == normal[j].x) {
-        normal[i].to_right = j;
-        normal[j].to_left = i;
-        normal[i].has_to_right = 1;
-        normal[j].has_to_left = 1;
+        normal[i].to[RIGHT] = j;
+        normal[j].to[LEFT] = i;
+        normal[i].has[RIGHT] = 1;
+        normal[j].has[LEFT] = 1;
       }
     }
   }
@@ -261,8 +255,11 @@ void map_request(u32 window) {
   workspace[index] = window;
   listen_to_events(window);
   state = requested_window_state(window);
-  if(state | WINDOW_STATE_FULLSCREEN)
+  if(state & WINDOW_STATE_FULLSCREEN) {
     fullscreen_windows[current_workspace] = window;
+    set_window_fullscreen(window);
+    send_fullscreen_windows(fullscreen_windows);
+  }
   reconfigure_monitor(focused_monitor);
   send_workspace(workspace, current_workspace);
   map_window(window);
@@ -355,91 +352,30 @@ void focus_out_notify(u32 window) {
   send_unfocused_window(window);
 }
 
-void focus_window_to_left(void) {
+void focus_window_direction(u32 direction) {
   const i32 curr_window = focused_windows[focused_workspace()];
-  if(curr_window < 0 || curr_window % 2 == 0 ||
+  const i32 offset_direction = direction - 2;
+  const u32 dir_axis = ABS(offset_direction);
+  const u32 end_by_axis = dir_axis == 2 ? curr_window / 2 : curr_window % 2;
+  const u32 is_end = offset_direction < 0 ? !end_by_axis : end_by_axis;
+  if(curr_window < 0 || is_end ||
      projection[focused_monitor][curr_window] ==
-       projection[focused_monitor][curr_window - 1]) {
-    if(!normal[focused_monitor].has_to_left) return;
-    const u32 left = normal[focused_monitor].to_left;
-    const u32 index = (curr_window < 0)      ? 1
-                      : curr_window % 2 == 1 ? curr_window
-                                             : curr_window + 1;
-    if(projection[left][index] != WINDOWS_PER_WORKSPACE) {
+       projection[focused_monitor][curr_window + offset_direction]) {
+    if(!normal[focused_monitor].has[direction]) return;
+    const u32 target = normal[focused_monitor].to[direction];
+    const u32 index = curr_window < 0 ? 0
+                      : is_end        ? (u32)curr_window - offset_direction
+                                      : (u32)curr_window;
+    if(projection[target][index] != WINDOWS_PER_WORKSPACE) {
       focus_window(
-        workspaces[visible_workspaces[left]][projection[left][index]]);
+        workspaces[visible_workspaces[target]][projection[target][index]]);
     } else {
-      focus_monitor(left);
+      focus_monitor(target);
     }
-  } else if(curr_window % 2) {
-    focus_window(workspaces[focused_workspace()]
-                           [projection[focused_monitor][curr_window - 1]]);
-  }
-}
-
-void focus_window_to_right(void) {
-  const i32 curr_window = focused_windows[focused_workspace()];
-  if(curr_window < 0 || curr_window % 2 ||
-     projection[focused_monitor][curr_window] ==
-       projection[focused_monitor][curr_window + 1]) {
-    if(!normal[focused_monitor].has_to_right) return;
-    const u32 right = normal[focused_monitor].to_right;
-    const u32 index = (curr_window < 0)      ? 0
-                      : curr_window % 2 == 0 ? curr_window
-                                             : curr_window - 1;
-    if(projection[right][index] != WINDOWS_PER_WORKSPACE) {
-      focus_window(
-        workspaces[visible_workspaces[right]][projection[right][index]]);
-    } else {
-      focus_monitor(right);
-    }
-  } else if(curr_window % 2 == 0) {
-    focus_window(workspaces[focused_workspace()]
-                           [projection[focused_monitor][curr_window + 1]]);
-  }
-}
-
-void focus_window_above(void) {
-  const i32 curr_window = focused_windows[focused_workspace()];
-  if(curr_window < 0 || curr_window / 2 == 0 ||
-     projection[focused_monitor][curr_window] ==
-       projection[focused_monitor][curr_window - 2]) {
-    if(!normal[focused_monitor].has_above) return;
-    const u32 above = normal[focused_monitor].above;
-    const u32 index = (curr_window < 0)      ? 2
-                      : curr_window / 2 == 0 ? curr_window
-                                             : curr_window - 2;
-    if(projection[above][index] != WINDOWS_PER_WORKSPACE) {
-      focus_window(
-        workspaces[visible_workspaces[above]][projection[above][index]]);
-    } else {
-      focus_monitor(normal[focused_monitor].above);
-    }
-  } else if(curr_window / 2) {
-    focus_window(workspaces[focused_workspace()]
-                           [projection[focused_monitor][curr_window - 2]]);
-  }
-}
-
-void focus_window_below(void) {
-  const i32 curr_window = focused_windows[focused_workspace()];
-  if(curr_window < 0 || curr_window / 2 ||
-     projection[focused_monitor][curr_window] ==
-       projection[focused_monitor][curr_window + 2]) {
-    if(!normal[focused_monitor].has_below) return;
-    const u32 below = normal[focused_monitor].below;
-    const u32 index = (curr_window < 0)      ? 0
-                      : curr_window / 2 == 1 ? curr_window
-                                             : curr_window + 2;
-    if(projection[below][index] != WINDOWS_PER_WORKSPACE) {
-      focus_window(
-        workspaces[visible_workspaces[below]][projection[below][index]]);
-    } else {
-      focus_monitor(normal[focused_monitor].below);
-    }
-  } else if(curr_window / 2 == 0) {
-    focus_window(workspaces[focused_workspace()]
-                           [projection[focused_monitor][curr_window + 2]]);
+  } else if(!is_end) {
+    focus_window(
+      workspaces[focused_workspace()]
+                [projection[focused_monitor][curr_window + offset_direction]]);
   }
 }
 
@@ -463,173 +399,48 @@ void swap_windows_by_index(u32 n) {
   focused_windows[curr_workspace] = n;
 }
 
-void swap_focused_window_with_left(void) {
+void swap_focused_window_with_direction(u32 direction) {
   const u32 curr_workspace = focused_workspace();
-  const i32 curr_window = focused_windows[curr_workspace];
-  if(curr_window < 0 || curr_window % 2 == 0 ||
+  const i32 curr_window = focused_windows[focused_workspace()];
+  const i32 offset_direction = direction - 2;
+  const u32 dir_axis = ABS(offset_direction);
+  const u32 end_by_axis = dir_axis == 2 ? curr_window / 2 : curr_window % 2;
+  const u32 is_end = offset_direction < 0 ? !end_by_axis : end_by_axis;
+  if(curr_window < 0 || is_end ||
      projection[focused_monitor][curr_window] ==
-       projection[focused_monitor][curr_window - 1]) {
-    if(!normal[focused_monitor].has_to_left) return;
-    const u32 left = normal[focused_monitor].to_left;
+       projection[focused_monitor][curr_window + offset_direction]) {
+    if(!normal[focused_monitor].has[direction]) return;
+    const u32 target = normal[focused_monitor].to[direction];
     const u32 index =
-      projection[left][(curr_window < 0)      ? 0
-                       : curr_window % 2 == 1 ? curr_window
-                                              : curr_window + 1];
+      projection[target][curr_window < 0 ? 0
+                         : is_end        ? (u32)curr_window - offset_direction
+                                         : (u32)curr_window];
     const u32 curr_index = projection[focused_monitor][curr_window];
     if(index != WINDOWS_PER_WORKSPACE) {
       const u32 t = workspaces[curr_workspace][curr_window];
       workspaces[curr_workspace][curr_index] =
-        workspaces[visible_workspaces[left]][index];
-      workspaces[visible_workspaces[left]][index] = t;
-      focused_windows[visible_workspaces[left]] = index;
+        workspaces[visible_workspaces[target]][index];
+      workspaces[visible_workspaces[target]][index] = t;
+      focused_windows[visible_workspaces[target]] = index;
     } else {
-      workspaces[visible_workspaces[left]][0] =
+      workspaces[visible_workspaces[target]][0] =
         workspaces[curr_workspace][curr_index];
       workspaces[curr_workspace][curr_index] = 0;
-      focused_windows[visible_workspaces[left]] = 0;
+      focused_windows[visible_workspaces[target]] = 0;
     }
     send_workspace(workspaces[curr_workspace], curr_workspace);
-    send_workspace(workspaces[visible_workspaces[left]],
-                   visible_workspaces[left]);
+    send_workspace(workspaces[visible_workspaces[target]],
+                   visible_workspaces[target]);
     reconfigure_monitor(focused_monitor);
-    reconfigure_monitor(left);
-    focused_monitor = left;
+    reconfigure_monitor(target);
+    focused_monitor = target;
     send_focused_monitor(focused_monitor);
   } else {
     const u32 t = workspaces[curr_workspace][curr_window];
     workspaces[curr_workspace][curr_window] =
-      workspaces[curr_workspace][curr_window - 1];
-    workspaces[curr_workspace][curr_window - 1] = t;
-    focused_windows[curr_workspace] -= 1;
-    send_workspace(workspaces[curr_workspace], curr_workspace);
-    reconfigure_monitor(focused_monitor);
-  }
-}
-
-void swap_focused_window_with_right(void) {
-  const u32 curr_workspace = focused_workspace();
-  const i32 curr_window = focused_windows[curr_workspace];
-  if(curr_window < 0 || curr_window % 2 == 1 ||
-     projection[focused_monitor][curr_window] ==
-       projection[focused_monitor][curr_window + 1]) {
-    if(!normal[focused_monitor].has_to_right) return;
-    const u32 right = normal[focused_monitor].to_right;
-    const u32 index =
-      projection[right][(curr_window < 0)      ? 0
-                        : curr_window % 2 == 0 ? curr_window
-                                               : curr_window - 1];
-    const u32 curr_index = projection[focused_monitor][curr_window];
-    if(index != WINDOWS_PER_WORKSPACE) {
-      const u32 t = workspaces[curr_workspace][curr_window];
-      workspaces[curr_workspace][curr_index] =
-        workspaces[visible_workspaces[right]][index];
-      workspaces[visible_workspaces[right]][index] = t;
-      focused_windows[visible_workspaces[right]] = index;
-    } else {
-      workspaces[visible_workspaces[right]][0] =
-        workspaces[curr_workspace][curr_index];
-      workspaces[curr_workspace][curr_index] = 0;
-      focused_windows[visible_workspaces[right]] = 0;
-    }
-    send_workspace(workspaces[curr_workspace], curr_workspace);
-    send_workspace(workspaces[visible_workspaces[right]],
-                   visible_workspaces[right]);
-    reconfigure_monitor(focused_monitor);
-    reconfigure_monitor(right);
-    focused_monitor = right;
-    send_focused_monitor(focused_monitor);
-  } else {
-    const u32 t = workspaces[curr_workspace][curr_window];
-    workspaces[curr_workspace][curr_window] =
-      workspaces[curr_workspace][curr_window + 1];
-    workspaces[curr_workspace][curr_window + 1] = t;
-    focused_windows[curr_workspace] += 1;
-    send_workspace(workspaces[curr_workspace], curr_workspace);
-    reconfigure_monitor(focused_monitor);
-  }
-}
-
-void swap_focused_window_with_above(void) {
-  const u32 curr_workspace = focused_workspace();
-  const i32 curr_window = focused_windows[curr_workspace];
-  if(curr_window < 0 || curr_window / 2 == 0 ||
-     projection[focused_monitor][curr_window] ==
-       projection[focused_monitor][curr_window - 2]) {
-    if(!normal[focused_monitor].has_above) return;
-    const u32 above = normal[focused_monitor].above;
-    const u32 index =
-      projection[above][(curr_window < 0)      ? 0
-                        : curr_window / 2 == 1 ? curr_window
-                                               : curr_window + 2];
-    const u32 curr_index = projection[focused_monitor][curr_window];
-    if(index != WINDOWS_PER_WORKSPACE) {
-      const u32 t = workspaces[curr_workspace][curr_window];
-      workspaces[curr_workspace][curr_index] =
-        workspaces[visible_workspaces[above]][index];
-      workspaces[visible_workspaces[above]][index] = t;
-      focused_windows[visible_workspaces[above]] = index;
-    } else {
-      workspaces[visible_workspaces[above]][0] =
-        workspaces[curr_workspace][curr_index];
-      workspaces[curr_workspace][curr_index] = 0;
-      focused_windows[visible_workspaces[above]] = 0;
-    }
-    send_workspace(workspaces[curr_workspace], curr_workspace);
-    send_workspace(workspaces[visible_workspaces[above]],
-                   visible_workspaces[above]);
-    reconfigure_monitor(focused_monitor);
-    reconfigure_monitor(above);
-    focused_monitor = above;
-    send_focused_monitor(focused_monitor);
-  } else {
-    const u32 t = workspaces[curr_workspace][curr_window];
-    workspaces[curr_workspace][curr_window] =
-      workspaces[curr_workspace][curr_window - 2];
-    workspaces[curr_workspace][curr_window - 2] = t;
-    focused_windows[curr_workspace] -= 2;
-    send_workspace(workspaces[curr_workspace], curr_workspace);
-    reconfigure_monitor(focused_monitor);
-  }
-}
-
-void swap_focused_window_with_below(void) {
-  const u32 curr_workspace = focused_workspace();
-  const i32 curr_window = focused_windows[curr_workspace];
-  if(curr_window < 0 || curr_window / 2 == 1 ||
-     projection[focused_monitor][curr_window] ==
-       projection[focused_monitor][curr_window + 2]) {
-    if(!normal[focused_monitor].has_below) return;
-    const u32 below = normal[focused_monitor].below;
-    const u32 index =
-      projection[below][(curr_window < 0)      ? 0
-                        : curr_window / 2 == 0 ? curr_window
-                                               : curr_window - 2];
-    const u32 curr_index = projection[focused_monitor][curr_window];
-    if(index != WINDOWS_PER_WORKSPACE) {
-      const u32 t = workspaces[curr_workspace][curr_window];
-      workspaces[curr_workspace][curr_index] =
-        workspaces[visible_workspaces[below]][index];
-      workspaces[visible_workspaces[below]][index] = t;
-      focused_windows[visible_workspaces[below]] = index;
-    } else {
-      workspaces[visible_workspaces[below]][0] =
-        workspaces[curr_workspace][curr_index];
-      workspaces[curr_workspace][curr_index] = 0;
-      focused_windows[visible_workspaces[below]] = 0;
-    }
-    send_workspace(workspaces[curr_workspace], curr_workspace);
-    send_workspace(workspaces[visible_workspaces[below]],
-                   visible_workspaces[below]);
-    reconfigure_monitor(focused_monitor);
-    reconfigure_monitor(below);
-    focused_monitor = below;
-    send_focused_monitor(focused_monitor);
-  } else {
-    const u32 t = workspaces[curr_workspace][curr_window];
-    workspaces[curr_workspace][curr_window] =
-      workspaces[curr_workspace][curr_window + 2];
-    workspaces[curr_workspace][curr_window + 2] = t;
-    focused_windows[curr_workspace] += 2;
+      workspaces[curr_workspace][curr_window + offset_direction];
+    workspaces[curr_workspace][curr_window + offset_direction] = t;
+    focused_windows[curr_workspace] += offset_direction;
     send_workspace(workspaces[curr_workspace], curr_workspace);
     reconfigure_monitor(focused_monitor);
   }

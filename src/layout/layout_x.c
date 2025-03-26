@@ -61,7 +61,7 @@ void configure_window(u32 window, u32 x, u32 y, u32 width, u32 heigth,
 
 u32 requested_window_state(u32 window) {
   xcb_atom_t atoms[15];
-  u32 ret;
+  u32 ret = WINDOW_STATE_NONE;
   const u32 len = query_window_atom_array(window, _NET_WM_STATE, atoms, 15);
   for(u32 i = 0; i < len; i++) {
     if(atoms[i] == _NET_WM_STATE_FULLSCREEN) ret |= WINDOW_STATE_FULLSCREEN;

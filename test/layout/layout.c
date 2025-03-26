@@ -215,7 +215,7 @@ CTF_TEST_STATIC(focus_window_with_3_windows_mapped) {
   subtest(above) {
     mock_select(focus_window) {
       mock_expect_nth(1, window, ==, 2);
-      focus_window_above();
+      focus_window_direction(UP);
       expect(mock_call_count, ==, 1);
     }
   }
@@ -223,7 +223,7 @@ CTF_TEST_STATIC(focus_window_with_3_windows_mapped) {
   subtest(below) {
     mock_select(focus_window) {
       mock_expect_nth(1, window, ==, 3);
-      focus_window_below();
+      focus_window_direction(DOWN);
       expect(mock_call_count, ==, 1);
     }
   }
@@ -231,7 +231,7 @@ CTF_TEST_STATIC(focus_window_with_3_windows_mapped) {
   subtest(to_left) {
     mock_select(focus_window) {
       mock_expect_nth(1, window, ==, 1);
-      focus_window_to_left();
+      focus_window_direction(LEFT);
       expect(mock_call_count, ==, 1);
     }
   }
@@ -239,7 +239,7 @@ CTF_TEST_STATIC(focus_window_with_3_windows_mapped) {
   subtest(to_right) {
     mock_select(focus_window) {
       mock_expect_nth(1, window, ==, 2);
-      focus_window_to_right();
+      focus_window_direction(RIGHT);
       expect(mock_call_count, ==, 1);
     }
   }
@@ -252,9 +252,9 @@ CTF_TEST_STATIC(changing_workspace) {
   };
   init_layout(geoms, geoms, 2);
   map_request(1);
-  focus_window_to_right();
+  focus_window_direction(RIGHT);
   map_request(2);
-  focus_window_to_left();
+  focus_window_direction(LEFT);
   subtest(to_one_already_visible_focuses_window) {
     mock_select(focus_window) {
       mock_expect(window, ==, 2);
