@@ -1,6 +1,5 @@
 #include "layout.h"
 
-#include <stdio.h>
 #include <string.h>
 
 #include "../const.h"
@@ -466,7 +465,6 @@ void change_workspace(u32 w) {
   u32 focused = focused_workspace();
   if(focused == w) return;
   for(u32 i = 0; i < monitor_count; i++) {
-    fflush(stdout);
     if(w == visible_workspaces[i]) {
       visible_workspaces[focused_monitor] = visible_workspaces[i];
       visible_workspaces[i] = focused;
@@ -477,11 +475,11 @@ void change_workspace(u32 w) {
       return;
     }
   }
-  for(u32 i = 0; i < WINDOWS_PER_WORKSPACE; i++)
-    unmap_window(workspaces[focused][i]);
   for(u32 i = 0; i < WINDOWS_PER_WORKSPACE; i++) {
     if(workspaces[w][i]) map_window(workspaces[w][i]);
   }
+  for(u32 i = 0; i < WINDOWS_PER_WORKSPACE; i++)
+    unmap_window(workspaces[focused][i]);
   visible_workspaces[focused_monitor] = w;
   send_visible_workspaces(visible_workspaces, monitor_count);
   reconfigure_monitor(focused_monitor);

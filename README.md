@@ -19,7 +19,6 @@ To Be Done:
 - Clickable bar
 - Urgency display
 - Runtime switchable colorschemes
-- Bar synchronization and performance improvements
 
 ## Installation
 awm uses Makefiles for compilation so simple `make && make install` should work.

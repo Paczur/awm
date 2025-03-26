@@ -56,6 +56,7 @@ void update_visible_workspaces(u32 *workspaces, u32 count);
 void update_focused_monitor(u32 m);
 void update_mode(u32 mode);
 void update_minimized_windows(u32 *windows, u32 count);
+void update_clocked_block(u32 id);
 void redraw_bar(void);
 
 void launcher_handle_key(u8 flags, u8 keycode);

@@ -31,8 +31,8 @@ TEN_X
 TEN_X
 #undef X
 
-static void open_terminal(void) { system_run("urxvt"); }
-static void open_browser(void) { system_run("lb"); }
+static void open_terminal(void) { system_run_bg("urxvt"); }
+static void open_browser(void) { system_run_bg("lb"); }
 static void insert_mode(void) { set_mode(INSERT_MODE); }
 static void die(void) { stop_wm = 1; }
 static void clean_state_and_die(void) {
@@ -44,16 +44,32 @@ static void signal_usr1(int unused) {
   (void)unused;
   clean_state_and_die();
 }
-static void system_shutdown(void) { system_run("sudo shutdown"); }
-static void brightness_up(void) { system_run("/etc/awm/scripts/brightness 2"); }
+static void system_shutdown(void) { system_run_bg("sudo shutdown"); }
+
+static void brightness_up(void) {
+  system_run("/etc/awm/scripts/brightness 2");
+  update_clocked_block(4);
+}
 static void brightness_down(void) {
   system_run("/etc/awm/scripts/brightness -2");
+  update_clocked_block(4);
 }
-static void volume_up(void) { system_run("volume +"); }
-static void volume_down(void) { system_run("volume -"); }
-static void volume_mute(void) { system_run("volume m"); }
+
+static void volume_up(void) {
+  system_run("volume +");
+  update_clocked_block(3);
+}
+static void volume_down(void) {
+  system_run("volume -");
+  update_clocked_block(3);
+}
+static void volume_mute(void) {
+  system_run("volume m");
+  update_clocked_block(3);
+}
+
 static void screenshot(void) {
-  system_run(
+  system_run_bg(
     "scrot -s -q 100 -e "
     "\"xclip -selection clipboard -t image/png -i "
     "/home/paczur/Multimedia/Pictures/Screenshots/Scrot/"

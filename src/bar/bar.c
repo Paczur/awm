@@ -25,6 +25,12 @@ struct clocked_block {
   u32 flags;
 };
 
+struct cmd {
+  int pid;
+  int fd;
+  FILE *f;
+};
+
 static u32 monitor_count;
 static struct gc gc;
 static struct geometry bars[MAX_MONITOR_COUNT];
@@ -61,8 +67,8 @@ static u32 stop_thread = 0;
 static u32 seconds;
 static u32 second_multiple = 1;
 static pthread_t thread;
-static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t launcher_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t draw_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t update_mutex = PTHREAD_MUTEX_INITIALIZER;
 static u32 clocked_blocks_offset;
 
 static u32 launcher_visible = 0;
@@ -321,31 +327,39 @@ static void refresh_prompt_blocks(void) {
   }
 }
 
-static i32 run_with_output(const char *cmd, char *output, u32 *output_len,
-                           u32 output_size) {
-  FILE *f;
+static void run_cmd(struct cmd *cmd, const char *shell) {
   int pid = 0;
   int fd[2];
-  i32 status = 0;
   if(!pipe(fd)) {
     pid = fork();
     if(pid == 0) {
       close(fd[0]);
       dup2(fd[1], STDOUT_FILENO);
       close(fd[1]);
-      execl("/bin/sh", "sh", "-c", cmd, NULL);
+      execl("/bin/sh", "sh", "-c", shell, NULL);
     } else {
       close(fd[1]);
-      f = fdopen(fd[0], "r");
-      if(f && fgets(output, output_size, f)) {
-        *output_len = strcspn(output, "\n");
-        output[*output_len] = 0;
-      }
-      waitpid(pid, &status, 0);
-      if(WIFEXITED(status)) status = WEXITSTATUS(status);
-      close(fd[0]);
+      cmd->f = fdopen(fd[0], "r");
+      cmd->pid = pid;
+      cmd->fd = fd[0];
     }
   }
+}
+
+static u32 read_from_cmd(struct cmd *cmd, char *output, u32 output_size) {
+  u32 output_len;
+  if(cmd->f && fgets(output, output_size, cmd->f)) {
+    output_len = strcspn(output, "\n");
+    output[output_len] = 0;
+  }
+  return output_len;
+}
+
+static i32 status_from_cmd(struct cmd *cmd) {
+  i32 status = 0;
+  waitpid(cmd->pid, &status, 0);
+  if(WIFEXITED(status)) status = WEXITSTATUS(status);
+  close(cmd->fd);
   return status;
 }
 
@@ -389,12 +403,59 @@ static u32 gcd(u32 a, u32 b) {
   return a;
 }
 
+static void refresh_clocked(i32 redraw) {
+  u32 id;
+  u32 offset;
+  u32 x = BAR_OUTER_MARGIN;
+  pthread_mutex_lock(&draw_mutex);
+  for(u32 i = 0; i < LENGTH(clocked_blocks_data); i++) {
+    if(clocked_blocks_state[i].output_len > 0)
+      x += clocked_blocks_state[i].output_len * font_metrics.width +
+           BAR_PADDING * 2 + BAR_INNER_MARGIN;
+  }
+  clocked_blocks_offset = x - BAR_INNER_MARGIN;
+  for(i32 i = LENGTH(clocked_blocks_data) - 1; i >= redraw; i--) {
+    if(clocked_blocks_state[i].output_len) {
+      offset = clocked_blocks_state[i].output_len * font_metrics.width +
+               BAR_PADDING * 2;
+      for(u32 j = 0; j < monitor_count; j++) {
+        id = clocked_blocks[j][i];
+        reconfigure_window(id, bars[j].x + bars[j].width - x, offset);
+        if(!clocked_blocks_state[i].mapped) map_window(id);
+        if(clocked_blocks_state[i].status > 1 ||
+           (clocked_blocks_state[i].status == 1 &&
+            clocked_blocks_data[i].flags & BAR_FLAGS_ALWAYS_ACTIVE)) {
+          change_window_color(id, BAR_URGENT);
+          draw_text_utf16(id, gc.urgent, font_metrics,
+                          clocked_blocks_state[i].output,
+                          clocked_blocks_state[i].output_len);
+        } else if(clocked_blocks_state[i].status == 1 ||
+                  clocked_blocks_data[i].flags & BAR_FLAGS_ALWAYS_ACTIVE) {
+          change_window_color(id, BAR_ACTIVE);
+          draw_text_utf16(id, gc.active, font_metrics,
+                          clocked_blocks_state[i].output,
+                          clocked_blocks_state[i].output_len);
+        } else {
+          change_window_color(id, BAR_INACTIVE);
+          draw_text_utf16(id, gc.inactive, font_metrics,
+                          clocked_blocks_state[i].output,
+                          clocked_blocks_state[i].output_len);
+        }
+      }
+      clocked_blocks_state[i].mapped = 1;
+      x -= offset + BAR_INNER_MARGIN;
+    } else if(clocked_blocks_state[i].mapped) {
+      for(u32 j = 0; j < monitor_count; j++) unmap_window(clocked_blocks[j][i]);
+      clocked_blocks_state[i].mapped = 0;
+    }
+  }
+  pthread_mutex_unlock(&draw_mutex);
+}
+
 static void *thread_loop(void *unused) {
   (void)unused;
-  u32 id;
-  u32 x;
-  u32 offset;
   i32 redraw;
+  struct cmd cmds[LENGTH(clocked_blocks_data)];
   char temp_buff[LENGTH(clocked_blocks_state[0].output)];
   for(u32 i = 0; i < LENGTH(clocked_blocks_data); i++) {
     second_multiple =
@@ -404,69 +465,30 @@ static void *thread_loop(void *unused) {
   seconds = second_multiple;
   while(!stop_thread) {
     redraw = -1;
-    x = BAR_OUTER_MARGIN;
-    pthread_mutex_lock(&mutex);
+    pthread_mutex_lock(&update_mutex);
     for(u32 i = 0; i < LENGTH(clocked_blocks_data); i++) {
       if(seconds % clocked_blocks_data[i].time == 0) {
         if(redraw == -1) redraw = i;
-        clocked_blocks_state[i].output_len = 0;
-        clocked_blocks_state[i].status = run_with_output(
-          clocked_blocks_data[i].cmd, temp_buff,
-          &clocked_blocks_state[i].output_len, LENGTH(temp_buff));
+        run_cmd(cmds + i, clocked_blocks_data[i].cmd);
+      }
+    }
+    for(u32 i = 0; i < LENGTH(clocked_blocks_data); i++) {
+      if(seconds % clocked_blocks_data[i].time == 0) {
+        clocked_blocks_state[i].output_len =
+          read_from_cmd(cmds + i, temp_buff, LENGTH(temp_buff));
         clocked_blocks_state[i].output_len =
           utf8_to_utf16(clocked_blocks_state[i].output,
                         LENGTH(clocked_blocks_state[i].output), (u8 *)temp_buff,
                         clocked_blocks_state[i].output_len);
+        clocked_blocks_state[i].status = status_from_cmd(cmds + i);
       }
-      if(clocked_blocks_state[i].output_len > 0)
-        x += clocked_blocks_state[i].output_len * font_metrics.width +
-             BAR_PADDING * 2 + BAR_INNER_MARGIN;
     }
+    pthread_mutex_unlock(&update_mutex);
     seconds = (seconds + 1) % (second_multiple + 1);
-    pthread_mutex_unlock(&mutex);
-    x -= BAR_INNER_MARGIN;
-    pthread_mutex_lock(&launcher_mutex);
     if(!launcher_visible && visible && redraw != -1) {
-      clocked_blocks_offset = x;
-      for(i32 i = LENGTH(clocked_blocks_data) - 1; i >= redraw; i--) {
-        if(clocked_blocks_state[i].output_len) {
-          offset = clocked_blocks_state[i].output_len * font_metrics.width +
-                   BAR_PADDING * 2;
-          for(u32 j = 0; j < monitor_count; j++) {
-            id = clocked_blocks[j][i];
-            reconfigure_window(id, bars[j].x + bars[j].width - x, offset);
-            if(!clocked_blocks_state[i].mapped) map_window(id);
-            if(clocked_blocks_state[i].status > 1 ||
-               (clocked_blocks_state[i].status == 1 &&
-                clocked_blocks_data[i].flags & BAR_FLAGS_ALWAYS_ACTIVE)) {
-              change_window_color(id, BAR_URGENT);
-              draw_text_utf16(id, gc.urgent, font_metrics,
-                              clocked_blocks_state[i].output,
-                              clocked_blocks_state[i].output_len);
-            } else if(clocked_blocks_state[i].status == 1 ||
-                      clocked_blocks_data[i].flags & BAR_FLAGS_ALWAYS_ACTIVE) {
-              change_window_color(id, BAR_ACTIVE);
-              draw_text_utf16(id, gc.active, font_metrics,
-                              clocked_blocks_state[i].output,
-                              clocked_blocks_state[i].output_len);
-            } else {
-              change_window_color(id, BAR_INACTIVE);
-              draw_text_utf16(id, gc.inactive, font_metrics,
-                              clocked_blocks_state[i].output,
-                              clocked_blocks_state[i].output_len);
-            }
-          }
-          clocked_blocks_state[i].mapped = 1;
-          x -= offset + BAR_INNER_MARGIN;
-        } else if(clocked_blocks_state[i].mapped) {
-          for(u32 j = 0; j < monitor_count; j++)
-            unmap_window(clocked_blocks[j][i]);
-          clocked_blocks_state[i].mapped = 0;
-        }
-      }
+      refresh_clocked(redraw);
       send_changes();
     }
-    pthread_mutex_unlock(&launcher_mutex);
     sleep(1);
   }
   return NULL;
@@ -494,6 +516,21 @@ void update_visible_workspaces(u32 *workspaces, u32 count) {
 void update_focused_monitor(u32 m) {
   focused_monitor = m;
   update_mode(mode);
+}
+
+void update_clocked_block(u32 id) {
+  char temp_buff[LENGTH(clocked_blocks_state[0].output)];
+  struct cmd cmd;
+  pthread_mutex_lock(&update_mutex);
+  run_cmd(&cmd, clocked_blocks_data[id].cmd);
+  clocked_blocks_state[id].output_len =
+    read_from_cmd(&cmd, temp_buff, LENGTH(temp_buff));
+  clocked_blocks_state[id].output_len = utf8_to_utf16(
+    clocked_blocks_state[id].output, LENGTH(clocked_blocks_state[id].output),
+    (u8 *)temp_buff, clocked_blocks_state[id].output_len);
+  clocked_blocks_state[id].status = status_from_cmd(&cmd);
+  pthread_mutex_unlock(&update_mutex);
+  refresh_clocked(id);
 }
 
 void update_mode(u32 m) {
@@ -548,7 +585,7 @@ void update_minimized_windows(u32 *windows, u32 count) {
 }
 
 void show_launcher(void) {
-  pthread_mutex_lock(&launcher_mutex);
+  pthread_mutex_lock(&draw_mutex);
   launcher_visible = 1;
   launcher_prompt_length = 0;
   launcher_hint_selected = 0;
@@ -558,7 +595,7 @@ void show_launcher(void) {
       launcher_hint_blocks_mapped[i][j] = 0;
     map_window(launcher_prompt_blocks[i]);
   }
-  pthread_mutex_unlock(&launcher_mutex);
+  pthread_mutex_unlock(&draw_mutex);
   refresh_prompt_blocks();
   regenerate_hints();
   refresh_prompt_blocks();
@@ -566,7 +603,7 @@ void show_launcher(void) {
 }
 
 void hide_launcher(void) {
-  pthread_mutex_lock(&launcher_mutex);
+  pthread_mutex_lock(&draw_mutex);
   for(u32 i = 0; i < monitor_count; i++) {
     unmap_window(launcher_prompt_blocks[i]);
     for(u32 j = 0; j < BAR_LAUNCHER_HINT_BLOCKS; j++)
@@ -576,7 +613,7 @@ void hide_launcher(void) {
   }
   map_bar();
   launcher_visible = 0;
-  pthread_mutex_unlock(&launcher_mutex);
+  pthread_mutex_unlock(&draw_mutex);
   unfocus_launcher();
   redraw_bar();
 }
@@ -648,9 +685,7 @@ void redraw_bar(void) {
                 minimized_window_names[j], minimized_window_name_len[j]);
     }
   }
-  pthread_mutex_lock(&mutex);
-  seconds = second_multiple;
-  pthread_mutex_unlock(&mutex);
+  refresh_clocked(0);
 }
 
 u32 get_bar_height(void) {
