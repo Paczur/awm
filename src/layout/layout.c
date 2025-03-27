@@ -62,12 +62,16 @@ static void reconfigure_monitor(u32 monitor) {
   struct geometry geom;
 
   if(fullscreen_windows[curr_workspace]) {
-    configure_and_raise(fullscreen_windows[curr_workspace],
-                        fullscreen[monitor].x, fullscreen[monitor].y,
-                        fullscreen[monitor].width, fullscreen[monitor].height,
-                        0);
-    bar_visibility(0);
-    return;
+    for(u32 i = 0; i < WINDOWS_PER_WORKSPACE; i++) {
+      if(workspaces[curr_workspace][i] == fullscreen_windows[curr_workspace]) {
+        configure_and_raise(fullscreen_windows[curr_workspace],
+                            fullscreen[monitor].x, fullscreen[monitor].y,
+                            fullscreen[monitor].width,
+                            fullscreen[monitor].height, 0);
+        bar_visibility(0);
+        return;
+      }
+    }
   }
 
   for(u32 i = 0; i < WINDOWS_PER_WORKSPACE; i++) {
