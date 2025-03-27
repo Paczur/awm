@@ -25,6 +25,7 @@ struct clocked_block {
   const char *cmd;
   u32 time;
   u32 flags;
+  void (*action)(u32 button, u32 index);
 };
 
 struct cmd {
@@ -740,6 +741,46 @@ void update_bar_colorscheme(void) {
   } else {
     redraw_bar();
   }
+}
+
+u32 bar_block_press(u32 window, u32 button) {
+  (void)button;
+  if(launcher_visible) {
+    for(u32 i = 0; i < monitor_count; i++) {
+      if(launcher_prompt_blocks[i] == window) {
+        launcher_run();
+        return 1;
+      }
+      for(u32 j = 0; j < BAR_LAUNCHER_HINT_BLOCKS; j++) {
+        if(launcher_hint_blocks[i][j] == window) {
+          launcher_hint_selected = j;
+          refresh_hints();
+          return 1;
+        }
+      }
+    }
+  } else {
+    for(u32 i = 0; i < monitor_count; i++) {
+      if(mode_blocks[i] == window) {
+        toggle_mode();
+        return 1;
+      }
+      for(u32 j = 0; j < WORKSPACE_COUNT; j++) {
+        if(workspace_blocks_mapped[i][j] && workspace_blocks[i][j] == window) {
+          change_workspace(j);
+          return 1;
+        }
+      }
+      for(u32 j = 0; j < LENGTH(clocked_blocks_data); j++) {
+        if(clocked_blocks[i][j] == window) {
+          if(clocked_blocks_data[j].action != NULL)
+            clocked_blocks_data[j].action(button, j);
+          return 1;
+        }
+      }
+    }
+  }
+  return 0;
 }
 
 void init_bar(const struct geometry *geoms, u32 m_count) {

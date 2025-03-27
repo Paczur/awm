@@ -1,12 +1,24 @@
 #!/bin/env dash
+
 process="$(ps -A | grep dunst)"
 ex=0
 
-if [ -z "$process" ]; then
-  mode=""
+if [ "$1" = "toggle" ]; then
+  if [ -n "$process" ]; then
+    killall dunst
+    mode=""
+  else
+    dunst &
+    mode=""
+    ex=1
+  fi
 else
-  mode=""
-  ex=1
+  if [ -z "$process" ]; then
+    mode=""
+  else
+    mode=""
+    ex=1
+  fi
 fi
 
 echo "$mode"

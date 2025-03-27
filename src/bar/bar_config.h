@@ -27,16 +27,52 @@
 #define BAR_OUTER_MARGIN 5
 #define BAR_INNER_MARGIN 3
 #define BAR_INNER_INSIDE_MARGIN 1
-#define BAR_CLOCKED_BLOCKS                                 \
-  {                                                        \
-    {"date +%H:%M", 60, BAR_FLAGS_ALWAYS_ACTIVE},          \
-    {"date \"+%a %d\"", 60, BAR_FLAGS_ALWAYS_ACTIVE},      \
-    {"/etc/awm/scripts/battery", 60, BAR_FLAGS_NONE},      \
-    {"/etc/awm/scripts/volume", 3600, BAR_FLAGS_NONE},     \
-    {"/etc/awm/scripts/brightness", 3600, BAR_FLAGS_NONE}, \
-    {"/etc/awm/scripts/cpu", 30, BAR_FLAGS_ALWAYS_ACTIVE}, \
-    {"/etc/awm/scripts/gpu", 30, BAR_FLAGS_ALWAYS_ACTIVE}, \
-    {"/etc/awm/scripts/ram", 30, BAR_FLAGS_ALWAYS_ACTIVE}, \
+
+static void brightness_action(u32 button, u32 index) {
+  if(button == 4) {
+    system_run("/etc/awm/scripts/brightness 2");
+    update_clocked_block(index);
+  } else if(button == 5) {
+    system_run("/etc/awm/scripts/brightness -2");
+    update_clocked_block(index);
+  }
+}
+
+static void volume_action(u32 button, u32 index) {
+  if(button == 1) {
+    system_run("volume m");
+    update_clocked_block(index);
+  } else if(button == 4) {
+    system_run("volume +");
+    update_clocked_block(index);
+  } else if(button == 5) {
+    system_run("volume -");
+    update_clocked_block(index);
+  }
+}
+
+static void dnd_action(u32 button, u32 index) {
+  if(button != 1) return;
+  system_run("/etc/awm/scripts/dnd toggle");
+  update_clocked_block(index);
+}
+
+static void refresh_action(u32 button, u32 index) {
+  if(button != 1) return;
+  update_clocked_block(index);
+}
+
+#define BAR_CLOCKED_BLOCKS                                                    \
+  {                                                                           \
+    {"date +%H:%M", 60, BAR_FLAGS_ALWAYS_ACTIVE, refresh_action},             \
+    {"date \"+%a %d\"", 60, BAR_FLAGS_ALWAYS_ACTIVE, refresh_action},         \
+    {"/etc/awm/scripts/battery", 60, BAR_FLAGS_NONE, refresh_action},         \
+    {"/etc/awm/scripts/volume", 3600, BAR_FLAGS_NONE, volume_action},         \
+    {"/etc/awm/scripts/brightness", 3600, BAR_FLAGS_NONE, brightness_action}, \
+    {"/etc/awm/scripts/dnd", 3600, BAR_FLAGS_NONE, dnd_action},               \
+    {"/etc/awm/scripts/cpu", 30, BAR_FLAGS_ALWAYS_ACTIVE, refresh_action},    \
+    {"/etc/awm/scripts/gpu", 30, BAR_FLAGS_ALWAYS_ACTIVE, refresh_action},    \
+    {"/etc/awm/scripts/ram", 30, BAR_FLAGS_ALWAYS_ACTIVE, refresh_action},    \
   }
 
 #define LAUNCHER_CONTROLS                                             \

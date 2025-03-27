@@ -28,4 +28,6 @@ struct geometry {
 #define MOD_CTRL (1 << 2)
 #define MOD_ALT (1 << 3)
 
+#define BUTTON(x) (1 << (7 + x))
+
 #endif

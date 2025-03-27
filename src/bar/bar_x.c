@@ -18,8 +18,9 @@ u32 create_window_geom(struct geometry geom) {
   puts("create window");
   const u32 window_mask =
     XCB_CW_BACK_PIXEL | XCB_CW_OVERRIDE_REDIRECT | XCB_CW_EVENT_MASK;
-  const u32 window_values[3] = {BAR_INACTIVE_BACKGROUND[colorscheme_index], 1,
-                                XCB_EVENT_MASK_EXPOSURE};
+  const u32 window_values[3] = {
+    BAR_INACTIVE_BACKGROUND[colorscheme_index], 1,
+    XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS};
   const u32 id = xcb_generate_id(conn);
   xcb_create_window(conn, screen->root_depth, id, screen->root, geom.x, geom.y,
                     geom.width, geom.height, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT,
@@ -145,3 +146,5 @@ void unfocus_launcher(void) {
   restore_focus();
   set_mode(NORMAL_MODE);
 }
+
+void toggle_mode(void) { set_mode(!get_mode()); }

@@ -140,7 +140,8 @@ static void key_press(const xcb_key_press_event_t *event) {
 
 static void button_press(const xcb_button_press_event_t *event) {
   xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, XCB_CURRENT_TIME);
-  if(event->event != screen->root) {
+  if(event->event != screen->root &&
+     !bar_block_press(event->event, event->detail)) {
     focus_window(event->event);
     set_mode(INSERT_MODE);
   }

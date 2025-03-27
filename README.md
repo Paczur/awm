@@ -16,7 +16,6 @@ expected.
 
 To Be Done:
 - Floating windows
-- Clickable bar
 - Urgency display
 
 ## Installation
