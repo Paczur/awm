@@ -1,22 +1,22 @@
 #!/bin/env dash
 
-process="$(ps -A | grep dunst)"
+paused="$(dunstctl is-paused)"
 ex=0
 
 if [ "$1" = "toggle" ]; then
-  if [ -n "$process" ]; then
-    killall dunst
-    mode=""
+  if [ "$paused" = "false" ]; then
+    dunstctl set-paused true
+    mode=""
   else
-    dunst &
-    mode=""
+    dunstctl set-paused false
+    mode=""
     ex=1
   fi
 else
-  if [ -z "$process" ]; then
-    mode=""
+  if [ "$paused" = "true" ]; then
+    mode=""
   else
-    mode=""
+    mode=""
     ex=1
   fi
 fi
