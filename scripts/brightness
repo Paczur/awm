@@ -12,4 +12,4 @@ if [ -n "$1" ]; then
 else
   curr_percent="$(echo "$current*100/$max" | bc)"
 fi
-echo " $curr_percent%"
+echo " $curr_percent%"

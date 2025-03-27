@@ -584,10 +584,10 @@ void update_minimized_window_name(u32 window) {
     if(minimized_windows[i] == window) {
       query_window_name(minimized_windows[i], minimized_window_names[i],
                         minimized_window_name_len + i, BAR_WINDOW_NAME_LENGTH);
+      refresh_minimized_windows();
       break;
     }
   }
-  refresh_minimized_windows();
 }
 
 void update_minimized_windows(u32 *windows, u32 count) {
