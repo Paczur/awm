@@ -55,6 +55,7 @@ void update_workspace(u32 *windows, u32 workspace);
 void update_visible_workspaces(u32 *workspaces, u32 count);
 void update_focused_monitor(u32 m);
 void update_mode(u32 mode);
+void update_minimized_window_name(u32 window);
 void update_minimized_windows(u32 *windows, u32 count);
 void update_clocked_block(u32 id);
 void redraw_bar(void);

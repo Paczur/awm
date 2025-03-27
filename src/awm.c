@@ -160,6 +160,10 @@ static void client_message(const xcb_client_message_event_t *event) {
   }
 }
 
+static void property_notify(const xcb_property_notify_event_t *event) {
+  if(event->atom == WM_NAME) update_minimized_window_name(event->window);
+}
+
 int main(void) {
   u8 code;
   xcb_generic_event_t *event;
@@ -202,6 +206,9 @@ int main(void) {
       break;
     case XCB_CLIENT_MESSAGE:
       client_message((xcb_client_message_event_t *)event);
+      break;
+    case XCB_PROPERTY_NOTIFY:
+      property_notify((xcb_property_notify_event_t *)event);
       break;
     default:
       if(code == xkb_event) {

@@ -24,14 +24,26 @@ static u8 projection[MAX_MONITOR_COUNT][WINDOWS_PER_WORKSPACE];
 static u32 visible_workspaces[MAX_MONITOR_COUNT];
 static struct monitor normal[MAX_MONITOR_COUNT] = {0};
 static struct geometry fullscreen[MAX_MONITOR_COUNT] = {0};
-static i32 focused_windows[WORKSPACE_COUNT] = {-1, -1, -1, -1, -1,
-                                               -1, -1, -1, -1, -1};
+static i32 focused_windows[WORKSPACE_COUNT] = {
+  -WINDOWS_PER_WORKSPACE, -WINDOWS_PER_WORKSPACE, -WINDOWS_PER_WORKSPACE,
+  -WINDOWS_PER_WORKSPACE, -WINDOWS_PER_WORKSPACE, -WINDOWS_PER_WORKSPACE,
+  -WINDOWS_PER_WORKSPACE, -WINDOWS_PER_WORKSPACE, -WINDOWS_PER_WORKSPACE,
+  -WINDOWS_PER_WORKSPACE};
 static u32 monitor_count;
 static u32 focused_monitor = -1;
 static u32 minimized_windows[MINIMIZE_QUEUE_SIZE];
 static u32 minimized_window_count;
 static i32 window_size_offsets[WORKSPACE_COUNT][2] = {0};
 static u32 fullscreen_windows[WORKSPACE_COUNT];
+
+static void minimize_window(u32 window) {
+  for(u32 k = minimized_window_count; k > 0; k--)
+    minimized_windows[k] = minimized_windows[k - 1];
+  minimized_window_count++;
+  minimized_windows[0] = window;
+  send_minimized_windows(minimized_windows, minimized_window_count);
+  set_window_minimized(window);
+}
 
 static void expand_height(u32 monitor, u8 *taken, u8 index) {
   for(u32 i = 0; i < WINDOWS_PER_WORKSPACE; i++) {
@@ -272,8 +284,8 @@ void map_request(u32 window) {
 void unmap_notify(u32 window) {
   const u32 current_workspace = focused_workspace();
   const i32 current_window =
-    focused_windows[current_workspace] == -1
-      ? -1
+    focused_windows[current_workspace] == -WINDOWS_PER_WORKSPACE
+      ? -WINDOWS_PER_WORKSPACE
       : projection[focused_monitor][focused_windows[current_workspace]];
   u32 *workspace;
   for(u32 j = 0; j < monitor_count; j++) {
@@ -312,7 +324,7 @@ void destroy_notify(u32 window) {
 void reset_layout_state(void) {
   for(u32 i = 0; i < WORKSPACE_COUNT; i++) {
     for(u32 j = 0; j < WINDOWS_PER_WORKSPACE; j++) workspaces[i][j] = 0;
-    focused_windows[i] = -1;
+    focused_windows[i] = -WINDOWS_PER_WORKSPACE;
   }
   for(u32 i = 0; i < MAX_MONITOR_COUNT; i++) visible_workspaces[i] = i;
 }
@@ -473,6 +485,7 @@ void change_workspace(u32 w) {
       visible_workspaces[focused_monitor] = visible_workspaces[i];
       visible_workspaces[i] = focused;
       send_visible_workspaces(visible_workspaces, monitor_count);
+      send_focused_workspace(w);
       reconfigure_monitor(focused_monitor);
       reconfigure_monitor(i);
       restore_focus();
@@ -486,6 +499,7 @@ void change_workspace(u32 w) {
     unmap_window(workspaces[focused][i]);
   visible_workspaces[focused_monitor] = w;
   send_visible_workspaces(visible_workspaces, monitor_count);
+  send_focused_workspace(w);
   reconfigure_monitor(focused_monitor);
   restore_focus();
 }
@@ -495,12 +509,7 @@ void set_minimized_window(u32 window, u32 state) {
     for(u32 i = 0; i < WORKSPACE_COUNT; i++) {
       for(u32 j = 0; j < WINDOWS_PER_WORKSPACE; j++) {
         if(workspaces[i][j] == window) {
-          for(u32 k = minimized_window_count; k > 0; k--)
-            minimized_windows[k] = minimized_windows[k - 1];
-          minimized_window_count++;
-          minimized_windows[0] = window;
-          send_minimized_windows(minimized_windows, minimized_window_count);
-          set_window_minimized(window);
+          minimize_window(window);
           workspaces[i][j] = 0;
           send_workspace(workspaces[i], i);
           for(u32 k = 0; k < monitor_count; k++) {
@@ -532,12 +541,7 @@ void minimize_focused_window(void) {
       ? focused_windows[focused_work]
       : projection[focused_monitor][focused_windows[focused_work]];
   if(minimized_window_count == MINIMIZE_QUEUE_SIZE || focused_win < 0) return;
-  for(u32 i = minimized_window_count; i > 0; i--)
-    minimized_windows[i] = minimized_windows[i - 1];
-  minimized_window_count++;
-  minimized_windows[0] = workspaces[focused_work][focused_win];
-  send_minimized_windows(minimized_windows, minimized_window_count);
-  set_window_minimized(workspaces[focused_work][focused_win]);
+  minimize_window(workspaces[focused_work][focused_win]);
   unmap_window(workspaces[focused_work][focused_win]);
   workspaces[focused_work][focused_win] = 0;
   send_workspace(workspaces[focused_work], focused_work);

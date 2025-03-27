@@ -283,6 +283,36 @@ static void refresh_workspace_blocks(void) {
   workspace_blocks_offset = prev_x;
 }
 
+static void refresh_minimized_windows(void) {
+  u32 x;
+  u32 id;
+  u32 w;
+  u32 text_length;
+  if(launcher_visible || !visible) return;
+  for(u32 i = 0; i < minimized_window_count; i++)
+    text_length += minimized_window_name_len[i];
+  minimized_window_blocks_width =
+    text_length * font_metrics.width + minimized_window_count * 2 * BAR_PADDING;
+  for(u32 i = 0; i < monitor_count; i++) {
+    x = bars[i].width / 2 + bars[i].x - minimized_window_blocks_width / 2;
+    for(u32 j = 0; j < minimized_window_count; j++) {
+      w = minimized_window_name_len[j] * font_metrics.width + BAR_PADDING * 2;
+      id = minimized_window_blocks[i][j];
+      reconfigure_window(id, x, w);
+      map_window(id);
+
+      x += w + BAR_INNER_INSIDE_MARGIN;
+    }
+    for(u32 j = minimized_window_count; j < MINIMIZE_QUEUE_SIZE; j++)
+      unmap_window(minimized_window_blocks[i][j]);
+  }
+  for(u32 i = 0; i < monitor_count; i++) {
+    for(u32 j = 0; j < minimized_window_count; j++)
+      draw_text(minimized_window_blocks[i][j], gc.active, font_metrics,
+                minimized_window_names[j], minimized_window_name_len[j]);
+  }
+}
+
 static void unmap_bar(void) {
   for(u32 i = 0; i < monitor_count; i++) {
     unmap_window(mode_blocks[i]);
@@ -549,39 +579,24 @@ void update_mode(u32 m) {
   }
 }
 
+void update_minimized_window_name(u32 window) {
+  for(u32 i = 0; i < minimized_window_count; i++) {
+    if(minimized_windows[i] == window) {
+      query_window_name(minimized_windows[i], minimized_window_names[i],
+                        minimized_window_name_len + i, BAR_WINDOW_NAME_LENGTH);
+      break;
+    }
+  }
+  refresh_minimized_windows();
+}
+
 void update_minimized_windows(u32 *windows, u32 count) {
-  u32 text_length = 0;
-  u32 x;
-  u32 id;
-  u32 w;
   minimized_window_count = MIN(count, MINIMIZE_QUEUE_SIZE);
   memcpy(minimized_windows, windows, minimized_window_count * sizeof(u32));
-  for(u32 i = 0; i < minimized_window_count; i++) {
+  for(u32 i = 0; i < minimized_window_count; i++)
     query_window_name(minimized_windows[i], minimized_window_names[i],
                       minimized_window_name_len + i, BAR_WINDOW_NAME_LENGTH);
-    text_length += minimized_window_name_len[i];
-  }
-  minimized_window_blocks_width =
-    text_length * font_metrics.width + minimized_window_count * 2 * BAR_PADDING;
-  if(launcher_visible || !visible) return;
-  for(u32 i = 0; i < monitor_count; i++) {
-    x = bars[i].width / 2 + bars[i].x - minimized_window_blocks_width / 2;
-    for(u32 j = 0; j < minimized_window_count; j++) {
-      w = minimized_window_name_len[j] * font_metrics.width + BAR_PADDING * 2;
-      id = minimized_window_blocks[i][j];
-      reconfigure_window(id, x, w);
-      map_window(id);
-
-      x += w + BAR_INNER_INSIDE_MARGIN;
-    }
-    for(u32 j = minimized_window_count; j < MINIMIZE_QUEUE_SIZE; j++)
-      unmap_window(minimized_window_blocks[i][j]);
-  }
-  for(u32 i = 0; i < monitor_count; i++) {
-    for(u32 j = 0; j < minimized_window_count; j++)
-      draw_text(minimized_window_blocks[i][j], gc.active, font_metrics,
-                minimized_window_names[j], minimized_window_name_len[j]);
-  }
+  refresh_minimized_windows();
 }
 
 void show_launcher(void) {
@@ -644,8 +659,9 @@ void launcher_handle_key(u8 flags, u8 keycode) {
 u32 launcher_showing(void) { return launcher_visible; }
 
 void launcher_run(void) {
-  system_run(launcher_hint_count == 0 ? launcher_prompt
-                                      : launcher_hints[launcher_hint_selected]);
+  system_run_bg(launcher_hint_count == 0
+                  ? launcher_prompt
+                  : launcher_hints[launcher_hint_selected]);
   hide_launcher();
 }
 
