@@ -2,10 +2,6 @@
 #define H_AWM_LAYOUT
 
 #include "../types.h"
-#define BORDER_SIZE 3
-#define GAP_SIZE 5
-#define BORDER_FOCUSED 0xfff3f3f3
-#define BORDER_UNFOCUSED 0xff111111
 
 #define UP 0
 #define ABOVE 0
@@ -47,6 +43,8 @@ void reset_size_offset(void);
 
 void set_fullscreen_window(u32 window, u32 state);
 void toggle_fullscreen_on_focused_window(void);
+
+void update_layout_colorscheme(void);
 
 #endif
 

@@ -3,6 +3,8 @@
 #include <string.h>
 
 #include "../const.h"
+#include "../global.h"
+#include "layout_config.h"
 #include "layout_x.h"
 
 #define POSITION_FULLSCREEN 0
@@ -25,10 +27,10 @@ static u32 visible_workspaces[MAX_MONITOR_COUNT];
 static struct monitor normal[MAX_MONITOR_COUNT] = {0};
 static struct geometry fullscreen[MAX_MONITOR_COUNT] = {0};
 static i32 focused_windows[WORKSPACE_COUNT] = {
-  -WINDOWS_PER_WORKSPACE, -WINDOWS_PER_WORKSPACE, -WINDOWS_PER_WORKSPACE,
-  -WINDOWS_PER_WORKSPACE, -WINDOWS_PER_WORKSPACE, -WINDOWS_PER_WORKSPACE,
-  -WINDOWS_PER_WORKSPACE, -WINDOWS_PER_WORKSPACE, -WINDOWS_PER_WORKSPACE,
-  -WINDOWS_PER_WORKSPACE};
+  WINDOWS_PER_WORKSPACE, WINDOWS_PER_WORKSPACE, WINDOWS_PER_WORKSPACE,
+  WINDOWS_PER_WORKSPACE, WINDOWS_PER_WORKSPACE, WINDOWS_PER_WORKSPACE,
+  WINDOWS_PER_WORKSPACE, WINDOWS_PER_WORKSPACE, WINDOWS_PER_WORKSPACE,
+  WINDOWS_PER_WORKSPACE};
 static u32 monitor_count;
 static u32 focused_monitor = -1;
 static u32 minimized_windows[MINIMIZE_QUEUE_SIZE];
@@ -284,8 +286,8 @@ void map_request(u32 window) {
 void unmap_notify(u32 window) {
   const u32 current_workspace = focused_workspace();
   const i32 current_window =
-    focused_windows[current_workspace] == -WINDOWS_PER_WORKSPACE
-      ? -WINDOWS_PER_WORKSPACE
+    focused_windows[current_workspace] == WINDOWS_PER_WORKSPACE
+      ? focused_windows[current_workspace]
       : projection[focused_monitor][focused_windows[current_workspace]];
   u32 *workspace;
   for(u32 j = 0; j < monitor_count; j++) {
@@ -324,7 +326,7 @@ void destroy_notify(u32 window) {
 void reset_layout_state(void) {
   for(u32 i = 0; i < WORKSPACE_COUNT; i++) {
     for(u32 j = 0; j < WINDOWS_PER_WORKSPACE; j++) workspaces[i][j] = 0;
-    focused_windows[i] = -WINDOWS_PER_WORKSPACE;
+    focused_windows[i] = WINDOWS_PER_WORKSPACE;
   }
   for(u32 i = 0; i < MAX_MONITOR_COUNT; i++) visible_workspaces[i] = i;
 }
@@ -357,12 +359,12 @@ finish:
   send_focused_window(window);
   send_focused_windows((u32 *)focused_windows);
   send_focused_workspace(visible_workspaces[monitor]);
-  change_window_border_color(window, BORDER_FOCUSED);
+  change_window_border_color(window, BORDER_FOCUSED[colorscheme_index]);
 }
 
 void focus_out_notify(u32 window) {
   const u32 work = focused_workspace();
-  change_window_border_color(window, BORDER_UNFOCUSED);
+  change_window_border_color(window, BORDER_UNFOCUSED[colorscheme_index]);
   focused_windows[work] = -focused_windows[work] - 1;
   send_unfocused_window(window);
 }
@@ -537,10 +539,13 @@ void set_minimized_window(u32 window, u32 state) {
 void minimize_focused_window(void) {
   const u32 focused_work = focused_workspace();
   const i32 focused_win =
-    focused_windows[focused_work] < 0
+    focused_windows[focused_work] < 0 ||
+        focused_windows[focused_work] >= WINDOWS_PER_WORKSPACE
       ? focused_windows[focused_work]
       : projection[focused_monitor][focused_windows[focused_work]];
-  if(minimized_window_count == MINIMIZE_QUEUE_SIZE || focused_win < 0) return;
+  if(minimized_window_count == MINIMIZE_QUEUE_SIZE || focused_win < 0 ||
+     focused_win >= WINDOWS_PER_WORKSPACE)
+    return;
   minimize_window(workspaces[focused_work][focused_win]);
   unmap_window(workspaces[focused_work][focused_win]);
   workspaces[focused_work][focused_win] = 0;
@@ -674,4 +679,16 @@ void toggle_fullscreen_on_focused_window(void) {
   }
   send_fullscreen_windows(fullscreen_windows);
   reconfigure_monitor(focused_monitor);
+}
+
+void update_layout_colorscheme(void) {
+  for(u32 i = 0; i < monitor_count; i++) {
+    i32 focused = focused_windows[visible_workspaces[i]];
+    for(u32 j = 0; j < WINDOWS_PER_WORKSPACE; j++) {
+      change_window_border_color(workspaces[visible_workspaces[i]][j],
+                                 focused > 0 && (u32)focused == j
+                                   ? BORDER_FOCUSED[colorscheme_index]
+                                   : BORDER_UNFOCUSED[colorscheme_index]);
+    }
+  }
 }

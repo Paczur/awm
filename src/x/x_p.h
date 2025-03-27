@@ -8,6 +8,7 @@
 
 #define ATOMS                   \
   X(AWM_MODE)                   \
+  X(AWM_COLORSCHEME)            \
   X(AWM_VISIBLE_WORKSPACES)     \
   X(AWM_FOCUSED_MONITOR)        \
   X(AWM_FOCUSED_WINDOWS)        \

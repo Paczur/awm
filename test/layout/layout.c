@@ -1,6 +1,7 @@
 #include "layout.h"
 
 #include <layout/layout.h>
+#include <layout/layout_config.h>
 
 #include "../mocks/mocks.h"
 

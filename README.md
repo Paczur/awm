@@ -18,7 +18,6 @@ To Be Done:
 - Floating windows
 - Clickable bar
 - Urgency display
-- Runtime switchable colorschemes
 
 ## Installation
 awm uses Makefiles for compilation so simple `make && make install` should work.

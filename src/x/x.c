@@ -6,6 +6,7 @@
 #include <xcb/randr.h>
 #include <xkbcommon/xkbcommon-x11.h>
 
+#include "../global.h"
 #include "../types.h"
 #include "x_p.h"
 
@@ -224,6 +225,14 @@ void query_window_string(xcb_window_t window, xcb_atom_t atom, char *str,
   *str_len = MIN(*str_len, str_size);
   memcpy(str, xcb_get_property_value(reply), *str_len);
   free(reply);
+}
+
+void query_colorscheme(void) {
+  colorscheme_index = query_cardinal(AWM_COLORSCHEME, 0);
+}
+
+void send_colorscheme(void) {
+  send_cardinal(AWM_COLORSCHEME, colorscheme_index);
 }
 
 void x_init(void) {

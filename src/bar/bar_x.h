@@ -2,6 +2,7 @@
 #define H_AWM_BAR_X
 
 #include "../types.h"
+#include "bar_config.h"
 
 struct block_id {
   u32 window_id;
@@ -15,9 +16,9 @@ struct font_metrics {
 };
 
 struct gc {
-  u32 active;
-  u32 inactive;
-  u32 urgent;
+  u32 active[MAX_COLORSCHEME_COUNT];
+  u32 inactive[MAX_COLORSCHEME_COUNT];
+  u32 urgent[MAX_COLORSCHEME_COUNT];
 };
 
 u32 create_window(void);

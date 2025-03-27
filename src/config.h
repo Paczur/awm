@@ -7,6 +7,7 @@
 #include "layout/layout.h"
 #include "shortcut/shortcut.h"
 #include "system/system.h"
+#include "x/x.h"
 #define CHANGE_WORKSPACE(x) \
   static void change_workspace_##x(void) { change_workspace(x); }
 #define UNMINIMIZE(x) \
@@ -30,6 +31,13 @@ TEN_X
 #define X UNMINIMIZE
 TEN_X
 #undef X
+
+#define MAX_COLORSCHEME_COUNT 2
+
+#define DARK_GRAY (u32[]){0xff111111, 0xffeeeeee}
+#define GRAY (u32[]){0xff333333, 0xffaaaaaa}
+#define YELLOW (u32[]){0xfff3f36e, 0xffe4bc04}
+#define WHITE (u32[]){0xfff3f3f3, 0xff000000}
 
 static void open_terminal(void) { system_run_bg("urxvt"); }
 static void open_browser(void) { system_run_bg("lb"); }
@@ -78,6 +86,14 @@ static void screenshot(void) {
     "%d-%m-%Y_%H-%M-%S_%wx%H.png");
 }
 
+static void toggle_colorscheme(void) {
+  colorscheme_index ^= 1;
+  update_bar_colorscheme();
+  update_layout_colorscheme();
+  send_colorscheme();
+  system_run_bg("color toggle");
+}
+
 static void resize_up(void) { change_size_offset(-5, 0); }
 static void resize_down(void) { change_size_offset(5, 0); }
 static void resize_left(void) { change_size_offset(0, -5); }
@@ -111,6 +127,7 @@ static void swap_windows_by_index_3(void) { swap_windows_by_index(3); }
     {FLAGS_NONE, KEY_j, focus_down},                           \
     {FLAGS_NONE, KEY_q, close_focused_window},                 \
     {FLAGS_NONE, KEY_p, screenshot},                           \
+    {FLAGS_NONE, KEY_c, toggle_colorscheme},                   \
     {FLAGS_NONE, KEY_f, toggle_fullscreen_on_focused_window},  \
     {MOD_ALT, KEY_s, system_shutdown},                         \
     {MOD_SHIFT, KEY_H, swap_left},                             \

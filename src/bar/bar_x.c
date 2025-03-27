@@ -8,6 +8,7 @@
 #include "../shortcut/shortcut.h"
 #include "../x/x_p.h"
 #include "bar.h"
+#include "bar_config.h"
 
 u32 create_window(void) {
   return create_window_geom((struct geometry){0, 0, 1, 1});
@@ -17,7 +18,7 @@ u32 create_window_geom(struct geometry geom) {
   puts("create window");
   const u32 window_mask =
     XCB_CW_BACK_PIXEL | XCB_CW_OVERRIDE_REDIRECT | XCB_CW_EVENT_MASK;
-  const u32 window_values[3] = {BAR_INACTIVE_BACKGROUND, 1,
+  const u32 window_values[3] = {BAR_INACTIVE_BACKGROUND[colorscheme_index], 1,
                                 XCB_EVENT_MASK_EXPOSURE};
   const u32 id = xcb_generate_id(conn);
   xcb_create_window(conn, screen->root_depth, id, screen->root, geom.x, geom.y,
@@ -28,17 +29,28 @@ u32 create_window_geom(struct geometry geom) {
 
 struct gc create_gc(u32 font_id, u32 window) {
   puts("create gc");
-  struct gc gc = {xcb_generate_id(conn), xcb_generate_id(conn),
-                  xcb_generate_id(conn)};
+  struct gc gc;
   const u32 gc_mask = XCB_GC_FOREGROUND | XCB_GC_BACKGROUND | XCB_GC_FONT;
-  const u32 gc_values[3][3] = {
-    {BAR_ACTIVE_FOREGROUND, BAR_ACTIVE_BACKGROUND, font_id},
-    {BAR_INACTIVE_FOREGROUND, BAR_INACTIVE_BACKGROUND, font_id},
-    {BAR_URGENT_FOREGROUND, BAR_INACTIVE_BACKGROUND, font_id},
-  };
-  xcb_create_gc(conn, gc.active, window, gc_mask, gc_values[0]);
-  xcb_create_gc(conn, gc.inactive, window, gc_mask, gc_values[1]);
-  xcb_create_gc(conn, gc.urgent, window, gc_mask, gc_values[2]);
+  u32 gc_values[3][MAX_COLORSCHEME_COUNT][3];
+  for(u32 i = 0; i < MAX_COLORSCHEME_COUNT; i++) {
+    gc.active[i] = xcb_generate_id(conn);
+    gc.inactive[i] = xcb_generate_id(conn);
+    gc.urgent[i] = xcb_generate_id(conn);
+    gc_values[0][i][0] = BAR_ACTIVE_FOREGROUND[i];
+    gc_values[0][i][1] = BAR_ACTIVE_BACKGROUND[i];
+    gc_values[0][i][2] = font_id;
+    gc_values[1][i][0] = BAR_INACTIVE_FOREGROUND[i];
+    gc_values[1][i][1] = BAR_INACTIVE_BACKGROUND[i];
+    gc_values[1][i][2] = font_id;
+    gc_values[2][i][0] = BAR_URGENT_FOREGROUND[i];
+    gc_values[2][i][1] = BAR_URGENT_BACKGROUND[i];
+    gc_values[2][i][2] = font_id;
+  }
+  for(u32 i = 0; i < MAX_COLORSCHEME_COUNT; i++) {
+    xcb_create_gc(conn, gc.active[i], window, gc_mask, gc_values[0][i]);
+    xcb_create_gc(conn, gc.inactive[i], window, gc_mask, gc_values[1][i]);
+    xcb_create_gc(conn, gc.urgent[i], window, gc_mask, gc_values[2][i]);
+  }
   return gc;
 }
 
@@ -99,14 +111,12 @@ void draw_text_utf16(u32 window, u32 gc, struct font_metrics metrics,
 
 void change_window_color(u32 window, u32 preset) {
   puts("change window color");
-  const u32 background = (preset == BAR_INACTIVE) ? BAR_INACTIVE_BACKGROUND
-                         : (preset == BAR_ACTIVE) ? BAR_ACTIVE_BACKGROUND
-                         : (preset == BAR_URGENT) ? BAR_URGENT_BACKGROUND
-                                                  : BAR_INACTIVE_BACKGROUND;
-
-  const u32 window_mask = XCB_CW_BACK_PIXEL;
-  const u32 window_values = background;
-  xcb_change_window_attributes(conn, window, window_mask, &window_values);
+  const u32 background =
+    (preset == BAR_ACTIVE)   ? BAR_ACTIVE_BACKGROUND[colorscheme_index]
+    : (preset == BAR_URGENT) ? BAR_URGENT_BACKGROUND[colorscheme_index]
+                             : BAR_INACTIVE_BACKGROUND[colorscheme_index];
+  xcb_change_window_attributes(conn, window, XCB_CW_BACK_PIXEL, &background);
+  xcb_clear_area(conn, 0, window, 0, 0, 1920, get_bar_height());
 }
 
 void query_window_name(u32 window, char *name, u32 *name_length,

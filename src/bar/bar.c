@@ -11,8 +11,10 @@
 #include <unistd.h>
 
 #include "../const.h"
+#include "../global.h"
 #include "../syms.h"
 #include "../system/system.h"
+#include "bar_config.h"
 #include "bar_x.h"
 
 #define WINDOW_NAME_SIZE 1024
@@ -198,12 +200,12 @@ static void refresh_hints(void) {
     for(u32 j = 0; j < launcher_hint_count; j++) {
       if(launcher_hint_selected == j) {
         change_window_color(launcher_hint_blocks[i][j], BAR_ACTIVE);
-        draw_text(launcher_hint_blocks[i][j], gc.active, font_metrics,
-                  launcher_hints[j], strlen(launcher_hints[j]));
+        draw_text(launcher_hint_blocks[i][j], gc.active[colorscheme_index],
+                  font_metrics, launcher_hints[j], strlen(launcher_hints[j]));
       } else {
         change_window_color(launcher_hint_blocks[i][j], BAR_INACTIVE);
-        draw_text(launcher_hint_blocks[i][j], gc.inactive, font_metrics,
-                  launcher_hints[j], strlen(launcher_hints[j]));
+        draw_text(launcher_hint_blocks[i][j], gc.inactive[colorscheme_index],
+                  font_metrics, launcher_hints[j], strlen(launcher_hints[j]));
       }
     }
   }
@@ -266,7 +268,7 @@ static void refresh_workspace_blocks(void) {
           map_window(id);
           workspace_blocks_mapped[i][j] = 1;
         }
-        draw_text(id, gc.active, font_metrics, &text, 1);
+        draw_text(id, gc.active[colorscheme_index], font_metrics, &text, 1);
       } else if(workspace_occupied[j]) {
         reposition_window(id, prev_x);
         prev_x +=
@@ -276,7 +278,7 @@ static void refresh_workspace_blocks(void) {
           map_window(id);
           workspace_blocks_mapped[i][j] = 1;
         }
-        draw_text(id, gc.inactive, font_metrics, &text, 1);
+        draw_text(id, gc.inactive[colorscheme_index], font_metrics, &text, 1);
       }
     }
   }
@@ -287,12 +289,13 @@ static void refresh_minimized_windows(void) {
   u32 x;
   u32 id;
   u32 w;
-  u32 text_length;
+  u32 text_length = 0;
   if(launcher_visible || !visible) return;
   for(u32 i = 0; i < minimized_window_count; i++)
     text_length += minimized_window_name_len[i];
-  minimized_window_blocks_width =
-    text_length * font_metrics.width + minimized_window_count * 2 * BAR_PADDING;
+  minimized_window_blocks_width = text_length * font_metrics.width +
+                                  minimized_window_count * 2 * BAR_PADDING +
+                                  BAR_INNER_INSIDE_MARGIN;
   for(u32 i = 0; i < monitor_count; i++) {
     x = bars[i].width / 2 + bars[i].x - minimized_window_blocks_width / 2;
     for(u32 j = 0; j < minimized_window_count; j++) {
@@ -308,8 +311,9 @@ static void refresh_minimized_windows(void) {
   }
   for(u32 i = 0; i < monitor_count; i++) {
     for(u32 j = 0; j < minimized_window_count; j++)
-      draw_text(minimized_window_blocks[i][j], gc.active, font_metrics,
-                minimized_window_names[j], minimized_window_name_len[j]);
+      draw_text(minimized_window_blocks[i][j], gc.active[colorscheme_index],
+                font_metrics, minimized_window_names[j],
+                minimized_window_name_len[j]);
   }
 }
 
@@ -344,15 +348,17 @@ static void refresh_prompt_blocks(void) {
     for(u32 i = 0; i < monitor_count; i++) {
       reconfigure_window(launcher_prompt_blocks[i],
                          bars[i].x + BAR_OUTER_MARGIN, launcher_prompt_offset);
-      draw_text(launcher_prompt_blocks[i], gc.inactive, font_metrics, "prompt",
-                6);
+      change_window_color(launcher_prompt_blocks[i], BAR_INACTIVE);
+      draw_text(launcher_prompt_blocks[i], gc.inactive[colorscheme_index],
+                font_metrics, "prompt", 6);
     }
   } else {
     for(u32 i = 0; i < monitor_count; i++) {
       reconfigure_window(launcher_prompt_blocks[i],
                          bars[i].x + BAR_OUTER_MARGIN, launcher_prompt_offset);
-      draw_text(launcher_prompt_blocks[i], gc.active, font_metrics,
-                launcher_prompt, launcher_prompt_length);
+      change_window_color(launcher_prompt_blocks[i], BAR_ACTIVE);
+      draw_text(launcher_prompt_blocks[i], gc.active[colorscheme_index],
+                font_metrics, launcher_prompt, launcher_prompt_length);
     }
   }
 }
@@ -456,18 +462,18 @@ static void refresh_clocked(i32 redraw) {
            (clocked_blocks_state[i].status == 1 &&
             clocked_blocks_data[i].flags & BAR_FLAGS_ALWAYS_ACTIVE)) {
           change_window_color(id, BAR_URGENT);
-          draw_text_utf16(id, gc.urgent, font_metrics,
+          draw_text_utf16(id, gc.urgent[colorscheme_index], font_metrics,
                           clocked_blocks_state[i].output,
                           clocked_blocks_state[i].output_len);
         } else if(clocked_blocks_state[i].status == 1 ||
                   clocked_blocks_data[i].flags & BAR_FLAGS_ALWAYS_ACTIVE) {
           change_window_color(id, BAR_ACTIVE);
-          draw_text_utf16(id, gc.active, font_metrics,
+          draw_text_utf16(id, gc.active[colorscheme_index], font_metrics,
                           clocked_blocks_state[i].output,
                           clocked_blocks_state[i].output_len);
         } else {
           change_window_color(id, BAR_INACTIVE);
-          draw_text_utf16(id, gc.inactive, font_metrics,
+          draw_text_utf16(id, gc.inactive[colorscheme_index], font_metrics,
                           clocked_blocks_state[i].output,
                           clocked_blocks_state[i].output_len);
         }
@@ -569,13 +575,16 @@ void update_mode(u32 m) {
   if(launcher_visible || !visible) return;
   for(u32 i = 0; i < focused_monitor; i++) {
     change_window_color(mode_blocks[i], BAR_INACTIVE);
-    draw_text(mode_blocks[i], gc.inactive, font_metrics, &text, 1);
+    draw_text(mode_blocks[i], gc.inactive[colorscheme_index], font_metrics,
+              &text, 1);
   }
   change_window_color(mode_blocks[focused_monitor], BAR_ACTIVE);
-  draw_text(mode_blocks[focused_monitor], gc.active, font_metrics, &text, 1);
+  draw_text(mode_blocks[focused_monitor], gc.active[colorscheme_index],
+            font_metrics, &text, 1);
   for(u32 i = focused_monitor + 1; i < monitor_count; i++) {
     change_window_color(mode_blocks[i], BAR_INACTIVE);
-    draw_text(mode_blocks[i], gc.inactive, font_metrics, &text, 1);
+    draw_text(mode_blocks[i], gc.inactive[colorscheme_index], font_metrics,
+              &text, 1);
   }
 }
 
@@ -689,16 +698,21 @@ void redraw_bar(void) {
     u32 preset;
     u32 color;
     char text;
-  } choice = mode == NORMAL_MODE
-               ? (struct choice){BAR_ACTIVE, gc.active, '+'}
-               : (struct choice){BAR_INACTIVE, gc.inactive, 'I'};
-  for(u32 i = 0; i < monitor_count; i++)
+  } choice =
+    mode == NORMAL_MODE
+      ? (struct choice){BAR_ACTIVE, gc.active[colorscheme_index], '+'}
+      : (struct choice){BAR_INACTIVE, gc.inactive[colorscheme_index], 'I'};
+  for(u32 i = 0; i < monitor_count; i++) {
+    change_window_color(mode_blocks[i], choice.preset);
     draw_text(mode_blocks[i], choice.color, font_metrics, &choice.text, 1);
+  }
   refresh_workspace_blocks();
   for(u32 i = 0; i < monitor_count; i++) {
     for(u32 j = 0; j < minimized_window_count; j++) {
-      draw_text(minimized_window_blocks[i][j], gc.active, font_metrics,
-                minimized_window_names[j], minimized_window_name_len[j]);
+      change_window_color(minimized_window_blocks[i][j], BAR_ACTIVE);
+      draw_text(minimized_window_blocks[i][j], gc.active[colorscheme_index],
+                font_metrics, minimized_window_names[j],
+                minimized_window_name_len[j]);
     }
   }
   refresh_clocked(0);
@@ -716,6 +730,15 @@ void bar_visibility(u32 val) {
     map_bar();
   } else {
     unmap_bar();
+  }
+}
+
+void update_bar_colorscheme(void) {
+  if(launcher_visible) {
+    refresh_prompt_blocks();
+    refresh_hints();
+  } else {
+    redraw_bar();
   }
 }
 

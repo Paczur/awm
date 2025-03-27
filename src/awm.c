@@ -117,6 +117,7 @@ static void init(void) {
   struct sigaction act = {.sa_handler = signal_usr1};
   sigaction(SIGUSR1, &act, NULL);
   x_init();
+  query_colorscheme();
   request_init();
 }
 
