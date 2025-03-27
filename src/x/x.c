@@ -214,8 +214,8 @@ void send_cardinal_array(xcb_atom_t atom, u32 *arr, u32 length) {
 void query_window_string(xcb_window_t window, xcb_atom_t atom, char *str,
                          u32 *str_len, u32 str_size) {
   puts("query string");
-  xcb_get_property_cookie_t cookie = xcb_get_property_unchecked(
-    conn, 0, window, atom, XCB_ATOM_STRING, 0, str_size);
+  xcb_get_property_cookie_t cookie =
+    xcb_get_property_unchecked(conn, 0, window, atom, UTF8_STRING, 0, str_size);
   xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, cookie, NULL);
   if(!reply) {
     *str_len = 0;

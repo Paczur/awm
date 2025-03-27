@@ -55,7 +55,7 @@ static u32 minimized_window_blocks[MAX_MONITOR_COUNT][MINIMIZE_QUEUE_SIZE];
 static u32 minimized_windows[MINIMIZE_QUEUE_SIZE];
 static u32 minimized_window_count;
 static u32 minimized_window_blocks_width;
-static char minimized_window_names[MINIMIZE_QUEUE_SIZE][WINDOW_NAME_SIZE];
+static u16 minimized_window_names[MINIMIZE_QUEUE_SIZE][WINDOW_NAME_SIZE];
 static u32 minimized_window_name_len[MINIMIZE_QUEUE_SIZE];
 
 static struct clocked_block clocked_blocks_data[] = BAR_CLOCKED_BLOCKS;
@@ -312,9 +312,9 @@ static void refresh_minimized_windows(void) {
   }
   for(u32 i = 0; i < monitor_count; i++) {
     for(u32 j = 0; j < minimized_window_count; j++)
-      draw_text(minimized_window_blocks[i][j], gc.active[colorscheme_index],
-                font_metrics, minimized_window_names[j],
-                minimized_window_name_len[j]);
+      draw_text_utf16(minimized_window_blocks[i][j],
+                      gc.active[colorscheme_index], font_metrics,
+                      minimized_window_names[j], minimized_window_name_len[j]);
   }
 }
 
@@ -590,10 +590,14 @@ void update_mode(u32 m) {
 }
 
 void update_minimized_window_name(u32 window) {
+  u8 name[BAR_WINDOW_NAME_LENGTH * 3];
+  u32 len;
   for(u32 i = 0; i < minimized_window_count; i++) {
     if(minimized_windows[i] == window) {
-      query_window_name(minimized_windows[i], minimized_window_names[i],
-                        minimized_window_name_len + i, BAR_WINDOW_NAME_LENGTH);
+      query_window_name(minimized_windows[i], name, &len,
+                        BAR_WINDOW_NAME_LENGTH * 3);
+      minimized_window_name_len[i] = utf8_to_utf16(
+        minimized_window_names[i], BAR_WINDOW_NAME_LENGTH, name, len);
       refresh_minimized_windows();
       break;
     }
@@ -601,11 +605,16 @@ void update_minimized_window_name(u32 window) {
 }
 
 void update_minimized_windows(u32 *windows, u32 count) {
+  u8 name[BAR_WINDOW_NAME_LENGTH * 3];
+  u32 len;
   minimized_window_count = MIN(count, MINIMIZE_QUEUE_SIZE);
   memcpy(minimized_windows, windows, minimized_window_count * sizeof(u32));
-  for(u32 i = 0; i < minimized_window_count; i++)
-    query_window_name(minimized_windows[i], minimized_window_names[i],
-                      minimized_window_name_len + i, BAR_WINDOW_NAME_LENGTH);
+  for(u32 i = 0; i < minimized_window_count; i++) {
+    query_window_name(minimized_windows[i], name, &len,
+                      BAR_WINDOW_NAME_LENGTH * 3);
+    minimized_window_name_len[i] = utf8_to_utf16(
+      minimized_window_names[i], BAR_WINDOW_NAME_LENGTH, name, len);
+  }
   refresh_minimized_windows();
 }
 
@@ -711,9 +720,9 @@ void redraw_bar(void) {
   for(u32 i = 0; i < monitor_count; i++) {
     for(u32 j = 0; j < minimized_window_count; j++) {
       change_window_color(minimized_window_blocks[i][j], BAR_ACTIVE);
-      draw_text(minimized_window_blocks[i][j], gc.active[colorscheme_index],
-                font_metrics, minimized_window_names[j],
-                minimized_window_name_len[j]);
+      draw_text_utf16(minimized_window_blocks[i][j],
+                      gc.active[colorscheme_index], font_metrics,
+                      minimized_window_names[j], minimized_window_name_len[j]);
     }
   }
   refresh_clocked(0);

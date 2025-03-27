@@ -37,7 +37,7 @@ void change_window_color(u32 window, u32 preset);
 void map_window(u32 window);
 void unmap_window(u32 window);
 void send_changes(void);
-void query_window_name(u32 window, char *name, u32 *name_length, u32 name_size);
+void query_window_name(u32 window, u8 *name, u32 *name_length, u32 name_size);
 void focus_launcher(u32 launcher);
 void unfocus_launcher(void);
 u32 keycode_to_keysyms(u8 keycode, const u32 **syms);

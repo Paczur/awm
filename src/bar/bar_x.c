@@ -120,12 +120,10 @@ void change_window_color(u32 window, u32 preset) {
   xcb_clear_area(conn, 0, window, 0, 0, 1920, get_bar_height());
 }
 
-void query_window_name(u32 window, char *name, u32 *name_length,
-                       u32 name_size) {
+void query_window_name(u32 window, u8 *name, u32 *name_length, u32 name_size) {
   puts("query window name");
-  query_window_string(window, WM_ICON_NAME, name, name_length, name_size);
-  if(*name_length == 0)
-    query_window_string(window, WM_NAME, name, name_length, name_size);
+  query_window_string(window, _NET_WM_NAME, (char *)name, name_length,
+                      name_size);
   if(*name_length == 0) {
     name[0] = '?';
     name[1] = 0;
