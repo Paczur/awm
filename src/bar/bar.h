@@ -1,6 +1,7 @@
 #ifndef H_AWM_BAR
 #define H_AWM_BAR
 
+#include "../const.h"
 #include "../types.h"
 
 struct launcher_control {
@@ -8,7 +9,10 @@ struct launcher_control {
   void (*f)(void);
 };
 
-void update_workspace(u32 *windows, u32 workspace);
+void update_urgent_workspaces(
+  u32 windows[WORKSPACE_COUNT][WINDOWS_PER_WORKSPACE]);
+void update_workspaces(u32 windows[WORKSPACE_COUNT][WINDOWS_PER_WORKSPACE]);
+void update_urgent_minimized(u32 windows[MINIMIZE_QUEUE_SIZE]);
 void update_visible_workspaces(u32 *workspaces, u32 count);
 void update_focused_monitor(u32 m);
 void update_mode(u32 mode);

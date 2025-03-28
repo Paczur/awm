@@ -45,6 +45,7 @@ void set_fullscreen_window(u32 window, u32 state);
 void toggle_fullscreen_on_focused_window(void);
 
 void update_layout_colorscheme(void);
+void update_window_urgent(u32 window);
 
 #endif
 

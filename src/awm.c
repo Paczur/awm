@@ -164,6 +164,7 @@ static void client_message(const xcb_client_message_event_t *event) {
 
 static void property_notify(const xcb_property_notify_event_t *event) {
   if(event->atom == WM_NAME) update_minimized_window_name(event->window);
+  if(event->atom == WM_HINTS) update_window_urgent(event->window);
 }
 
 int main(void) {

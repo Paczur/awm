@@ -66,7 +66,14 @@ u32 requested_window_state(u32 window) {
   for(u32 i = 0; i < len; i++) {
     if(atoms[i] == _NET_WM_STATE_FULLSCREEN) ret |= WINDOW_STATE_FULLSCREEN;
   }
+  if(query_window_urgent(window)) ret |= WINDOW_STATE_URGENT;
   return ret;
+}
+
+u32 query_window_urgent(u32 window) {
+  struct wm_hints hints;
+  hints = query_window_hints(window);
+  return hints.flags.urgency;
 }
 
 void listen_to_events(u32 window) {
@@ -96,25 +103,19 @@ void unfocus_window(void) {
 
 void delete_window(u32 window) {
   u32 count;
-  xcb_icccm_get_wm_protocols_reply_t protocols;
+  xcb_atom_t atoms[10];
   const xcb_client_message_event_t message = {
     XCB_CLIENT_MESSAGE,
     32,
     .window = window,
     WM_PROTOCOLS,
     {.data32[0] = WM_DELETE_WINDOW, .data32[1] = XCB_CURRENT_TIME}};
-  xcb_get_property_cookie_t cookie =
-    xcb_icccm_get_wm_protocols(conn, window, WM_PROTOCOLS);
-  if(xcb_icccm_get_wm_protocols_reply(conn, cookie, &protocols, NULL)) {
-    count = protocols.atoms_len;
-    for(u32 i = 0; i < count; i++) {
-      if(protocols.atoms[i] == WM_DELETE_WINDOW) {
-        xcb_send_event(conn, 0, window, 0, (char *)&message);
-        xcb_icccm_get_wm_protocols_reply_wipe(&protocols);
-        return;
-      }
+  count = query_window_atom_array(window, WM_PROTOCOLS, atoms, 10);
+  for(u32 i = 0; i < count; i++) {
+    if(atoms[i] == WM_DELETE_WINDOW) {
+      xcb_send_event(conn, 0, window, 0, (char *)&message);
+      return;
     }
-    xcb_icccm_get_wm_protocols_reply_wipe(&protocols);
   }
   xcb_kill_client(conn, window);
 }
@@ -125,16 +126,7 @@ void delete_sent_layout_data(void) {
   xcb_delete_property(conn, screen->root, AWM_FOCUSED_MONITOR);
   xcb_delete_property(conn, screen->root, AWM_MINIMIZED_WINDOW_COUNT);
   xcb_delete_property(conn, screen->root, AWM_MINIMIZED_WINDOWS);
-  xcb_delete_property(conn, screen->root, AWM_WORKSPACE_0);
-  xcb_delete_property(conn, screen->root, AWM_WORKSPACE_1);
-  xcb_delete_property(conn, screen->root, AWM_WORKSPACE_2);
-  xcb_delete_property(conn, screen->root, AWM_WORKSPACE_3);
-  xcb_delete_property(conn, screen->root, AWM_WORKSPACE_4);
-  xcb_delete_property(conn, screen->root, AWM_WORKSPACE_5);
-  xcb_delete_property(conn, screen->root, AWM_WORKSPACE_6);
-  xcb_delete_property(conn, screen->root, AWM_WORKSPACE_7);
-  xcb_delete_property(conn, screen->root, AWM_WORKSPACE_8);
-  xcb_delete_property(conn, screen->root, AWM_WORKSPACE_9);
+  xcb_delete_property(conn, screen->root, AWM_WORKSPACES);
   xcb_delete_property(conn, screen->root, _NET_CURRENT_DESKTOP);
   xcb_delete_property(conn, screen->root, _NET_ACTIVE_WINDOW);
   xcb_delete_property(conn, screen->root, _NET_NUMBER_OF_DESKTOPS);
@@ -152,74 +144,23 @@ void query_visible_workspaces(u32 *workspaces, u32 count) {
   }
 }
 
-void query_workspaces(u32 *windows) {
-  const xcb_get_property_cookie_t cookies[WORKSPACE_COUNT] = {
-    xcb_get_property_unchecked(conn, 0, screen->root, AWM_WORKSPACE_0,
-                               XCB_ATOM_CARDINAL, 0, 4),
-    xcb_get_property_unchecked(conn, 0, screen->root, AWM_WORKSPACE_1,
-                               XCB_ATOM_CARDINAL, 0, 4),
-    xcb_get_property_unchecked(conn, 0, screen->root, AWM_WORKSPACE_2,
-                               XCB_ATOM_CARDINAL, 0, 4),
-    xcb_get_property_unchecked(conn, 0, screen->root, AWM_WORKSPACE_3,
-                               XCB_ATOM_CARDINAL, 0, 4),
-    xcb_get_property_unchecked(conn, 0, screen->root, AWM_WORKSPACE_4,
-                               XCB_ATOM_CARDINAL, 0, 4),
-    xcb_get_property_unchecked(conn, 0, screen->root, AWM_WORKSPACE_5,
-                               XCB_ATOM_CARDINAL, 0, 4),
-    xcb_get_property_unchecked(conn, 0, screen->root, AWM_WORKSPACE_6,
-                               XCB_ATOM_CARDINAL, 0, 4),
-    xcb_get_property_unchecked(conn, 0, screen->root, AWM_WORKSPACE_7,
-                               XCB_ATOM_CARDINAL, 0, 4),
-    xcb_get_property_unchecked(conn, 0, screen->root, AWM_WORKSPACE_8,
-                               XCB_ATOM_CARDINAL, 0, 4),
-    xcb_get_property_unchecked(conn, 0, screen->root, AWM_WORKSPACE_9,
-                               XCB_ATOM_CARDINAL, 0, 4)};
-  xcb_get_property_reply_t *const replies[WORKSPACE_COUNT] = {
-    xcb_get_property_reply(conn, cookies[0], NULL),
-    xcb_get_property_reply(conn, cookies[1], NULL),
-    xcb_get_property_reply(conn, cookies[2], NULL),
-    xcb_get_property_reply(conn, cookies[3], NULL),
-    xcb_get_property_reply(conn, cookies[4], NULL),
-    xcb_get_property_reply(conn, cookies[5], NULL),
-    xcb_get_property_reply(conn, cookies[6], NULL),
-    xcb_get_property_reply(conn, cookies[7], NULL),
-    xcb_get_property_reply(conn, cookies[8], NULL),
-    xcb_get_property_reply(conn, cookies[9], NULL)};
-  (void)windows;
-  for(u32 i = 0; i < WORKSPACE_COUNT; i++) {
-    if(replies[i]) {
-      if(xcb_get_property_value_length(replies[i]) > 0)
-        memcpy(windows + i * WINDOWS_PER_WORKSPACE,
-               xcb_get_property_value(replies[i]),
-               sizeof(u32) * WINDOWS_PER_WORKSPACE);
-      free(replies[i]);
-    }
-  }
+void query_workspaces(u32 windows[WORKSPACE_COUNT][WINDOWS_PER_WORKSPACE]) {
+  query_cardinal_array(AWM_WORKSPACES, (u32 *)windows,
+                       WORKSPACE_COUNT * WINDOWS_PER_WORKSPACE);
 }
 
-void send_workspace(u32 *windows, u32 w) {
-  const xcb_atom_t workspace = w == 0   ? AWM_WORKSPACE_0
-                               : w == 1 ? AWM_WORKSPACE_1
-                               : w == 2 ? AWM_WORKSPACE_2
-                               : w == 3 ? AWM_WORKSPACE_3
-                               : w == 4 ? AWM_WORKSPACE_4
-                               : w == 5 ? AWM_WORKSPACE_5
-                               : w == 6 ? AWM_WORKSPACE_6
-                               : w == 7 ? AWM_WORKSPACE_7
-                               : w == 8 ? AWM_WORKSPACE_8
-                               : w == 9 ? AWM_WORKSPACE_9
-                                        : 10;
-  if(w >= WORKSPACE_COUNT) return;
-  send_cardinal_array(workspace, windows, WINDOWS_PER_WORKSPACE);
-  update_workspace(windows, w);
+void send_workspaces(u32 windows[WORKSPACE_COUNT][WINDOWS_PER_WORKSPACE]) {
+  send_cardinal_array(AWM_WORKSPACES, (u32 *)windows,
+                      WORKSPACE_COUNT * WINDOWS_PER_WORKSPACE);
+  update_workspaces(windows);
 }
 
-void query_focused_windows(u32 *windows) {
-  query_cardinal_array(AWM_FOCUSED_WINDOWS, windows, WORKSPACE_COUNT);
+void query_focused_windows(i32 windows[WORKSPACE_COUNT]) {
+  query_cardinal_array(AWM_FOCUSED_WINDOWS, (u32 *)windows, WORKSPACE_COUNT);
 }
 
-void send_focused_windows(u32 *windows) {
-  send_cardinal_array(AWM_FOCUSED_WINDOWS, windows, WORKSPACE_COUNT);
+void send_focused_windows(i32 windows[WORKSPACE_COUNT]) {
+  send_cardinal_array(AWM_FOCUSED_WINDOWS, (u32 *)windows, WORKSPACE_COUNT);
 }
 
 u32 query_focused_monitor(void) {
@@ -283,12 +224,36 @@ void send_size_offsets(i32 *offsets) {
   send_cardinal_array(AWM_SIZE_OFFSETS, (u32 *)offsets, WORKSPACE_COUNT * 2);
 }
 
-void query_fullscreen_windows(u32 *windows) {
+void query_fullscreen_windows(u32 windows[WORKSPACE_COUNT]) {
   query_cardinal_array(AWM_FULLSCREEN_WINDOWS, windows, WORKSPACE_COUNT);
 }
 
-void send_fullscreen_windows(u32 *windows) {
+void send_fullscreen_windows(u32 windows[WORKSPACE_COUNT]) {
   send_cardinal_array(AWM_FULLSCREEN_WINDOWS, windows, WORKSPACE_COUNT);
+}
+
+void query_urgent_workspace_windows(
+  u32 windows[WORKSPACE_COUNT][WINDOWS_PER_WORKSPACE]) {
+  query_cardinal_array(AWM_URGENT_WORKSPACE_WINDOWS, (u32 *)windows,
+                       WORKSPACE_COUNT * WINDOWS_PER_WORKSPACE);
+}
+
+void send_urgent_workspace_windows(
+  u32 windows[WORKSPACE_COUNT][WINDOWS_PER_WORKSPACE]) {
+  send_cardinal_array(AWM_URGENT_WORKSPACE_WINDOWS, (u32 *)windows,
+                      WORKSPACE_COUNT * WINDOWS_PER_WORKSPACE);
+  update_urgent_workspaces(windows);
+}
+
+void query_urgent_minimized_windows(u32 windows[MINIMIZE_QUEUE_SIZE]) {
+  query_cardinal_array(AWM_URGENT_MINIMIZED_WINDOWS, windows,
+                       MINIMIZE_QUEUE_SIZE);
+}
+
+void send_urgent_minimized_windows(u32 windows[MINIMIZE_QUEUE_SIZE]) {
+  send_cardinal_array(AWM_URGENT_MINIMIZED_WINDOWS, windows,
+                      MINIMIZE_QUEUE_SIZE);
+  update_urgent_minimized(windows);
 }
 
 void set_window_fullscreen(u32 window) {

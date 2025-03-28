@@ -7,5 +7,6 @@
 #define GAP_SIZE 5
 #define BORDER_FOCUSED WHITE
 #define BORDER_UNFOCUSED DARK_GRAY
+#define BORDER_URGENT YELLOW
 
 #endif

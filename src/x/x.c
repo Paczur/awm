@@ -227,6 +227,16 @@ void query_window_string(xcb_window_t window, xcb_atom_t atom, char *str,
   free(reply);
 }
 
+struct wm_hints query_window_hints(u32 window) {
+  struct wm_hints ret;
+  xcb_get_property_cookie_t cookie = xcb_get_property_unchecked(
+    conn, 0, window, WM_HINTS, WM_HINTS, 0, sizeof(struct wm_hints) / 32);
+  xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, cookie, NULL);
+  memcpy(&ret, xcb_get_property_value(reply), sizeof(ret));
+  if(reply) free(reply);
+  return ret;
+}
+
 void query_colorscheme(void) {
   colorscheme_index = query_cardinal(AWM_COLORSCHEME, 0);
 }

@@ -56,11 +56,11 @@ static void system_shutdown(void) { system_run_bg("sudo shutdown"); }
 
 static void brightness_up(void) {
   system_run("/etc/awm/scripts/brightness 2");
-  update_clocked_block(4);
+  update_clocked_block(2);
 }
 static void brightness_down(void) {
   system_run("/etc/awm/scripts/brightness -2");
-  update_clocked_block(4);
+  update_clocked_block(2);
 }
 
 static void volume_up(void) {

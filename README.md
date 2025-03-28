@@ -16,7 +16,6 @@ expected.
 
 To Be Done:
 - Floating windows
-- Urgency display
 
 ## Installation
 awm uses Makefiles for compilation so simple `make && make install` should work.
