@@ -81,7 +81,7 @@ static struct launcher_control launcher_controls[] = LAUNCHER_CONTROLS;
 static char launcher_path_entries[MAX_PATH_ENTRIES][MAX_PATH_ENTRY_SIZE];
 static u32 launcher_path_entry_count;
 
-static char launcher_prompt[BAR_LAUNCHER_PROMPT_LENGTH];
+static char launcher_prompt[MAX_PATH_ENTRY_SIZE];
 static u32 launcher_prompt_length;
 static u32 launcher_prompt_offset;
 static u32 launcher_prompt_blocks[MAX_MONITOR_COUNT];
@@ -94,7 +94,7 @@ static u8 launcher_hint_blocks_mapped[MAX_MONITOR_COUNT]
                                      [BAR_LAUNCHER_HINT_BLOCKS];
 
 static void populate_path(void) {
-  char string[512];
+  char string[MAX_PATH_ENTRY_SIZE * 5];
   DIR *stream;
   struct dirent *ent;
   struct stat buf = {0};
@@ -114,7 +114,9 @@ static void populate_path(void) {
         stat(string, &buf);
         if(!S_ISDIR(buf.st_mode) && buf.st_mode & S_IXUSR) {
           for(u32 k = 0; k < launcher_path_entry_count; k++) {
-            if(strcmp(launcher_path_entries[k], ent->d_name) == 0) goto skip;
+            if(memcmp(launcher_path_entries[k], ent->d_name,
+                      MIN(len, MAX_PATH_ENTRY_SIZE)) == 0)
+              goto skip;
           }
           strlcpy(launcher_path_entries[launcher_path_entry_count++],
                   ent->d_name, MAX_PATH_ENTRY_SIZE);
@@ -134,12 +136,13 @@ static void populate_path(void) {
     for(u32 j = 0; j < launcher_path_entry_count - 1 - i; j++) {
       len = strlen(launcher_path_entries[j]);
       len2 = strlen(launcher_path_entries[j + 1]);
-      if(len > len2 ||
-         (len == len2 &&
-          strcmp(launcher_path_entries[j], launcher_path_entries[j + 1]) > 0)) {
-        strcpy(string, launcher_path_entries[j]);
-        strcpy(launcher_path_entries[j], launcher_path_entries[j + 1]);
-        strcpy(launcher_path_entries[j + 1], string);
+      if(len > len2 || (len == len2 && memcmp(launcher_path_entries[j],
+                                              launcher_path_entries[j + 1],
+                                              MAX_PATH_ENTRY_SIZE) > 0)) {
+        memcpy(string, launcher_path_entries[j], MAX_PATH_ENTRY_SIZE);
+        memcpy(launcher_path_entries[j], launcher_path_entries[j + 1],
+               MAX_PATH_ENTRY_SIZE);
+        memcpy(launcher_path_entries[j + 1], string, MAX_PATH_ENTRY_SIZE);
         swapped = 1;
       }
     }
@@ -226,7 +229,8 @@ static void regenerate_hints(void) {
     len = strlen(launcher_path_entries[i]);
     if(launcher_hint_count < BAR_LAUNCHER_HINT_BLOCKS) {
       launcher_hint_lengths[launcher_hint_count] = len;
-      strcpy(launcher_hints[launcher_hint_count++], launcher_path_entries[i]);
+      memcpy(launcher_hints[launcher_hint_count++], launcher_path_entries[i],
+             MAX_PATH_ENTRY_SIZE);
     }
   }
 
@@ -709,10 +713,10 @@ void launcher_handle_key(u8 flags, u8 keycode) {
       }
     }
   }
-  if(launcher_prompt_length < BAR_LAUNCHER_PROMPT_LENGTH) {
+  if(launcher_prompt_length < MAX_PATH_ENTRY_SIZE) {
     launcher_prompt_length +=
       keycode_to_utf8(keycode, launcher_prompt + launcher_prompt_length,
-                      BAR_LAUNCHER_PROMPT_LENGTH - launcher_prompt_length);
+                      MAX_PATH_ENTRY_SIZE - launcher_prompt_length);
     launcher_hint_selected = 0;
     regenerate_hints();
     refresh_prompt_blocks();
