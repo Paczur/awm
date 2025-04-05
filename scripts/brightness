@@ -5,11 +5,11 @@ if [ "$dir" = "/sys/class/backlight/" ]; then
 fi
 current="$(cat "$dir/brightness")"
 max="$(cat "$dir/max_brightness")"
-curr_percent="$(echo "$current*100/$max" | bc)"
-percent="$(echo "$max/100" | bc)"
 if [ -n "$1" ]; then
-  curr_percent="$(echo "$curr_percent+$1" | bc)"
-  current="$(echo "$curr_percent*$percent" | bc)"
+  curr_percent="$(echo "$current*100/$max+$1" | bc)"
+  current="$(echo "$curr_percent*$max/100" | bc)"
   sudo dash -c "echo $current > $dir/brightness"
+else
+  curr_percent="$(echo "$current*100/$max" | bc)"
 fi
-echo " $curr_percent%"
+echo " $curr_percent%"

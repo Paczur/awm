@@ -1,304 +1,880 @@
 #include "bar.h"
 
-#include <fontconfig/fontconfig.h>
+#include <dirent.h>
+#include <iconv.h>
+#include <pthread.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
-#include "bar_container.h"
-#include "block.h"
-#include "block_info.h"
-#include "block_minimized.h"
-#include "block_mode.h"
-#include "block_workspace.h"
-#include "launcher_container.h"
-#include "launcher_hint.h"
-#include "launcher_prompt.h"
-#include "launcher_trie.h"
+#include "../const.h"
+#include "../global.h"
+#include "../syms.h"
+#include "../system/system.h"
+#include "bar_config.h"
+#include "bar_x.h"
 
-// TODO: Possibly optimize searching
-#define LENGTH(x) (sizeof(x) / sizeof((x)[0]))
+#define WINDOW_NAME_SIZE 1024
+#define MAX_PATH_ENTRIES 10240
+#define MAX_PATH_ENTRY_SIZE 64
 
-#define CONF_COLOR(b, def) \
-  to_block_settings(b, def##_BACKGROUND, def##_FOREGROUND)
+struct clocked_block {
+  const char *cmd;
+  u32 time;
+  u32 flags;
+  void (*action)(u32 button, u32 index);
+};
 
-bool bar_launcher_visible;
-static xcb_connection_t *conn;
-static const xcb_screen_t *screen;
-static const char *fontstr;
+struct cmd {
+  int pid;
+  int fd;
+  FILE *f;
+};
 
-static size_t (*focused_workspace)(void);
+static u32 monitor_count;
+static struct gc gc;
+static struct geometry bars[MAX_MONITOR_COUNT];
+static struct font_metrics font_metrics;
+static u32 visible = 1;
 
-static void bar_launcher_hint_refresh(void) {
-  launcher_hint_regen(launcher_prompt_search, launcher_prompt_search_length);
-  launcher_hint_update(block_next_x(&launcher_prompt_geometry));
+static u32 mode_blocks[MAX_MONITOR_COUNT];
+static u32 mode = 2;
+static u32 mode_block_offset;
+static u32 focused_monitor;
+
+static u8 workspace_occupied[WORKSPACE_COUNT];
+static u32 visible_workspaces[WORKSPACE_COUNT];
+static u8 urgent_workspaces[WORKSPACE_COUNT];
+static u32 workspace_blocks[MAX_MONITOR_COUNT][WORKSPACE_COUNT];
+static u32 workspace_blocks_offset;
+static u8 workspace_blocks_mapped[MAX_MONITOR_COUNT][WORKSPACE_COUNT];
+
+static u32 minimized_window_blocks[MAX_MONITOR_COUNT][MINIMIZE_QUEUE_SIZE];
+static u32 minimized_windows[MINIMIZE_QUEUE_SIZE];
+static u32 minimized_urgent_windows[MINIMIZE_QUEUE_SIZE];
+static u32 minimized_window_count;
+static u32 minimized_window_blocks_width;
+static u16 minimized_window_names[MINIMIZE_QUEUE_SIZE][WINDOW_NAME_SIZE];
+static u32 minimized_window_name_len[MINIMIZE_QUEUE_SIZE];
+
+static struct clocked_block clocked_blocks_data[] = BAR_CLOCKED_BLOCKS;
+static u32 clocked_blocks[MAX_MONITOR_COUNT][LENGTH(clocked_blocks_data)];
+static struct {
+  u16 output[50];
+  u32 output_len;
+  i32 status;
+  u8 mapped;
+} clocked_blocks_state[LENGTH(clocked_blocks_data)];
+static u32 stop_thread = 0;
+static u32 seconds;
+static u32 second_multiple = 1;
+static pthread_t thread;
+static pthread_mutex_t draw_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t update_mutex = PTHREAD_MUTEX_INITIALIZER;
+static u32 clocked_blocks_offset;
+
+static u32 launcher_visible = 0;
+static struct launcher_control launcher_controls[] = LAUNCHER_CONTROLS;
+static char launcher_path_entries[MAX_PATH_ENTRIES][MAX_PATH_ENTRY_SIZE];
+static u32 launcher_path_entry_count;
+
+static char launcher_prompt[MAX_PATH_ENTRY_SIZE];
+static u32 launcher_prompt_length;
+static u32 launcher_prompt_offset;
+static u32 launcher_prompt_blocks[MAX_MONITOR_COUNT];
+static char launcher_hints[BAR_LAUNCHER_HINT_BLOCKS][MAX_PATH_ENTRY_SIZE];
+static u32 launcher_hint_lengths[BAR_LAUNCHER_HINT_BLOCKS];
+static u32 launcher_hint_selected;
+static u32 launcher_hint_count;
+static u32 launcher_hint_blocks[MAX_MONITOR_COUNT][BAR_LAUNCHER_HINT_BLOCKS];
+static u8 launcher_hint_blocks_mapped[MAX_MONITOR_COUNT]
+                                     [BAR_LAUNCHER_HINT_BLOCKS];
+
+static void populate_path(void) {
+  char string[MAX_PATH_ENTRY_SIZE * 5];
+  DIR *stream;
+  struct dirent *ent;
+  struct stat buf = {0};
+  u32 len;
+  u32 len2;
+  u32 swapped;
+  char *path = getenv("PATH");
+  for(u32 i = 0, j = 0;; i++) {
+    if(path[i] == ':' || path[i] == 0) {
+      string[j] = 0;
+      stream = opendir(string);
+      while((ent = readdir(stream)) != NULL) {
+        len = strlen(ent->d_name);
+        string[j] = '/';
+        memcpy(string + j + 1, ent->d_name, len);
+        string[j + len + 1] = 0;
+        stat(string, &buf);
+        if(!S_ISDIR(buf.st_mode) && buf.st_mode & S_IXUSR) {
+          for(u32 k = 0; k < launcher_path_entry_count; k++) {
+            if(memcmp(launcher_path_entries[k], ent->d_name,
+                      MIN(len, MAX_PATH_ENTRY_SIZE)) == 0)
+              goto skip;
+          }
+          strlcpy(launcher_path_entries[launcher_path_entry_count++],
+                  ent->d_name, MAX_PATH_ENTRY_SIZE);
+        skip:
+        }
+      }
+      closedir(stream);
+      if(path[i] == 0) break;
+      j = 0;
+    } else {
+      string[j++] = path[i];
+    }
+  }
+
+  for(u32 i = 0; i < launcher_path_entry_count - 1; i++) {
+    swapped = 0;
+    for(u32 j = 0; j < launcher_path_entry_count - 1 - i; j++) {
+      len = strlen(launcher_path_entries[j]);
+      len2 = strlen(launcher_path_entries[j + 1]);
+      if(len > len2 || (len == len2 && memcmp(launcher_path_entries[j],
+                                              launcher_path_entries[j + 1],
+                                              MAX_PATH_ENTRY_SIZE) > 0)) {
+        memcpy(string, launcher_path_entries[j], MAX_PATH_ENTRY_SIZE);
+        memcpy(launcher_path_entries[j], launcher_path_entries[j + 1],
+               MAX_PATH_ENTRY_SIZE);
+        memcpy(launcher_path_entries[j + 1], string, MAX_PATH_ENTRY_SIZE);
+        swapped = 1;
+      }
+    }
+    if(!swapped) break;
+  }
 }
 
-size_t bar_get_containers(const bar_containers_t **cont) {
-  *cont = &bar_containers;
-  return bar_container_count;
+static u8 prefix_matches(char *prefix, char *arr, u32 size) {
+  for(u32 i = 0; i < size; i++) {
+    if(prefix[i] != arr[i]) return 0;
+  }
+  return 1;
 }
 
-void bar_launcher_focus_restore(void) {
-  if(!bar_launcher_visible) return;
-  xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT,
-                      bar_containers.launcher[0], XCB_CURRENT_TIME);
+static u8 comp_strings(char *a, char *b) {
+  u32 a_len = strlen(a);
+  u32 b_len = strlen(b);
+  u32 min = MIN(a_len, b_len);
+  u32 val;
+  for(u32 i = 0; i < min; i++) {
+    val = (a[i] < b[i]) - (a[i] > b[i]);
+    if(val) return val;
+  }
+  return (a_len < b_len) - (a_len > b_len);
 }
 
-void bar_launcher_show(void) {
-  size_t visible = -1;
-  for(size_t i = 0; i < bar_container_count; i++) {
-    if(bar_containers.visibility[i]) {
-      visible = i;
+static void calc_prompt_offset(void) {
+  launcher_prompt_offset =
+    launcher_prompt_length == 0
+      ? (u32)font_metrics.width * 6 + BAR_PADDING * 2
+      : font_metrics.width * launcher_prompt_length + BAR_PADDING * 2;
+}
+
+static void refresh_hints(void) {
+  u32 id;
+  u32 prev_x;
+  u32 w;
+  calc_prompt_offset();
+  for(u32 i = launcher_hint_count; i < BAR_LAUNCHER_HINT_BLOCKS; i++) {
+    for(u32 j = 0; j < monitor_count; j++) {
+      if(!launcher_hint_blocks_mapped[j][i]) continue;
+      unmap_window(launcher_hint_blocks[j][i]);
+      launcher_hint_blocks_mapped[j][i] = 0;
+    }
+  }
+  for(u32 i = 0; i < monitor_count; i++) {
+    prev_x =
+      bars[i].x + launcher_prompt_offset + BAR_OUTER_MARGIN + BAR_INNER_MARGIN;
+    for(u32 j = 0; j < launcher_hint_count; j++) {
+      id = launcher_hint_blocks[i][j];
+      w = font_metrics.width * strlen(launcher_hints[j]) + BAR_PADDING * 2;
+      reconfigure_window(id, prev_x, w);
+      if(!launcher_hint_blocks_mapped[i][j]) {
+        map_window(id);
+        launcher_hint_blocks_mapped[i][j] = 1;
+      }
+      prev_x += w + BAR_INNER_INSIDE_MARGIN;
+    }
+  }
+  for(u32 i = 0; i < monitor_count; i++) {
+    for(u32 j = 0; j < launcher_hint_count; j++) {
+      if(launcher_hint_selected == j) {
+        change_window_color(launcher_hint_blocks[i][j], BAR_ACTIVE);
+        draw_text(launcher_hint_blocks[i][j], gc.active[colorscheme_index],
+                  font_metrics, launcher_hints[j], strlen(launcher_hints[j]));
+      } else {
+        change_window_color(launcher_hint_blocks[i][j], BAR_INACTIVE);
+        draw_text(launcher_hint_blocks[i][j], gc.inactive[colorscheme_index],
+                  font_metrics, launcher_hints[j], strlen(launcher_hints[j]));
+      }
+    }
+  }
+}
+
+static void regenerate_hints(void) {
+  u32 w = 0;
+  u32 max_w = 0;
+  u32 len;
+  launcher_hint_count = 0;
+  for(u32 i = 0; i < launcher_path_entry_count; i++) {
+    if(!prefix_matches(launcher_prompt, launcher_path_entries[i],
+                       launcher_prompt_length))
+      continue;
+    len = strlen(launcher_path_entries[i]);
+    if(launcher_hint_count < BAR_LAUNCHER_HINT_BLOCKS) {
+      launcher_hint_lengths[launcher_hint_count] = len;
+      memcpy(launcher_hints[launcher_hint_count++], launcher_path_entries[i],
+             MAX_PATH_ENTRY_SIZE);
+    }
+  }
+
+  for(u32 i = 0; i < monitor_count; i++)
+    if(bars[i].width > max_w) max_w = bars[i].width;
+  for(u32 i = 0; i < launcher_hint_count; i++) {
+    w += BAR_PADDING * 2 + font_metrics.width * strlen(launcher_hints[i]);
+    if(w > max_w) {
+      launcher_hint_count = i;
       break;
     }
   }
-  if(visible < bar_container_count) {
-    launcher_container_show();
-    bar_launcher_visible = true;
-    launcher_prompt_clear();
-    xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, XCB_MOD_MASK_ANY);
-    for(size_t i = 0; i < bar_container_count; i++) {
-      xcb_grab_key(conn, 1, bar_containers.launcher[i], XCB_MOD_MASK_ANY,
-                   XCB_GRAB_ANY, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
-    }
-    launcher_trie_unmark(launcher_trie_tree);
-    launcher_trie_populate(&launcher_trie_tree);
-    launcher_trie_cleanup(launcher_trie_tree);
-    bar_launcher_hint_refresh();
-  }
+  refresh_hints();
 }
 
-void bar_launcher_hide(void) {
-  if(bar_launcher_visible) {
-    launcher_container_hide();
-    bar_launcher_visible = false;
-    for(size_t i = 0; i < bar_container_count; i++) {
-      xcb_ungrab_key(conn, XCB_GRAB_ANY, bar_containers.launcher[i],
-                     XCB_MOD_MASK_ANY);
+static void refresh_workspace_blocks(void) {
+  if(launcher_visible || !visible) return;
+  u32 id;
+  char text;
+  u32 prev_x;
+  for(u32 i = 0; i < WORKSPACE_COUNT; i++) {
+    for(u32 j = 0; j < monitor_count; j++) {
+      if(workspace_blocks_mapped[j][i] && visible_workspaces[j] != i &&
+         !workspace_occupied[i]) {
+        unmap_window(workspace_blocks[j][i]);
+        workspace_blocks_mapped[j][i] = 0;
+      }
     }
   }
+  for(u32 i = 0; i < monitor_count; i++) {
+    prev_x =
+      bars[i].x + mode_block_offset + BAR_OUTER_MARGIN + BAR_INNER_MARGIN;
+    for(u32 j = 0; j < WORKSPACE_COUNT; j++) {
+      id = workspace_blocks[i][j];
+      text = (j + 1) % 10 + '0';
+      if(visible_workspaces[i] == j) {
+        reposition_window(id, prev_x);
+        prev_x +=
+          BAR_PADDING * 2 + font_metrics.width + BAR_INNER_INSIDE_MARGIN;
+        change_window_color(id, BAR_ACTIVE);
+        if(!workspace_blocks_mapped[i][j]) {
+          map_window(id);
+          workspace_blocks_mapped[i][j] = 1;
+        }
+        draw_text(id, gc.active[colorscheme_index], font_metrics, &text, 1);
+      } else if(urgent_workspaces[j]) {
+        reposition_window(id, prev_x);
+        prev_x +=
+          BAR_PADDING * 2 + font_metrics.width + BAR_INNER_INSIDE_MARGIN;
+        change_window_color(id, BAR_URGENT);
+        if(!workspace_blocks_mapped[i][j]) {
+          map_window(id);
+          workspace_blocks_mapped[i][j] = 1;
+        }
+        draw_text(id, gc.urgent[colorscheme_index], font_metrics, &text, 1);
+      } else if(workspace_occupied[j]) {
+        reposition_window(id, prev_x);
+        prev_x +=
+          BAR_PADDING * 2 + font_metrics.width + BAR_INNER_INSIDE_MARGIN;
+        change_window_color(id, BAR_INACTIVE);
+        if(!workspace_blocks_mapped[i][j]) {
+          map_window(id);
+          workspace_blocks_mapped[i][j] = 1;
+        }
+        draw_text(id, gc.inactive[colorscheme_index], font_metrics, &text, 1);
+      }
+    }
+  }
+  workspace_blocks_offset = prev_x;
 }
 
-void bar_launcher_append(const char *buff, size_t len) {
-  if(bar_launcher_visible) {
-    launcher_prompt_append(buff, len);
-    bar_launcher_hint_refresh();
+static void refresh_minimized_windows(void) {
+  u32 x;
+  u32 id;
+  u32 w;
+  u32 text_length = 0;
+  if(launcher_visible || !visible) return;
+  for(u32 i = 0; i < minimized_window_count; i++)
+    text_length += minimized_window_name_len[i];
+  minimized_window_blocks_width = text_length * font_metrics.width +
+                                  minimized_window_count * 2 * BAR_PADDING +
+                                  BAR_INNER_INSIDE_MARGIN;
+  for(u32 i = 0; i < monitor_count; i++) {
+    x = bars[i].width / 2 + bars[i].x - minimized_window_blocks_width / 2;
+    for(u32 j = 0; j < minimized_window_count; j++) {
+      w = minimized_window_name_len[j] * font_metrics.width + BAR_PADDING * 2;
+      id = minimized_window_blocks[i][j];
+      reconfigure_window(id, x, w);
+      map_window(id);
+      x += w + BAR_INNER_INSIDE_MARGIN;
+    }
+    for(u32 j = minimized_window_count; j < MINIMIZE_QUEUE_SIZE; j++)
+      unmap_window(minimized_window_blocks[i][j]);
+  }
+  for(u32 i = 0; i < monitor_count; i++) {
+    for(u32 j = 0; j < minimized_window_count; j++) {
+      for(u32 k = 0; k < MINIMIZE_QUEUE_SIZE; k++) {
+        if(minimized_urgent_windows[k] == minimized_windows[j]) {
+          change_window_color(minimized_window_blocks[i][j], BAR_URGENT);
+          draw_text_utf16(minimized_window_blocks[i][j],
+                          gc.urgent[colorscheme_index], font_metrics,
+                          minimized_window_names[j],
+                          minimized_window_name_len[j]);
+          goto changed;
+        }
+      }
+      change_window_color(minimized_window_blocks[i][j], BAR_ACTIVE);
+      draw_text_utf16(minimized_window_blocks[i][j],
+                      gc.active[colorscheme_index], font_metrics,
+                      minimized_window_names[j], minimized_window_name_len[j]);
+    changed:
+    }
   }
 }
 
-void bar_launcher_erase(void) {
-  if(bar_launcher_visible) {
-    launcher_prompt_erase();
-    bar_launcher_hint_refresh();
+static void unmap_bar(void) {
+  for(u32 i = 0; i < monitor_count; i++) {
+    unmap_window(mode_blocks[i]);
+    for(u32 j = 0; j < WORKSPACE_COUNT; j++) {
+      unmap_window(workspace_blocks[i][j]);
+      workspace_blocks_mapped[i][j] = 0;
+    }
+    for(u32 j = 0; j < minimized_window_count; j++)
+      unmap_window(minimized_window_blocks[i][j]);
+    for(u32 j = 0; j < LENGTH(clocked_blocks_data); j++) {
+      unmap_window(clocked_blocks[i][j]);
+      clocked_blocks_state[j].mapped = 0;
+    }
   }
 }
 
-void bar_launcher_select_left(void) {
-  if(bar_launcher_visible) {
-    launcher_hint_selected =
-      (launcher_hint_selected + launcher_hint_count - 1) % launcher_hint_count;
-    launcher_hint_update(block_next_x(&launcher_prompt_geometry));
+static void map_bar(void) {
+  for(u32 i = 0; i < monitor_count; i++) {
+    map_window(mode_blocks[i]);
+    for(u32 j = 0; j < minimized_window_count; j++)
+      map_window(minimized_window_blocks[i][j]);
+  }
+  refresh_workspace_blocks();
+}
+
+static void refresh_prompt_blocks(void) {
+  calc_prompt_offset();
+  if(launcher_prompt_length == 0) {
+    for(u32 i = 0; i < monitor_count; i++) {
+      reconfigure_window(launcher_prompt_blocks[i],
+                         bars[i].x + BAR_OUTER_MARGIN, launcher_prompt_offset);
+      change_window_color(launcher_prompt_blocks[i], BAR_INACTIVE);
+      draw_text(launcher_prompt_blocks[i], gc.inactive[colorscheme_index],
+                font_metrics, "prompt", 6);
+    }
+  } else {
+    for(u32 i = 0; i < monitor_count; i++) {
+      reconfigure_window(launcher_prompt_blocks[i],
+                         bars[i].x + BAR_OUTER_MARGIN, launcher_prompt_offset);
+      change_window_color(launcher_prompt_blocks[i], BAR_ACTIVE);
+      draw_text(launcher_prompt_blocks[i], gc.active[colorscheme_index],
+                font_metrics, launcher_prompt, launcher_prompt_length);
+    }
   }
 }
 
-void bar_launcher_select_right(void) {
-  if(bar_launcher_visible) {
-    launcher_hint_selected = (launcher_hint_selected + 1) % launcher_hint_count;
-    launcher_hint_update(block_next_x(&launcher_prompt_geometry));
+static void run_cmd(struct cmd *cmd, const char *shell) {
+  int pid = 0;
+  int fd[2];
+  if(!pipe(fd)) {
+    pid = fork();
+    if(pid == 0) {
+      close(fd[0]);
+      dup2(fd[1], STDOUT_FILENO);
+      close(fd[1]);
+      execl("/bin/sh", "sh", "-c", shell, NULL);
+    } else {
+      close(fd[1]);
+      cmd->f = fdopen(fd[0], "r");
+      cmd->pid = pid;
+      cmd->fd = fd[0];
+    }
   }
 }
 
-char *bar_launcher_return(void) {
-  if(bar_launcher_visible) {
-    bar_launcher_hide();
-    if(launcher_trie_hints[launcher_hint_selected][0] == 0)
-      return launcher_prompt_search;
-    return launcher_trie_hints[launcher_hint_selected];
+static u32 read_from_cmd(struct cmd *cmd, char *output, u32 output_size) {
+  u32 output_len;
+  if(cmd->f && fgets(output, output_size, cmd->f)) {
+    output_len = strcspn(output, "\n");
+    output[output_len] = 0;
+  }
+  return output_len;
+}
+
+static i32 status_from_cmd(struct cmd *cmd) {
+  i32 status = 0;
+  waitpid(cmd->pid, &status, 0);
+  if(WIFEXITED(status)) status = WEXITSTATUS(status);
+  close(cmd->fd);
+  return status;
+}
+
+static u32 utf8_to_utf16(u16 *out, u32 out_size, u8 *in, u32 in_len) {
+  u32 index = 0;
+  u32 out_index = 0;
+  while(index < in_len && out_index < out_size) {
+    if(in[index] & (1 << 7) && in[index] & (1 << 6)) {  // >= 2 bytes
+      if(in[index] & (1 << 5)) {                        // >= 3 bytes
+        if(in[index] & (1 << 4)) {                      // 4 bytes
+          out[out_index++] = '?';
+          index += 4;
+        } else {  // 3 bytes
+          out[out_index++] = ((in[index] & 0x0F) << 12) |
+                             ((in[index + 1] & 0x3F) << 6) |
+                             (in[index + 2] & 0x3F);
+          index += 3;
+        }
+      } else {  // 2 bytes
+        out[out_index++] = ((in[index] & 0x1F) << 6) | (in[index + 1] & 0x3F);
+        index += 2;
+      }
+    } else {  // 1 byte
+      out[out_index++] = in[index] & 0x7F;
+      index++;
+    }
+  }
+  for(u32 i = 0; i < out_index; i++) {
+    out[i] = (out[i] >> 8) | (out[i] << 8);
+  }
+  return out_index;
+}
+
+static u32 gcd(u32 a, u32 b) {
+  u32 t;
+  while(b != 0) {
+    t = a % b;
+    a = b;
+    b = t;
+  }
+  return a;
+}
+
+static void refresh_clocked(i32 redraw) {
+  u32 id;
+  u32 offset;
+  u32 x = BAR_OUTER_MARGIN;
+  pthread_mutex_lock(&draw_mutex);
+  for(u32 i = 0; i < LENGTH(clocked_blocks_data); i++) {
+    if(clocked_blocks_state[i].output_len > 0)
+      x += clocked_blocks_state[i].output_len * font_metrics.width +
+           BAR_PADDING * 2 + BAR_INNER_MARGIN;
+  }
+  clocked_blocks_offset = x - BAR_INNER_MARGIN;
+  for(i32 i = LENGTH(clocked_blocks_data) - 1; i >= redraw; i--) {
+    if(clocked_blocks_state[i].output_len) {
+      offset = clocked_blocks_state[i].output_len * font_metrics.width +
+               BAR_PADDING * 2;
+      for(u32 j = 0; j < monitor_count; j++) {
+        id = clocked_blocks[j][i];
+        reconfigure_window(id, bars[j].x + bars[j].width - x, offset);
+        if(!clocked_blocks_state[i].mapped) map_window(id);
+        if(clocked_blocks_state[i].status > 1 ||
+           (clocked_blocks_state[i].status == 1 &&
+            clocked_blocks_data[i].flags & BAR_FLAGS_ALWAYS_ACTIVE)) {
+          change_window_color(id, BAR_URGENT);
+          draw_text_utf16(id, gc.urgent[colorscheme_index], font_metrics,
+                          clocked_blocks_state[i].output,
+                          clocked_blocks_state[i].output_len);
+        } else if(clocked_blocks_state[i].status == 1 ||
+                  clocked_blocks_data[i].flags & BAR_FLAGS_ALWAYS_ACTIVE) {
+          change_window_color(id, BAR_ACTIVE);
+          draw_text_utf16(id, gc.active[colorscheme_index], font_metrics,
+                          clocked_blocks_state[i].output,
+                          clocked_blocks_state[i].output_len);
+        } else {
+          change_window_color(id, BAR_INACTIVE);
+          draw_text_utf16(id, gc.inactive[colorscheme_index], font_metrics,
+                          clocked_blocks_state[i].output,
+                          clocked_blocks_state[i].output_len);
+        }
+      }
+      clocked_blocks_state[i].mapped = 1;
+      x -= offset + BAR_INNER_MARGIN;
+    } else if(clocked_blocks_state[i].mapped) {
+      for(u32 j = 0; j < monitor_count; j++) unmap_window(clocked_blocks[j][i]);
+      clocked_blocks_state[i].mapped = 0;
+    }
+  }
+  pthread_mutex_unlock(&draw_mutex);
+}
+
+static void *thread_loop(void *unused) {
+  (void)unused;
+  i32 redraw;
+  struct cmd cmds[LENGTH(clocked_blocks_data)];
+  char temp_buff[LENGTH(clocked_blocks_state[0].output)];
+  for(u32 i = 0; i < LENGTH(clocked_blocks_data); i++) {
+    second_multiple =
+      second_multiple * (clocked_blocks_data[i].time /
+                         gcd(second_multiple, clocked_blocks_data[i].time));
+  }
+  seconds = second_multiple;
+  while(!stop_thread) {
+    redraw = -1;
+    pthread_mutex_lock(&update_mutex);
+    for(u32 i = 0; i < LENGTH(clocked_blocks_data); i++) {
+      if(seconds % clocked_blocks_data[i].time == 0) {
+        if(redraw == -1) redraw = i;
+        run_cmd(cmds + i, clocked_blocks_data[i].cmd);
+      }
+    }
+    for(u32 i = 0; i < LENGTH(clocked_blocks_data); i++) {
+      if(seconds % clocked_blocks_data[i].time == 0) {
+        clocked_blocks_state[i].output_len =
+          read_from_cmd(cmds + i, temp_buff, LENGTH(temp_buff));
+        clocked_blocks_state[i].output_len =
+          utf8_to_utf16(clocked_blocks_state[i].output,
+                        LENGTH(clocked_blocks_state[i].output), (u8 *)temp_buff,
+                        clocked_blocks_state[i].output_len);
+        clocked_blocks_state[i].status = status_from_cmd(cmds + i);
+      }
+    }
+    pthread_mutex_unlock(&update_mutex);
+    seconds = (seconds + 1) % (second_multiple + 1);
+    if(!launcher_visible && visible && redraw != -1) {
+      refresh_clocked(redraw);
+      send_changes();
+    }
+    sleep(1);
   }
   return NULL;
 }
 
-PURE bool bar_launcher_window(xcb_window_t window) {
-  if(!bar_launcher_visible) return false;
-  for(size_t i = 0; i < bar_container_count; i++) {
-    if(bar_containers.launcher[i] == window) return true;
-  }
-  return false;
-}
-
-void bar_update_minimized(void) {
-  block_minimized_update(
-    block_next_x(block_workspace_geometry + MAX_WORKSPACE_BLOCKS - 1),
-    block_info_offset_right);
-}
-
-void bar_update_workspace(size_t n) {
-  size_t pos =
-    block_next_x(block_workspace_geometry + (MAX_WORKSPACE_BLOCKS - 1));
-  bool update = (pos == block_minimized_geometry[0].x);
-  block_workspace_update(focused_workspace(),
-                         block_next_x(&block_mode_geometry), n);
-  if(update) bar_update_minimized();
-}
-
-void bar_update_mode(MODE m) {
-  size_t pos = block_next_x(&block_mode_geometry);
-  block_mode_set(m == MODE_NORMAL);
-  if(block_next_x(&block_mode_geometry) == pos) bar_update_workspace(0);
-}
-
-void bar_redraw(xcb_window_t window) {
-  size_t bar = bar_container_find(window);
-  if(bar >= bar_container_count) {
-    if(block_mode_find_redraw(window)) return;
-    if(block_workspace_find_redraw(window)) return;
-    if(block_info_find_redraw(window)) return;
-    if(block_minimized_find_redraw(window)) return;
-    if(bar_launcher_visible) {
-      if(launcher_prompt_find_redraw(window)) return;
-      if(launcher_hint_find_redraw(window)) return;
-    }
-    return;
-  }
-}
-
-void bar_redraw_all(void) {
-  for(size_t i = 0; i < bar_container_count; i++) {
-    block_mode_redraw(i);
-    block_workspace_redraw(i);
-    block_info_redraw(i);
-    block_minimized_redraw(i);
-    if(bar_launcher_visible) {
-      launcher_prompt_redraw(i);
-      launcher_hint_redraw(i);
+void update_urgent_workspaces(
+  u32 windows[WORKSPACE_COUNT][WINDOWS_PER_WORKSPACE]) {
+  for(u32 i = 0; i < WORKSPACE_COUNT; i++) {
+    urgent_workspaces[i] = 0;
+    for(u32 j = 0; j < WINDOWS_PER_WORKSPACE; j++) {
+      if(windows[i][j]) {
+        urgent_workspaces[i] = 1;
+        break;
+      }
     }
   }
+  refresh_workspace_blocks();
 }
 
-void bar_update_all(void) {
-  block_mode_update();
-  bar_update_workspace(1);
-  block_info_update_all();
-  bar_update_minimized();
+void update_urgent_minimized(u32 windows[MINIMIZE_QUEUE_SIZE]) {
+  memcpy(minimized_urgent_windows, windows, sizeof(u32) * MINIMIZE_QUEUE_SIZE);
+  refresh_minimized_windows();
 }
 
-void bar_update_info_highlight(int n, int delay) {
-  block_info_update_highlight(n, delay);
+void update_workspaces(u32 windows[WORKSPACE_COUNT][WINDOWS_PER_WORKSPACE]) {
+  if(launcher_visible || !visible) return;
+  for(u32 i = 0; i < WORKSPACE_COUNT; i++) {
+    workspace_occupied[i] = 0;
+    for(u32 j = 0; j < WINDOWS_PER_WORKSPACE; j++) {
+      if(windows[i][j] != 0) {
+        workspace_occupied[i] = 1;
+        break;
+      }
+    }
+  }
+  refresh_workspace_blocks();
 }
 
-void bar_update_info(int n) { block_info_update(n); }
+void update_visible_workspaces(u32 *workspaces, u32 count) {
+  u32 min = MIN(MIN(count, WORKSPACE_COUNT), monitor_count);
+  memcpy(visible_workspaces, workspaces, min * sizeof(u32));
+  refresh_workspace_blocks();
+}
 
-void bar_visibility(size_t bar, bool st) {
-  if(st == bar_containers.visibility[bar]) return;
-  if(st) {
-    xcb_map_window(conn, bar_containers.id[bar]);
-    bar_update_minimized();
-    bar_update_workspace(0);
+void update_focused_monitor(u32 m) {
+  focused_monitor = m;
+  update_mode(mode);
+}
+
+void update_clocked_block(u32 id) {
+  char temp_buff[LENGTH(clocked_blocks_state[0].output)];
+  struct cmd cmd;
+  pthread_mutex_lock(&update_mutex);
+  run_cmd(&cmd, clocked_blocks_data[id].cmd);
+  clocked_blocks_state[id].output_len =
+    read_from_cmd(&cmd, temp_buff, LENGTH(temp_buff));
+  clocked_blocks_state[id].output_len = utf8_to_utf16(
+    clocked_blocks_state[id].output, LENGTH(clocked_blocks_state[id].output),
+    (u8 *)temp_buff, clocked_blocks_state[id].output_len);
+  clocked_blocks_state[id].status = status_from_cmd(&cmd);
+  pthread_mutex_unlock(&update_mutex);
+  refresh_clocked(id);
+}
+
+void update_mode(u32 m) {
+  const char text = m == NORMAL_MODE ? '+' : 'I';
+  mode = m;
+  if(launcher_visible || !visible) return;
+  for(u32 i = 0; i < focused_monitor; i++) {
+    change_window_color(mode_blocks[i], BAR_INACTIVE);
+    draw_text(mode_blocks[i], gc.inactive[colorscheme_index], font_metrics,
+              &text, 1);
+  }
+  change_window_color(mode_blocks[focused_monitor], BAR_ACTIVE);
+  draw_text(mode_blocks[focused_monitor], gc.active[colorscheme_index],
+            font_metrics, &text, 1);
+  for(u32 i = focused_monitor + 1; i < monitor_count; i++) {
+    change_window_color(mode_blocks[i], BAR_INACTIVE);
+    draw_text(mode_blocks[i], gc.inactive[colorscheme_index], font_metrics,
+              &text, 1);
+  }
+}
+
+void update_minimized_window_name(u32 window) {
+  u8 name[BAR_WINDOW_NAME_LENGTH * 3];
+  u32 len;
+  for(u32 i = 0; i < minimized_window_count; i++) {
+    if(minimized_windows[i] == window) {
+      query_window_name(minimized_windows[i], name, &len,
+                        BAR_WINDOW_NAME_LENGTH * 3);
+      minimized_window_name_len[i] = utf8_to_utf16(
+        minimized_window_names[i], BAR_WINDOW_NAME_LENGTH, name, len);
+      refresh_minimized_windows();
+      break;
+    }
+  }
+}
+
+void update_minimized_windows(u32 *windows, u32 count) {
+  u8 name[BAR_WINDOW_NAME_LENGTH * 3];
+  u32 len;
+  minimized_window_count = MIN(count, MINIMIZE_QUEUE_SIZE);
+  memcpy(minimized_windows, windows, minimized_window_count * sizeof(u32));
+  for(u32 i = 0; i < minimized_window_count; i++) {
+    query_window_name(minimized_windows[i], name, &len,
+                      BAR_WINDOW_NAME_LENGTH * 3);
+    minimized_window_name_len[i] = utf8_to_utf16(
+      minimized_window_names[i], BAR_WINDOW_NAME_LENGTH, name, len);
+  }
+  refresh_minimized_windows();
+}
+
+void show_launcher(void) {
+  pthread_mutex_lock(&draw_mutex);
+  launcher_visible = 1;
+  launcher_prompt_length = 0;
+  launcher_hint_selected = 0;
+  unmap_bar();
+  for(u32 i = 0; i < monitor_count; i++) {
+    for(u32 j = 0; j < BAR_LAUNCHER_HINT_BLOCKS; j++)
+      launcher_hint_blocks_mapped[i][j] = 0;
+    map_window(launcher_prompt_blocks[i]);
+  }
+  pthread_mutex_unlock(&draw_mutex);
+  refresh_prompt_blocks();
+  regenerate_hints();
+  refresh_prompt_blocks();
+  focus_launcher(launcher_prompt_blocks[0]);
+}
+
+void hide_launcher(void) {
+  pthread_mutex_lock(&draw_mutex);
+  for(u32 i = 0; i < monitor_count; i++) {
+    unmap_window(launcher_prompt_blocks[i]);
+    for(u32 j = 0; j < BAR_LAUNCHER_HINT_BLOCKS; j++)
+      unmap_window(launcher_hint_blocks[i][j]);
+    for(u32 j = 0; j < BAR_LAUNCHER_HINT_BLOCKS; j++)
+      unmap_window(launcher_hint_blocks[i][j]);
+  }
+  map_bar();
+  launcher_visible = 0;
+  pthread_mutex_unlock(&draw_mutex);
+  unfocus_launcher();
+  redraw_bar();
+}
+
+void launcher_handle_key(u8 flags, u8 keycode) {
+  const u32 *syms;
+  const u32 num = keycode_to_keysyms(keycode, &syms);
+  if(flags == FLAGS_NONE) {
+    for(u32 i = 0; i < num; i++) {
+      for(u32 j = 0; j < LENGTH(launcher_controls); j++) {
+        if(launcher_controls[j].keysym == syms[i]) {
+          launcher_controls[j].f();
+          return;
+        }
+      }
+    }
+  }
+  if(launcher_prompt_length < MAX_PATH_ENTRY_SIZE) {
+    launcher_prompt_length +=
+      keycode_to_utf8(keycode, launcher_prompt + launcher_prompt_length,
+                      MAX_PATH_ENTRY_SIZE - launcher_prompt_length);
+    launcher_hint_selected = 0;
+    regenerate_hints();
+    refresh_prompt_blocks();
+  }
+}
+
+u32 launcher_showing(void) { return launcher_visible; }
+
+void launcher_run(void) {
+  system_run_bg(launcher_hint_count == 0
+                  ? launcher_prompt
+                  : launcher_hints[launcher_hint_selected]);
+  hide_launcher();
+}
+
+void launcher_erase(void) {
+  if(launcher_prompt_length == 0) return;
+  launcher_prompt_length--;
+  regenerate_hints();
+  refresh_prompt_blocks();
+}
+
+void launcher_hint_left(void) {
+  launcher_hint_selected =
+    (launcher_hint_selected + launcher_hint_count - 1) % launcher_hint_count;
+  refresh_hints();
+}
+
+void launcher_hint_right(void) {
+  launcher_hint_selected = (launcher_hint_selected + 1) % launcher_hint_count;
+  refresh_hints();
+}
+
+void redraw_bar(void) {
+  if(launcher_visible) return;
+  const struct choice {
+    u32 preset;
+    u32 color;
+    char text;
+  } choice =
+    mode == NORMAL_MODE
+      ? (struct choice){BAR_ACTIVE, gc.active[colorscheme_index], '+'}
+      : (struct choice){BAR_INACTIVE, gc.inactive[colorscheme_index], 'I'};
+  for(u32 i = 0; i < monitor_count; i++) {
+    change_window_color(mode_blocks[i], choice.preset);
+    draw_text(mode_blocks[i], choice.color, font_metrics, &choice.text, 1);
+  }
+  refresh_workspace_blocks();
+  for(u32 i = 0; i < monitor_count; i++) {
+    for(u32 j = 0; j < minimized_window_count; j++) {
+      change_window_color(minimized_window_blocks[i][j], BAR_ACTIVE);
+      draw_text_utf16(minimized_window_blocks[i][j],
+                      gc.active[colorscheme_index], font_metrics,
+                      minimized_window_names[j], minimized_window_name_len[j]);
+    }
+  }
+  refresh_clocked(0);
+}
+
+u32 get_bar_height(void) {
+  return font_metrics.ascent + font_metrics.descent + BAR_PADDING * 2 +
+         BAR_OUTER_MARGIN;
+}
+
+void bar_visibility(u32 val) {
+  if(visible == val) return;
+  visible = val;
+  if(visible) {
+    map_bar();
   } else {
-    bar_launcher_hide();
-    xcb_unmap_window(conn, bar_containers.id[bar]);
-  }
-  bar_containers.visibility[bar] = st;
-#define PRINT                         \
-  OUT_CONTAINER(bar_containers, bar); \
-  OUT(st);
-  LOGF(BAR_TRACE);
-#undef PRINT
-}
-
-void bar_color(size_t index) {
-  launcher_container_color(index);
-  bar_container_color(index);
-  block_color(index);
-  bar_update_all();
-}
-
-void bar_focus(xcb_window_t win) {
-  if(bar_launcher_visible && !bar_launcher_window(win)) {
-    bar_launcher_hide();
+    unmap_bar();
   }
 }
 
-void bar_count_update(const rect_t *rect, size_t count) {
-  PangoFontDescription *font;
-  bar_containers_t containers = bar_containers;
-  size_t old = bar_container_count;
-  if(count > bar_container_count) {
-    containers.x = realloc(containers.x, count * sizeof(uint32_t));
-    containers.y = realloc(containers.y, count * sizeof(uint32_t));
-    containers.w = realloc(containers.w, count * sizeof(uint32_t));
-    containers.visibility =
-      realloc(containers.visibility, count * sizeof(uint32_t));
+void update_bar_colorscheme(void) {
+  if(launcher_visible) {
+    refresh_prompt_blocks();
+    refresh_hints();
+  } else {
+    redraw_bar();
   }
-  for(size_t i = 0; i < count; i++) {
-    containers.x[i] = rect[i].x;
-    containers.y[i] = rect[i].y;
-    containers.w[i] = rect[i].w;
-  }
-  bar_container_update(containers, count);
-  font = pango_font_description_from_string(fontstr);
-  block_mode_count_update(font, old);
-  block_info_count_update(font, old);
-  block_minimized_count_update(font, old);
-  block_workspace_count_update(font, old);
-  launcher_container_count_update(old);
-  launcher_prompt_count_update(font, old);
-  launcher_hint_count_update(font, old);
-  pango_font_description_free(font);
-  bar_update_all();
 }
 
-void bar_init(const bar_init_t *init) {
-  xcolor_t color;
-  conn = init->conn;
-  screen = init->screen;
-  PangoFontDescription *font;
-  fontstr = init->bar_font;
-  bar_containers_t containers = {.id = 0};
-  focused_workspace = init->focused_workspace;
-  containers.x = malloc(init->bar_container_count * sizeof(uint32_t));
-  containers.y = malloc(init->bar_container_count * sizeof(uint32_t));
-  containers.w = malloc(init->bar_container_count * sizeof(uint32_t));
-  containers.h = init->bar_containers[0].h;
-  containers.visibility = malloc(init->bar_container_count * sizeof(bool));
-  memset(containers.visibility, 1, init->bar_container_count * sizeof(bool));
-  block_background(init->bar_background, &color, 0, 6);
-  memcpy(containers.background, color, sizeof(xcolor_t));
-  containers.padding = init->block_padding;
-  containers.separator = init->block_separator;
-  containers.launcher = NULL;
-  for(size_t i = 0; i < init->bar_container_count; i++) {
-    containers.x[i] = init->bar_containers[i].x;
-    containers.y[i] = init->bar_containers[i].y;
-    containers.w[i] = init->bar_containers[i].w;
+u32 bar_block_press(u32 window, u32 button) {
+  (void)button;
+  if(launcher_visible) {
+    for(u32 i = 0; i < monitor_count; i++) {
+      if(launcher_prompt_blocks[i] == window) {
+        launcher_run();
+        return 1;
+      }
+      for(u32 j = 0; j < BAR_LAUNCHER_HINT_BLOCKS; j++) {
+        if(launcher_hint_blocks[i][j] == window) {
+          launcher_hint_selected = j;
+          refresh_hints();
+          return 1;
+        }
+      }
+    }
+  } else {
+    for(u32 i = 0; i < monitor_count; i++) {
+      if(mode_blocks[i] == window) {
+        toggle_mode();
+        return 1;
+      }
+      for(u32 j = 0; j < WORKSPACE_COUNT; j++) {
+        if(workspace_blocks_mapped[i][j] && workspace_blocks[i][j] == window) {
+          change_workspace(j);
+          return 1;
+        }
+      }
+      for(u32 j = 0; j < LENGTH(clocked_blocks_data); j++) {
+        if(clocked_blocks[i][j] == window) {
+          if(clocked_blocks_data[j].action != NULL)
+            clocked_blocks_data[j].action(button, j);
+          return 1;
+        }
+      }
+    }
   }
-  bar_container_init(conn, screen, containers, init->bar_container_count);
-  block_init(conn, screen, init->visual_type);
-  font = pango_font_description_from_string(init->bar_font);
-  block_mode_init(font, &init->block_mode);
-  block_workspace_init(font, &init->block_workspace);
-  block_info_init(font, bar_update_minimized, &init->block_info, conn);
-  block_minimized_init(font, &init->block_minimized);
-  launcher_container_init(conn, screen);
-  launcher_prompt_init(font, &init->launcher_prompt);
-  launcher_hint_init(font, &init->launcher_hint);
-  pango_font_description_free(font);
-  launcher_trie_populate(&launcher_trie_tree);
-  bar_update_workspace(0);
-  bar_update_minimized();
+  return 0;
 }
 
-void bar_deinit(void) {
-  launcher_trie_clear(launcher_trie_tree);
-  launcher_hint_deinit();
-  launcher_prompt_deinit();
-  launcher_container_deinit();
-  block_minimized_deinit();
-  block_info_deinit();
-  block_workspace_deinit();
-  block_mode_deinit();
-  block_deinit();
-  bar_container_deinit();
-  FcFini();
-  pango_cairo_font_map_set_default(NULL);
-  cairo_debug_reset_static_data();
+void init_bar(const struct geometry *geoms, u32 m_count) {
+  const u32 font_id = open_font();
+  font_metrics = query_font_metrics(font_id);
+  struct geometry geom = {
+    .x = 0,
+    .y = 0,
+    .width = BAR_PADDING * 2 + font_metrics.width,
+    .height = BAR_PADDING * 2 + font_metrics.ascent + font_metrics.descent,
+  };
+  mode_block_offset = BAR_PADDING * 2 + font_metrics.width;
+  monitor_count = MIN(m_count, MAX_MONITOR_COUNT);
+  memcpy(bars, geoms, monitor_count * sizeof(struct geometry));
+  for(u32 i = 0; i < monitor_count; i++) {
+    geom.y = geoms[i].y + BAR_OUTER_MARGIN;
+    geom.x = geoms[i].x + BAR_OUTER_MARGIN;
+    mode_blocks[i] = create_window_geom(geom);
+    for(u32 j = 0; j < WORKSPACE_COUNT; j++)
+      workspace_blocks[i][j] = create_window_geom(geom);
+    for(u32 j = 0; j < LENGTH(clocked_blocks_data); j++)
+      clocked_blocks[i][j] = create_window_geom(geom);
+    for(u32 j = 0; j < MINIMIZE_QUEUE_SIZE; j++)
+      minimized_window_blocks[i][j] = create_window_geom(geom);
+    launcher_prompt_blocks[i] = create_window_geom(geom);
+    for(u32 j = 0; j < BAR_LAUNCHER_HINT_BLOCKS; j++)
+      launcher_hint_blocks[i][j] = create_window_geom(geom);
+    map_window(mode_blocks[i]);
+  }
+  gc = create_gc(font_id, workspace_blocks[0][0]);
+  close_font(font_id);
+  populate_path();
+  pthread_create(&thread, NULL, thread_loop, NULL);
+}
+
+void deinit_bar(void) {
+  void *val;
+  stop_thread = 1;
+  pthread_join(thread, &val);
 }

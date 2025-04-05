@@ -1,0 +1,12 @@
+#ifndef H_AWM_CONST
+#define H_AWM_CONST
+
+#define WORKSPACE_COUNT 10
+#define MAX_MONITOR_COUNT 4
+#define WINDOWS_PER_WORKSPACE 4
+#define MINIMIZE_QUEUE_SIZE 10
+
+#define INSERT_MODE 1
+#define NORMAL_MODE 0
+
+#endif

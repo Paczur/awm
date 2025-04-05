@@ -1,57 +1,56 @@
-#ifndef H_LAYOUT
-#define H_LAYOUT
+#ifndef H_AWM_LAYOUT
+#define H_AWM_LAYOUT
 
-#include "layout_types.h"
+#include "../types.h"
 
-size_t layout_workareas(const workarea_t **);
-void layout_workareas_update(const rect_t *, const rect_t *, size_t);
+#define UP 0
+#define ABOVE 0
+#define LEFT 1
+#define RIGHT 3
+#define BELOW 4
+#define DOWN 4
 
-size_t layout_workspaces(const workspace_t **);
-size_t layout_workspace_focused(void);
-void layout_workspace_switch(size_t);
-const char *layout_workspace_name(size_t);
-const char *layout_workspace_names(void);
-bool layout_workspace_isempty(size_t);
-bool layout_workspace_isurgent(size_t);
-bool layout_workspace_area_isfullscreen(size_t, size_t);
-bool layout_workspace_area_fullscreen_toggle(size_t, size_t);
+void init_layout(const struct geometry *normal,
+                 const struct geometry *fullscreen, u32 monitor_count);
 
-pthread_rwlock_t *layout_window_lock(void);
-window_list_t *const *layout_minimized(void);
-window_t *layout_xwin2win(xcb_window_t);
-xcb_window_t layout_win2xwin(const window_t *win);
-size_t layout_win2area(const window_t *win);
-window_t *layout_spawn2win(size_t);
-window_t *layout_focused(void);
-size_t layout_area_focused(void);
-xcb_window_t layout_focused_xwin(void);
-bool layout_focus_restore(void);
-bool layout_focus(const window_t *);
-void layout_focus_lose(void);
-window_t *layout_above(void);
-window_t *layout_below(void);
-window_t *layout_to_right(void);
-window_t *layout_to_left(void);
-bool layout_urgency_set(window_t *, bool);
-bool layout_input_set(window_t *, bool);
-bool layout_swap(const window_t *, const window_t *);
-void layout_reset_sizes(const window_t *);
-void layout_resize_w(const window_t *, int);
-void layout_resize_h(const window_t *, int);
-void layout_show(size_t);
-WINDOW_STATE layout_minimize(window_t *);
-void layout_destroy(xcb_window_t);
-void layout_restore(xcb_window_t, size_t);
-window_t *layout_create(xcb_window_t);
+void map_request(u32 window);
+void unmap_notify(u32 window);
+void destroy_notify(u32 window);
+void focus_in_notify(u32 window);
+void focus_out_notify(u32 window);
+void destroy_notify(u32 window);
 
-void layout_init(const layout_init_t *);
-void layout_deinit(void);
+void focus_window(u32 window);
+void focus_window_direction(u32 direction);
+void swap_windows_by_index(u32 n);
+void swap_focused_window_with_direction(u32 direction);
 
-bool layout_event_map(xcb_window_t, bool iconic);
-void layout_event_map_notify(xcb_window_t);
-WINDOW_STATE layout_event_unmap(xcb_window_t);
-void layout_event_create(xcb_window_t);
-WINDOW_STATE layout_event_destroy(xcb_window_t);
-void layout_event_focus(xcb_window_t);
+void reset_layout_state(void);
+
+void close_window(u32 window);
+void close_focused_window(void);
+
+void change_workspace(u32 w);
+void set_minimized_window(u32 window, u32 state);
+void minimize_focused_window(void);
+void unminimize_window(u32 index);
+void clean_layout_state(void);
+u32 is_workspace_empty(void);
+void restore_focus(void);
+
+void change_size_offset(i32 x, i32 y);
+void reset_size_offset(void);
+
+void set_fullscreen_window(u32 window, u32 state);
+void toggle_fullscreen_on_focused_window(void);
+
+void update_layout_colorscheme(void);
+void update_window_urgent(u32 window);
+void toggle_focused_workspace_floating(void);
+
+void start_window_move(u32 window, u32 x, u32 y);
+void move_window(u32 x, u32 y);
+void stop_window_move(void);
 
 #endif
+

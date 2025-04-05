@@ -1,74 +1,92 @@
-BIN=bin
-BUILD=build
-DIRS=$(BIN) $(BUILD)
-SRC=src
-ETC=/etc/awm
+rwildcard=$(foreach d,$(wildcard $(1:=/*)),$(call rwildcard,$d,$2) $(filter $(subst *,%,$2),$d))
 
-WARN=-Wall -Wextra -Wvla -Wsuggest-attribute=pure -Wsuggest-attribute=const
-VERBOSITY=-D DEBUG -D HINT_DEBUG -D LAYOUT_TRACE -D SYSTEM_DEBUG -D LAYOUT_GRID_TRACE
-MEMORY_DEBUG=-fsanitize=address -fsanitize=pointer-compare -fsanitize=pointer-subtract
-DEBUG=$(MEMORY_DEBUG) $(VERBOSITY) -Og -ggdb3  -fsanitize=undefined \
-			-fsanitize-address-use-after-scope -fstack-check -fno-stack-clash-protection
-TEXT=$(shell pkg-config --cflags --libs pangocairo fontconfig)
-X=$(shell pkg-config --cflags --libs xcb xcb-randr xcb-xkb xkbcommon-x11 xcb-icccm)
-THREADS=-lpthread
-LIBS= $(X) $(TEXT) $(THREADS)
-RELEASE=-O2 -s -pipe -flto=4 -fwhole-program
-CFLAGS=$(WARN) -march=native -std=gnu99 $(LIBS)
-SOURCES=$(wildcard $(SRC)/*.c $(SRC)/**/*.c)
-OBJECTS=$(patsubst $(SRC)/%.c,$(BUILD)/%.o,$(SOURCES))
-DEPENDS=$(patsubst $(SRC)/%.c,$(BUILD)/%.d,$(SOURCES))
+SOURCES=$(call rwildcard,src,*.c)
+TESTS=$(call rwildcard,test,*.c)
+LINKER_FLAGS=$(patsubst %.c, build/%.lf, $(TESTS))
+SRC_OBJECTS=$(patsubst %.c, build/%.o, $(SOURCES))
+TEST_OBJECTS=$(patsubst %.c, build/%.o, $(TESTS))
+DEPENDENCIES=$(patsubst %.c, build/%.d, $(SOURCES)$(TESTS))
+TEST_BIN=tests
+TEST_RUN=build/$(TEST_BIN).run
 
-export CCACHE_DIR := ccache
-CC=ccache gcc
+MEMORY_DEBUG_FLAGS=-fsanitize=address -fsanitize=pointer-compare -fsanitize=pointer-subtract
+WARN_FLAGS=-Wall -Wextra -Werror -Wno-error=cpp -Wno-unused-function -Wunused-result -Wvla -Wshadow -Wstrict-prototypes -Wno-maybe-uninitialized -Wno-logical-not-parentheses
+SANTIIZER_FLAGS=-fsanitize=undefined -fsanitize-address-use-after-scope -fstack-check -fno-stack-clash-protection
+DEBUG_FLAGS=$(WARN_FLAGS) $(MEMORY_DEBUG_FLAGS) $(SANITIZER_FLAGS) -Og -ggdb3
+OPTIMIZE_FLAGS=-march=native -O2 -pipe -D NDEBUG
+LINK_FLAGS=$(BASE_CFLAGS) -flto=4 -lpthread -fwhole-program $(shell pkg-config --cflags --libs xcb xcb-icccm xcb-randr xcb-xkb xkbcommon-x11)
+TEST_FLAGS=$(CFLAGS) -Isrc -lctf -Wno-unused-parameter
+BASE_CFLAGS=-std=gnu11 -MMD -MP
+CFLAGS=$(BASE_CFLAGS)
 
 all: release
 
-$(shell mkdir -p $(dir $(DEPENDS)))
--include $(DEPENDS)
+release: CFLAGS += $(OPTIMIZE_FLAGS)
+release: bins
 
-.PHONY: all install uninstall release debug re re_clean clean
-MAKEFLAGS := --jobs=$(shell nproc)
-MAKEFLAGS += --output-sync=target
-$(VERBOSE).SILENT:
+debug: CFLAGS += $(DEBUG_FLAGS)
+debug: $(TEST_RUN) bins
 
-install: $(BIN)/awm | $(ETC)
-	cp $(BIN)/awm /usr/bin
+check: $(TEST_RUN)
+
+clean:
+	rm -rf build bin
+
+bins: bin/awm
+
+install: bins
+	install -D bin/awm /usr/bin/awm-test
+	mkdir -p /etc/awm
 	cp -r scripts /etc/awm
 
 uninstall:
 	rm /usr/bin/awm
-	rm -r /etc/awm
 
-re: re_clean debug
-re_clean:
-	rm -rf $(BIN)/out
+MAKEFLAGS += --no-builtin-rules
+.SUFFIXES:
+.DELETE_ON_ERROR:
+.PHONY: all release debug check clean install uninstall
+$(VERBOSE).SILENT:
+$(shell mkdir -p $(dir $(DEPENDENCIES)))
+-include $(DEPENDENCIES)
 
-release: CFLAGS += $(RELEASE)
-release: binaries
+bin/awm: $(SRC_OBJECTS)
+	mkdir -p $(@D)
+	$(info LN  $@)
+	$(CC) $(LINK_FLAGS) $(CFLAGS) -o $@ $^
 
-debug: CFLAGS += $(DEBUG)
-debug: binaries
+$(TEST_RUN): bin/$(TEST_BIN)
+	mkdir -p $(@D)
+	$(info RUN $<)
+	./$< --cleanup --sigsegv
+	touch $@
 
-clean:
-	rm -rf $(BIN) $(BUILD)
+bin/$(TEST_BIN): $(TEST_OBJECTS) $(filter-out build/src/awm.o, $(SRC_OBJECTS)) | build/test/$(TEST_BIN).lf
+	mkdir -p $(@D)
+	$(info LN  $@)
+	$(CC) $(LINK_FLAGS) $(TEST_FLAGS) `cat $|` -o $@ $^
 
-clean_all:
-	rm -rf $(BIN) $(BUILD) $(CCACHE_DIR)
+build/test/$(TEST_BIN).lf: $(TESTS)
+	mkdir -p $(@D)
+	$(info FLG $@ )
+	$(SHELL) ./build_scripts/wraps $^ > $@
 
-binaries: $(BIN)/awm
+build/test/%.c: test/%.c
+	mkdir -p $(@D)
+	$(info E   $@)
+	$(CC) $(TEST_FLAGS) -E -o $@ $<
 
-$(BIN)/awm: $(OBJECTS) | $(BIN)
-	$(CC) $(CFLAGS) -o $@ $^
+build/test/%.o: test/%.c
+	mkdir -p $(@D)
+	$(info CC  $@)
+	$(CC) $(TEST_FLAGS) -c -o $@ $<
 
-$(BUILD):
-	mkdir -p $(dir $(OBJECTS)) $(dir $(DEPENDS))
+build/test/main.o: test/main.c
+	mkdir -p $(@D)
+	$(info CC  $@)
+	$(CC) $(TEST_FLAGS) -c -o $@ $<
 
-$(BUILD)/%.o: $(SRC)/%.c | $(BUILD)
-	$(CC) $(CFLAGS) -MMD -MP -c -o $@ $<
-
-$(BIN):
-	mkdir -p $(BIN)
-
-$(ETC):
-	mkdir -p $(ETC)
+build/src/%.o: src/%.c
+	mkdir -p $(@D)
+	$(info CC  $@)
+	$(CC) $(CFLAGS) -c -o $@ $<

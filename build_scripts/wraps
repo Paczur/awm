@@ -1,0 +1,15 @@
+#!/bin/sh
+
+wraps="$(grep -h '^\s*CTF_MOCK(' "$@" | sed 's/\s*CTF_MOCK([^,]\+,\s*\([^ ,]\+\)\s*.*/,--wrap=\1/' | sort | uniq | tr -d '\n')"
+wraps="${wraps}$(grep -h '^\s*CTF_MOCK_STATIC(' "$@" | sed 's/\s*CTF_MOCK_STATIC([^,]\+,\s*\([^ ,]\+\)\s*).*/,--wrap=\1/' | sort | uniq | tr -d '\n')"
+wraps="${wraps}$(grep -h '^\s*CTF_MOCK_VOID_ARG(' "$@" | sed 's/\s*CTF_MOCK_VOID_ARG([^,]\+,\s*\([^ ,]\+\)\s*).*/,--wrap=\1/' | sort | uniq | tr -d '\n')"
+wraps="${wraps}$(grep -h '^\s*CTF_MOCK_VOID_ARG_STATIC(' "$@" | sed 's/\s*CTF_MOCK_VOID_ARG_STATIC([^,]\+,\s*\([^ ,]\+\)\s*).*/,--wrap=\1/' | sort | uniq | tr -d '\n')"
+wraps="${wraps}$(grep -h '^\s*CTF_MOCK_VOID_RET(' "$@" | sed 's/\s*CTF_MOCK_VOID_RET(\([^,]\+\)\s*,.*/,--wrap=\1/' | sort | uniq | tr -d '\n')"
+wraps="${wraps}$(grep -h '^\s*CTF_MOCK_VOID_RET_STATIC(' "$@" | sed 's/\s*CTF_MOCK_VOID_RET_STATIC(\([^,]\+\)\s*,.*/,--wrap=\1/' | sort | uniq | tr -d '\n')"
+wraps="${wraps}$(grep -h '^\s*CTF_MOCK_VOID(' "$@" | sed 's/\s*CTF_MOCK_VOID(\([^,]\+\)\s*).*/,--wrap=\1/' | sort | uniq | tr -d '\n')"
+wraps="${wraps}$(grep -h '^\s*CTF_MOCK_VOID_STATIC(' "$@" | sed 's/\s*CTF_MOCK_VOID_STATIC(\([^,]\+\)\s*).*/,--wrap=\1/' | sort | uniq | tr -d '\n')"
+if [ -n "${wraps}" ]; then
+  echo "-Wl${wraps}"
+else
+  echo ""
+fi
