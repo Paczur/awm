@@ -21,6 +21,9 @@ struct monitor {
   u8 to[5];
 };
 
+static u32 window_moved;
+static u32 window_move_x;
+static u32 window_move_y;
 static u32 workspaces[WORKSPACE_COUNT][WINDOWS_PER_WORKSPACE];
 static u8 projection[MAX_MONITOR_COUNT][WINDOWS_PER_WORKSPACE];
 static u32 visible_workspaces[MAX_MONITOR_COUNT];
@@ -40,6 +43,9 @@ static u32 fullscreen_windows[WORKSPACE_COUNT];
 static u32 urgent_workspace_windows[WORKSPACE_COUNT][WINDOWS_PER_WORKSPACE] = {
   0};
 static u32 urgent_minimized_windows[MINIMIZE_QUEUE_SIZE];
+static u32 floating_workspaces[WORKSPACE_COUNT];
+static struct geometry floating_window_geometry[WORKSPACE_COUNT]
+                                               [WINDOWS_PER_WORKSPACE];
 
 static void minimize_window(u32 window) {
   for(u32 k = minimized_window_count; k > 0; k--)
@@ -71,8 +77,9 @@ static void expand_width(u32 monitor, u8 *taken, u8 index) {
 }
 
 static void reconfigure_monitor(u32 monitor) {
+  struct geometry *temp_geo;
   const u32 curr_workspace = visible_workspaces[monitor];
-  const u32 *const workspace = workspaces[curr_workspace];
+  u32 *const workspace = workspaces[curr_workspace];
   u8 taken[WINDOWS_PER_WORKSPACE * 2];
   u8 index;
   u32 offsets_changed = 0;
@@ -90,6 +97,7 @@ static void reconfigure_monitor(u32 monitor) {
       }
     }
   }
+  bar_visibility(1);
 
   for(u32 i = 0; i < WINDOWS_PER_WORKSPACE; i++) {
     projection[monitor][i] = workspace[i] ? i : WINDOWS_PER_WORKSPACE;
@@ -102,6 +110,31 @@ static void reconfigure_monitor(u32 monitor) {
   } else {
     expand_height(monitor, taken, index);
     expand_width(monitor, taken, index);
+  }
+  if(floating_workspaces[curr_workspace]) {
+    for(u32 i = 0; i < WINDOWS_PER_WORKSPACE; i++) {
+      temp_geo = floating_window_geometry[curr_workspace] + i;
+      if(temp_geo->x < normal[monitor].x || temp_geo->y < normal[monitor].y ||
+         temp_geo->x + temp_geo->width >
+           normal[monitor].x + normal[monitor].width ||
+         temp_geo->y + temp_geo->height >
+           normal[monitor].y + normal[monitor].height) {
+        geom.width =
+          MIN(temp_geo->width, normal[monitor].width - BORDER_SIZE * 2);
+        geom.height =
+          MIN(temp_geo->height, normal[monitor].height - BORDER_SIZE * 2);
+        geom.x = CLAMP(normal[monitor].x, temp_geo->x,
+                       normal[monitor].x + normal[monitor].width -
+                         BORDER_SIZE * 2 - geom.width);
+        geom.y = CLAMP(normal[monitor].y, temp_geo->y,
+                       normal[monitor].y + normal[monitor].height -
+                         BORDER_SIZE * 2 - geom.height);
+        *temp_geo = geom;
+        configure_window(workspaces[curr_workspace][i], geom.x, geom.y,
+                         geom.width, geom.height, BORDER_SIZE);
+      }
+    }
+    return;
   }
   for(u32 i = 0; i < WINDOWS_PER_WORKSPACE; i++) {
     if(taken[i * 2] == 0) continue;
@@ -157,7 +190,6 @@ static void reconfigure_monitor(u32 monitor) {
                        BORDER_SIZE);
     }
   }
-  bar_visibility(1);
   if(offsets_changed) send_size_offsets((i32 *)window_size_offsets);
 }
 
@@ -357,6 +389,9 @@ void map_request(u32 window) {
   }
   if(state & WINDOW_STATE_URGENT)
     set_window_workspace_urgent(current_workspace, window);
+  if(floating_workspaces[current_workspace])
+    query_requested_window_geometry(
+      floating_window_geometry[current_workspace] + index, window);
   reconfigure_monitor(focused_monitor);
   send_workspaces(workspaces);
   map_window(window);
@@ -379,6 +414,8 @@ void unmap_notify(u32 window) {
     for(u32 i = 0; i < WINDOWS_PER_WORKSPACE; i++) {
       if(workspace[i] == window) {
         workspace[i] = 0;
+        urgent_workspace_windows[visible_workspaces[j]][i] = 0;
+        send_urgent_workspace_windows(urgent_workspace_windows);
         reconfigure_monitor(focused_monitor);
         send_workspaces(workspaces);
         if(visible_workspaces[j] == current_workspace &&
@@ -452,6 +489,7 @@ void focus_out_notify(u32 window) {
 }
 
 void focus_window_direction(u32 direction) {
+  if(floating_workspaces[focused_workspace()]) return;
   const i32 curr_window = focused_windows[focused_workspace()];
   const i32 offset_direction = direction - 2;
   const u32 dir_axis = ABS(offset_direction);
@@ -499,6 +537,7 @@ void swap_windows_by_index(u32 n) {
 }
 
 void swap_focused_window_with_direction(u32 direction) {
+  if(floating_workspaces[focused_workspace()]) return;
   const u32 curr_workspace = focused_workspace();
   const i32 curr_window = focused_windows[focused_workspace()];
   const i32 offset_direction = direction - 2;
@@ -545,10 +584,23 @@ void swap_focused_window_with_direction(u32 direction) {
 
 void change_size_offset(i32 x, i32 y) {
   const u32 curr_workspace = focused_workspace();
-  window_size_offsets[curr_workspace][0] += x;
-  window_size_offsets[curr_workspace][1] += y;
-  reconfigure_monitor(focused_monitor);
-  send_size_offsets((i32 *)window_size_offsets);
+  const i32 curr_index = focused_windows[curr_workspace];
+  if(floating_workspaces[curr_workspace]) {
+    if(curr_index < 0 || curr_index >= WINDOWS_PER_WORKSPACE) return;
+    floating_window_geometry[curr_workspace][curr_index].width += y;
+    floating_window_geometry[curr_workspace][curr_index].height += x;
+    reconfigure_monitor(focused_monitor);
+    resize_window(workspaces[curr_workspace][curr_index],
+                  floating_window_geometry[curr_workspace][curr_index].x,
+                  floating_window_geometry[curr_workspace][curr_index].y,
+                  floating_window_geometry[curr_workspace][curr_index].width,
+                  floating_window_geometry[curr_workspace][curr_index].height);
+  } else {
+    window_size_offsets[curr_workspace][0] += x;
+    window_size_offsets[curr_workspace][1] += y;
+    reconfigure_monitor(focused_monitor);
+    send_size_offsets((i32 *)window_size_offsets);
+  }
 }
 
 void reset_size_offset(void) {
@@ -690,10 +742,18 @@ void init_layout(const struct geometry *norm, const struct geometry *full,
   send_fullscreen_windows(fullscreen_windows);
   send_urgent_workspace_windows(urgent_workspace_windows);
   send_urgent_minimized_windows(urgent_minimized_windows);
+  query_floating_workspaces(floating_workspaces);
+  send_floating_workspaces(floating_workspaces);
 
   for(u32 i = 0; i < WORKSPACE_COUNT; i++) {
     for(u32 j = 0; j < WINDOWS_PER_WORKSPACE; j++) {
       if(workspaces[i][j] > 0) listen_to_events(workspaces[i][j]);
+    }
+    if(floating_workspaces[i]) {
+      for(u32 j = 0; j < WINDOWS_PER_WORKSPACE; j++) {
+        query_window_geometry(floating_window_geometry[i] + j,
+                              workspaces[i][j]);
+      }
     }
   }
 
@@ -784,4 +844,59 @@ void update_layout_colorscheme(void) {
                                    : BORDER_UNFOCUSED[colorscheme_index]);
     }
   }
+}
+
+void toggle_focused_workspace_floating(void) {
+  u32 curr_workspace = focused_workspace();
+  floating_workspaces[curr_workspace] ^= 1;
+  if(floating_workspaces[curr_workspace]) {
+    for(u32 i = 0; i < WINDOWS_PER_WORKSPACE; i++) {
+      query_window_geometry(floating_window_geometry[curr_workspace] + i,
+                            workspaces[curr_workspace][i]);
+    }
+  }
+  reconfigure_monitor(focused_monitor);
+  send_floating_workspaces(floating_workspaces);
+}
+
+void start_window_move(u32 window, u32 x, u32 y) {
+  window_moved = window;
+  window_move_x = x;
+  window_move_y = y;
+  listen_to_motion(window);
+}
+
+void move_window(u32 x, u32 y) {
+  const u32 curr_workspace = focused_workspace();
+  struct geometry *geom;
+  if(!floating_workspaces[curr_workspace] || !window_moved) return;
+  for(u32 i = 0; i < WINDOWS_PER_WORKSPACE; i++) {
+    if(workspaces[curr_workspace][i] == window_moved) {
+      geom = floating_window_geometry[curr_workspace] + i;
+      if(x < window_move_x && geom->x + x < window_move_x) {
+        geom->x = normal[focused_monitor].x;
+      } else {
+        geom->x += x - window_move_x;
+      }
+      if(y < window_move_y && geom->y + y < window_move_y) {
+        geom->y = normal[focused_monitor].y;
+      } else {
+        geom->y += y - window_move_y;
+      }
+      window_move_x = x;
+      window_move_y = y;
+      reconfigure_monitor(focused_monitor);
+      resize_window(workspaces[curr_workspace][i],
+                    floating_window_geometry[curr_workspace][i].x,
+                    floating_window_geometry[curr_workspace][i].y,
+                    floating_window_geometry[curr_workspace][i].width,
+                    floating_window_geometry[curr_workspace][i].height);
+      return;
+    }
+  }
+}
+
+void stop_window_move(void) {
+  stop_listening_to_motion(window_moved);
+  window_moved = 0;
 }

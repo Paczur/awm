@@ -9,6 +9,7 @@ static struct {
   u8 mode;
   u8 mode_return;
   u8 mode_keycode;
+  u8 mode_held;
   u8 last_keycode;
   u32 shortcut_length;
   struct shortcut shortcuts[MAX_SHORTCUT_SIZE];
@@ -71,6 +72,7 @@ void handle_shortcut(u8 flags, u8 keycode) {
   void (*const f)(void) = find_shortcut(flags, keycode);
   if(keycode == state.mode_keycode) {
     state.mode_return = 0;
+    state.mode_held = 1;
   } else {
     state.mode_return = state.mode_keycode;
   }
@@ -81,6 +83,9 @@ void handle_shortcut(u8 flags, u8 keycode) {
 
 void release_handler(u8 keycode) {
   state.last_keycode = 0;
+  if(keycode == state.mode_keycode) {
+    state.mode_held = 0;
+  }
   if(state.mode_return == keycode) {
     if(state.mode == NORMAL_MODE) set_mode(INSERT_MODE);
     state.mode_return = 0;
@@ -101,3 +106,5 @@ void set_mode(u8 mode) {
 }
 
 u8 get_mode(void) { return state.mode; }
+
+u32 mode_held(void) { return state.mode_held; }

@@ -31,15 +31,10 @@ static void x_init_root(void) {
 }
 
 static void x_init_wm(void) {
-  xcb_void_cookie_t err_cookie;
-  xcb_generic_error_t *err;
-  uint32_t values;
-  values = XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT |
-           XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | XCB_EVENT_MASK_STRUCTURE_NOTIFY;
-  err_cookie = xcb_change_window_attributes_checked(conn, screen->root,
-                                                    XCB_CW_EVENT_MASK, &values);
-  err = xcb_request_check(conn, err_cookie);
-  free(err);
+  const u32 values = XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT |
+                     XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY |
+                     XCB_EVENT_MASK_STRUCTURE_NOTIFY;
+  xcb_change_window_attributes(conn, screen->root, XCB_CW_EVENT_MASK, &values);
 }
 
 static void x_init_visual(void) {
@@ -228,12 +223,27 @@ void query_window_string(xcb_window_t window, xcb_atom_t atom, char *str,
 }
 
 struct wm_hints query_window_hints(u32 window) {
-  struct wm_hints ret;
+  struct wm_hints ret = {0};
   xcb_get_property_cookie_t cookie = xcb_get_property_unchecked(
-    conn, 0, window, WM_HINTS, WM_HINTS, 0, sizeof(struct wm_hints) / 32);
+    conn, 0, window, WM_HINTS, WM_HINTS, 0, sizeof(struct wm_hints) / 8);
   xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, cookie, NULL);
-  memcpy(&ret, xcb_get_property_value(reply), sizeof(ret));
-  if(reply) free(reply);
+  if(reply) {
+    memcpy(&ret, xcb_get_property_value(reply), sizeof(ret));
+    free(reply);
+  }
+  return ret;
+}
+
+struct wm_size_hints query_window_size_hints(u32 window) {
+  struct wm_size_hints ret = {0};
+  xcb_get_property_cookie_t cookie =
+    xcb_get_property_unchecked(conn, 0, window, WM_NORMAL_HINTS, WM_SIZE_HINTS,
+                               0, sizeof(struct wm_size_hints) / 8);
+  xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, cookie, NULL);
+  if(reply) {
+    memcpy(&ret, xcb_get_property_value(reply), sizeof(ret));
+    free(reply);
+  }
   return ret;
 }
 

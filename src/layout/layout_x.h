@@ -16,7 +16,12 @@ void configure_and_raise(u32 window, u32 x, u32 y, u32 width, u32 height,
                          u32 border);
 void configure_window(u32 window, u32 x, u32 y, u32 width, u32 heigth,
                       u32 border);
+void resize_window(u32 window, u32 x, u32 y, u32 width, u32 heigth);
+void query_window_geometry(struct geometry *geom, u32 window);
+void query_requested_window_geometry(struct geometry *geom, u32 window);
 void listen_to_events(u32 window);
+void listen_to_motion(u32 window);
+void stop_listening_to_motion(u32 window);
 void change_window_border_color(u32 window, u32 color);
 void focus_window(u32 window);
 void unfocus_window(void);
@@ -53,6 +58,8 @@ void send_urgent_workspace_windows(
   u32 windows[WORKSPACE_COUNT][WINDOWS_PER_WORKSPACE]);
 void query_urgent_minimized_windows(u32 windows[MINIMIZE_QUEUE_SIZE]);
 void send_urgent_minimized_windows(u32 windows[MINIMIZE_QUEUE_SIZE]);
+void query_floating_workspaces(u32 workspaces[WORKSPACE_COUNT]);
+void send_floating_workspaces(u32 workspaces[WORKSPACE_COUNT]);
 
 u32 query_window_urgent(u32 window);
 

@@ -59,6 +59,45 @@ void configure_window(u32 window, u32 x, u32 y, u32 width, u32 heigth,
                        values);
 }
 
+void resize_window(u32 window, u32 x, u32 y, u32 width, u32 heigth) {
+  const u32 values[] = {x, y, width, heigth};
+  sync_configure(window);
+  xcb_configure_window(conn, window,
+                       XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y |
+                         XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
+                       values);
+}
+
+void query_window_geometry(struct geometry *geom, u32 window) {
+  xcb_get_geometry_cookie_t cookie = xcb_get_geometry_unchecked(conn, window);
+  xcb_get_geometry_reply_t *reply = xcb_get_geometry_reply(conn, cookie, NULL);
+  if(reply) {
+    geom->x = reply->x;
+    geom->y = reply->x;
+    geom->width = reply->width;
+    geom->height = reply->height;
+    free(reply);
+  } else {
+    geom->x = 0;
+    geom->y = 0;
+    geom->width = 0;
+    geom->height = 0;
+  }
+}
+
+void query_requested_window_geometry(struct geometry *geom, u32 window) {
+  struct wm_size_hints hints = query_window_size_hints(window);
+  query_window_geometry(geom, window);
+  if(hints.flags.user_size || hints.flags.program_size) return;
+  if(hints.flags.program_min_size) {
+    geom->width = MAX(hints.min_width, (i32)geom->width);
+    geom->height = MAX(hints.min_height, (i32)geom->height);
+  } else if(hints.flags.program_base_size) {
+    geom->width = MAX(hints.base_width, (i32)geom->width);
+    geom->height = MAX(hints.base_height, (i32)geom->height);
+  }
+}
+
 u32 requested_window_state(u32 window) {
   xcb_atom_t atoms[15];
   u32 ret = WINDOW_STATE_NONE;
@@ -82,6 +121,20 @@ void listen_to_events(u32 window) {
                         _NET_WM_ACTION_CLOSE};
   xcb_change_window_attributes(conn, window, XCB_CW_EVENT_MASK, &values);
   send_cardinal_array(_NET_WM_ALLOWED_ACTIONS, atoms, LENGTH(atoms));
+  xcb_grab_button(conn, 1, window, XCB_EVENT_MASK_BUTTON_PRESS,
+                  XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE,
+                  XCB_BUTTON_INDEX_ANY, XCB_MOD_MASK_ANY);
+}
+
+void listen_to_motion(u32 window) {
+  xcb_grab_button(conn, 1, window,
+                  XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE |
+                    XCB_EVENT_MASK_POINTER_MOTION,
+                  XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE,
+                  XCB_BUTTON_INDEX_ANY, XCB_MOD_MASK_ANY);
+}
+
+void stop_listening_to_motion(u32 window) {
   xcb_grab_button(conn, 1, window, XCB_EVENT_MASK_BUTTON_PRESS,
                   XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE,
                   XCB_BUTTON_INDEX_ANY, XCB_MOD_MASK_ANY);
@@ -254,6 +307,14 @@ void send_urgent_minimized_windows(u32 windows[MINIMIZE_QUEUE_SIZE]) {
   send_cardinal_array(AWM_URGENT_MINIMIZED_WINDOWS, windows,
                       MINIMIZE_QUEUE_SIZE);
   update_urgent_minimized(windows);
+}
+
+void query_floating_workspaces(u32 workspaces[WORKSPACE_COUNT]) {
+  query_cardinal_array(AWM_FLOATING_WORKSPACES, workspaces, WORKSPACE_COUNT);
+}
+
+void send_floating_workspaces(u32 workspaces[WORKSPACE_COUNT]) {
+  send_cardinal_array(AWM_FLOATING_WORKSPACES, workspaces, WORKSPACE_COUNT);
 }
 
 void set_window_fullscreen(u32 window) {

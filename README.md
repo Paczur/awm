@@ -1,10 +1,6 @@
 # Array Window Manager (awm) (name subject to change)
 
-Work in progress tiling X11 window manager featuring modal keybindings.
-
-## Disclaimer
-As it is pre-release software, functionality is not finnished and bugs are to be
-expected.
+Tiling X11 window manager featuring modal keybindings.
 
 ## Features
 - Status bar with builtin launcher
@@ -13,9 +9,7 @@ expected.
 - Performance and low memmory footprint
 - Partial support for ICCCM and EWMH standards
 - Modal keybidings
-
-To Be Done:
-- Floating windows
+- Floating mode
 
 ## Installation
 awm uses Makefiles for compilation so simple `make && make install` should work.

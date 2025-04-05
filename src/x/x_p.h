@@ -19,12 +19,15 @@
   X(AWM_URGENT_WORKSPACE_WINDOWS) \
   X(AWM_URGENT_MINIMIZED_WINDOWS) \
   X(AWM_WORKSPACES)               \
+  X(AWM_FLOATING_WORKSPACES)      \
   X(UTF8_STRING)                  \
   X(WM_PROTOCOLS)                 \
   X(WM_DELETE_WINDOW)             \
   X(WM_CLIENT_MACHINE)            \
   X(WM_CLASS)                     \
   X(WM_HINTS)                     \
+  X(WM_NORMAL_HINTS)              \
+  X(WM_SIZE_HINTS)                \
   X(_NET_ACTIVE_WINDOW)           \
   X(_NET_NUMBER_OF_DESKTOPS)      \
   X(_NET_CURRENT_DESKTOP)         \
@@ -72,6 +75,33 @@ struct wm_hints {
   u32 window_group;
 };
 
+struct wm_size_hints {
+  struct {
+    u8 user_position : 1;
+    u8 user_size : 1;
+    u8 program_position : 1;
+    u8 program_size : 1;
+    u8 program_min_size : 1;
+    u8 program_max_size : 1;
+    u8 program_resize_inc : 1;
+    u8 program_aspect : 1;
+    u8 program_base_size : 1;
+    u8 program_win_gravity : 1;
+  } flags;
+  u32 pad[4];
+  i32 min_width;
+  i32 min_height;
+  i32 max_width;
+  i32 max_height;
+  i32 width_inc;
+  i32 height_inc;
+  i32 min_aspect[2];
+  i32 max_aspect[2];
+  i32 base_width;
+  i32 base_height;
+  i32 win_gravity;
+};
+
 extern xcb_visualtype_t *visual_type;
 extern xcb_connection_t *conn;
 extern const xcb_setup_t *setup;
@@ -102,6 +132,7 @@ void query_window_string(xcb_window_t window, xcb_atom_t atom, char *string,
                          u32 *string_len, u32 string_size);
 
 struct wm_hints query_window_hints(u32 window);
+struct wm_size_hints query_window_size_hints(u32 window);
 
 void map_window(xcb_window_t window);
 void unmap_window(xcb_window_t window);

@@ -46,6 +46,11 @@ void toggle_fullscreen_on_focused_window(void);
 
 void update_layout_colorscheme(void);
 void update_window_urgent(u32 window);
+void toggle_focused_workspace_floating(void);
+
+void start_window_move(u32 window, u32 x, u32 y);
+void move_window(u32 x, u32 y);
+void stop_window_move(void);
 
 #endif
 

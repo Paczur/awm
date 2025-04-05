@@ -21,6 +21,8 @@ struct geometry {
 
 #define LENGTH(x) (sizeof(x) / sizeof((x)[0]))
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
+#define MAX(x, y) ((x) > (y) ? (x) : (y))
+#define CLAMP(low, x, high) MAX(MIN(x, high), low)
 #define ABS(x) ((x) < 0 ? -(x) : (x))
 
 #define FLAGS_NONE 0

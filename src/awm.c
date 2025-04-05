@@ -139,11 +139,37 @@ static void key_press(const xcb_key_press_event_t *event) {
 }
 
 static void button_press(const xcb_button_press_event_t *event) {
-  xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, XCB_CURRENT_TIME);
   if(event->event != screen->root &&
      !bar_block_press(event->event, event->detail)) {
     focus_window(event->event);
-    set_mode(INSERT_MODE);
+    if(mode_held()) {
+      xcb_allow_events(conn, XCB_ALLOW_ASYNC_POINTER, XCB_CURRENT_TIME);
+      start_window_move(event->event, event->root_x, event->root_y);
+    } else {
+      xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, XCB_CURRENT_TIME);
+      set_mode(INSERT_MODE);
+    }
+  }
+}
+
+static void button_release(const xcb_button_release_event_t *event) {
+  (void)event;
+  if(event->detail != 1) return;
+  if(mode_held()) {
+    xcb_allow_events(conn, XCB_ALLOW_ASYNC_POINTER, XCB_CURRENT_TIME);
+    move_window(event->root_x, event->root_y);
+  } else {
+    xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, XCB_CURRENT_TIME);
+  }
+  stop_window_move();
+}
+
+static void motion_notify(const xcb_motion_notify_event_t *event) {
+  if(mode_held()) {
+    xcb_allow_events(conn, XCB_ALLOW_ASYNC_POINTER, XCB_CURRENT_TIME);
+    move_window(event->root_x, event->root_y);
+  } else {
+    xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, XCB_CURRENT_TIME);
   }
 }
 
@@ -186,6 +212,12 @@ int main(void) {
       break;
     case XCB_BUTTON_PRESS:
       button_press((xcb_button_press_event_t *)event);
+      break;
+    case XCB_BUTTON_RELEASE:
+      button_release((xcb_button_release_event_t *)event);
+      break;
+    case XCB_MOTION_NOTIFY:
+      motion_notify((xcb_motion_notify_event_t *)event);
       break;
     case XCB_MAP_REQUEST:
       map_request(((xcb_map_request_event_t *)event)->window);

@@ -30,4 +30,6 @@ void handle_shortcut(u8 flags, u8 keycode);
 void set_mode(u8 mode);
 u8 get_mode(void);
 
+u32 mode_held(void);
+
 #endif

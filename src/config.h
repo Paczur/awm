@@ -129,6 +129,7 @@ static void swap_windows_by_index_3(void) { swap_windows_by_index(3); }
     {FLAGS_NONE, KEY_p, screenshot},                           \
     {FLAGS_NONE, KEY_c, toggle_colorscheme},                   \
     {FLAGS_NONE, KEY_f, toggle_fullscreen_on_focused_window},  \
+    {FLAGS_NONE, KEY_g, toggle_focused_workspace_floating},    \
     {MOD_ALT, KEY_s, system_shutdown},                         \
     {MOD_SHIFT, KEY_H, swap_left},                             \
     {MOD_SHIFT, KEY_L, swap_right},                            \
