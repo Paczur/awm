@@ -35,7 +35,7 @@ clean:
 bins: bin/awm
 
 install: bins
-	install -D bin/awm /usr/bin/awm-test
+	install -D bin/awm /usr/bin/awm
 	mkdir -p /etc/awm
 	cp -r scripts /etc/awm
 

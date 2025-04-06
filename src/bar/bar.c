@@ -412,10 +412,12 @@ static void run_cmd(struct cmd *cmd, const char *shell) {
 }
 
 static u32 read_from_cmd(struct cmd *cmd, char *output, u32 output_size) {
-  u32 output_len;
+  u32 output_len = 0;
   if(cmd->f && fgets(output, output_size, cmd->f)) {
     output_len = strcspn(output, "\n");
     output[output_len] = 0;
+  } else {
+    output[0] = 0;
   }
   return output_len;
 }
