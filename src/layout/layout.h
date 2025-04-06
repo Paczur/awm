@@ -20,6 +20,7 @@ void focus_in_notify(u32 window);
 void focus_out_notify(u32 window);
 void destroy_notify(u32 window);
 
+void raise_window(u32 window);
 void focus_window(u32 window);
 void focus_window_direction(u32 direction);
 void swap_windows_by_index(u32 n);

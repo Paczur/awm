@@ -141,6 +141,7 @@ static void key_press(const xcb_key_press_event_t *event) {
 static void button_press(const xcb_button_press_event_t *event) {
   if(event->event != screen->root &&
      !bar_block_press(event->event, event->detail)) {
+    raise_window(event->event);
     focus_window(event->event);
     if(mode_held()) {
       xcb_allow_events(conn, XCB_ALLOW_ASYNC_POINTER, XCB_CURRENT_TIME);
@@ -166,8 +167,8 @@ static void button_release(const xcb_button_release_event_t *event) {
 
 static void motion_notify(const xcb_motion_notify_event_t *event) {
   if(mode_held()) {
-    xcb_allow_events(conn, XCB_ALLOW_ASYNC_POINTER, XCB_CURRENT_TIME);
     move_window(event->root_x, event->root_y);
+    xcb_allow_events(conn, XCB_ALLOW_ASYNC_POINTER, XCB_CURRENT_TIME);
   } else {
     xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, XCB_CURRENT_TIME);
   }

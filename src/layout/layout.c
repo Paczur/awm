@@ -390,8 +390,8 @@ void map_request(u32 window) {
   if(state & WINDOW_STATE_URGENT)
     set_window_workspace_urgent(current_workspace, window);
   if(floating_workspaces[current_workspace])
-    query_requested_window_geometry(
-      floating_window_geometry[current_workspace] + index, window);
+    query_window_geometry(floating_window_geometry[current_workspace] + index,
+                          window);
   reconfigure_monitor(focused_monitor);
   send_workspaces(workspaces);
   map_window(window);
@@ -489,7 +489,6 @@ void focus_out_notify(u32 window) {
 }
 
 void focus_window_direction(u32 direction) {
-  if(floating_workspaces[focused_workspace()]) return;
   const i32 curr_window = focused_windows[focused_workspace()];
   const i32 offset_direction = direction - 2;
   const u32 dir_axis = ABS(offset_direction);
@@ -497,7 +496,8 @@ void focus_window_direction(u32 direction) {
   const u32 is_end = offset_direction < 0 ? !end_by_axis : end_by_axis;
   if(curr_window < 0 || is_end ||
      projection[focused_monitor][curr_window] ==
-       projection[focused_monitor][curr_window + offset_direction]) {
+       projection[focused_monitor][curr_window + offset_direction] ||
+     floating_workspaces[focused_workspace()]) {
     if(!normal[focused_monitor].has[direction]) return;
     const u32 target = normal[focused_monitor].to[direction];
     const u32 index = curr_window < 0 ? 0
@@ -863,7 +863,6 @@ void start_window_move(u32 window, u32 x, u32 y) {
   window_moved = window;
   window_move_x = x;
   window_move_y = y;
-  listen_to_motion(window);
 }
 
 void move_window(u32 x, u32 y) {
@@ -896,7 +895,4 @@ void move_window(u32 x, u32 y) {
   }
 }
 
-void stop_window_move(void) {
-  stop_listening_to_motion(window_moved);
-  window_moved = 0;
-}
+void stop_window_move(void) { window_moved = 0; }
