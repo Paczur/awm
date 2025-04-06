@@ -12,27 +12,21 @@
 
 static void sync_configure(u32 window) {
   u32 count;
-  xcb_icccm_get_wm_protocols_reply_t protocols;
+  u32 atoms[20];
   xcb_client_message_event_t message = {
     XCB_CLIENT_MESSAGE,
     32,
     .window = window,
     WM_PROTOCOLS,
     {.data32[0] = _NET_WM_SYNC_REQUEST, .data32[1] = XCB_CURRENT_TIME}};
-  xcb_get_property_cookie_t cookie =
-    xcb_icccm_get_wm_protocols(conn, window, WM_PROTOCOLS);
-  if(xcb_icccm_get_wm_protocols_reply(conn, cookie, &protocols, NULL)) {
-    count = protocols.atoms_len;
-    for(u32 i = 0; i < count; i++) {
-      if(protocols.atoms[i] == _NET_WM_SYNC_REQUEST) {
-        query_cardinal_array(_NET_WM_SYNC_REQUEST_COUNTER,
-                             message.data.data32 + 2, 2);
-        xcb_send_event(conn, 0, window, 0, (char *)&message);
-        xcb_icccm_get_wm_protocols_reply_wipe(&protocols);
-        return;
-      }
+  count = query_window_atom_array(window, WM_PROTOCOLS, atoms, 20);
+  for(u32 i = 0; i < count; i++) {
+    if(atoms[i] == _NET_WM_SYNC_REQUEST) {
+      query_cardinal_array(_NET_WM_SYNC_REQUEST_COUNTER,
+                           message.data.data32 + 2, 2);
+      xcb_send_event(conn, 0, window, 0, (char *)&message);
+      return;
     }
-    xcb_icccm_get_wm_protocols_reply_wipe(&protocols);
   }
 }
 
@@ -369,8 +363,7 @@ void setup_root(void) {
   gethostname(hostname, 100);
   const u32 hostname_length = strlen(hostname);
   u32 supporting_wm_window = xcb_generate_id(conn);
-  xcb_icccm_set_wm_protocols(conn, screen->root, WM_PROTOCOLS, 1,
-                             &WM_DELETE_WINDOW);
+  send_window_atom_array(screen->root, WM_PROTOCOLS, &WM_DELETE_WINDOW, 1);
   xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, _NET_SUPPORTED,
                       XCB_ATOM_ATOM, 32, LENGTH(supported), supported);
   xcb_create_window(conn, screen->root_depth, supporting_wm_window,

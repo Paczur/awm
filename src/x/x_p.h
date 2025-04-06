@@ -3,7 +3,6 @@
 
 #include <xcb/randr.h>
 #include <xcb/xcb.h>
-#include <xcb/xcb_icccm.h>
 #include <xcb/xkb.h>
 
 #define ATOMS                     \
