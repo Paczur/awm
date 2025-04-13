@@ -67,8 +67,8 @@ static void refresh_action(u32 button, u32 index) {
     {"date \"+%a %d\"", 60, BAR_FLAGS_ALWAYS_ACTIVE, refresh_action},      \
     {"/etc/awm/scripts/brightness", 3600, BAR_FLAGS_ALWAYS_ACTIVE,         \
      brightness_action},                                                   \
-    {"/etc/awm/scripts/battery", 60, BAR_FLAGS_NONE, refresh_action},      \
     {"/etc/awm/scripts/volume", 3600, BAR_FLAGS_NONE, volume_action},      \
+    {"/etc/awm/scripts/battery", 60, BAR_FLAGS_NONE, refresh_action},      \
     {"/etc/awm/scripts/dnd", 3600, BAR_FLAGS_NONE, dnd_action},            \
     {"/etc/awm/scripts/cpu", 30, BAR_FLAGS_ALWAYS_ACTIVE, refresh_action}, \
     {"/etc/awm/scripts/gpu", 30, BAR_FLAGS_ALWAYS_ACTIVE, refresh_action}, \
