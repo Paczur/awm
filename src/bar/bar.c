@@ -114,8 +114,9 @@ static void populate_path(void) {
         stat(string, &buf);
         if(!S_ISDIR(buf.st_mode) && buf.st_mode & S_IXUSR) {
           for(u32 k = 0; k < launcher_path_entry_count; k++) {
-            if(memcmp(launcher_path_entries[k], ent->d_name,
-                      MIN(len, MAX_PATH_ENTRY_SIZE)) == 0)
+            len2 = strlen(launcher_path_entries[k]);
+            if(len == len2 && memcmp(launcher_path_entries[k], ent->d_name,
+                                     MIN(len, len2)) == 0)
               goto skip;
           }
           strlcpy(launcher_path_entries[launcher_path_entry_count++],
