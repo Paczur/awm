@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 typedef uint8_t u8;
 typedef uint16_t u16;
 typedef uint32_t u32;
@@ -31,5 +32,11 @@ struct geometry {
 #define MOD_ALT (1 << 3)
 
 #define BUTTON(x) (1 << (7 + x))
+
+#define LOG(x)             \
+  do {                     \
+    fputs(x "\n", stderr); \
+    fflush(stderr);        \
+  } while(0)
 
 #endif

@@ -228,7 +228,8 @@ struct wm_hints query_window_hints(u32 window) {
     conn, 0, window, WM_HINTS, WM_HINTS, 0, sizeof(struct wm_hints) / 8);
   xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, cookie, NULL);
   if(reply) {
-    memcpy(&ret, xcb_get_property_value(reply), sizeof(ret));
+    memcpy(&ret, xcb_get_property_value(reply),
+           MIN(sizeof(ret), (u32)xcb_get_property_value_length(reply)));
     free(reply);
   }
   return ret;
@@ -241,7 +242,8 @@ struct wm_size_hints query_window_size_hints(u32 window) {
                                0, sizeof(struct wm_size_hints) / 8);
   xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, cookie, NULL);
   if(reply) {
-    memcpy(&ret, xcb_get_property_value(reply), sizeof(ret));
+    memcpy(&ret, xcb_get_property_value(reply),
+           MIN(sizeof(ret), (u32)xcb_get_property_value_length(reply)));
     free(reply);
   }
   return ret;
