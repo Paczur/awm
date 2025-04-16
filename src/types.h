@@ -38,5 +38,10 @@ struct geometry {
     fputs(x "\n", stderr); \
     fflush(stderr);        \
   } while(0)
+#define LOGF(x, ...)                 \
+  do {                               \
+    fprintf(stderr, x, __VA_ARGS__); \
+    fflush(stderr);                  \
+  } while(0)
 
 #endif

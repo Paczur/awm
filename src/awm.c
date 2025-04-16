@@ -11,11 +11,11 @@
 #include "x/x.h"
 #include "x/x_p.h"
 
-static struct geometry monitors[MAX_MONITOR_COUNT] = {0};
+struct geometry fullscreen[MAX_MONITOR_COUNT] = {0};
 static u32 monitor_count;
 
 static void request_init(void) {
-  struct geometry fullscreen[MAX_MONITOR_COUNT] = {0};
+  static struct geometry monitors[MAX_MONITOR_COUNT] = {0};
   u32 length;
   u32 bar_height;
   xcb_randr_crtc_t *firstCrtc;
@@ -99,14 +99,17 @@ static u32 diff_monitors(void) {
       break;
     }
   }
-  if(temp_monitor_count != monitor_count) ret = 1;
-  for(u32 i = 0; i < temp_monitor_count; i++) {
-    if((u32)randr_crtcs[i]->x != monitors[i].x ||
-       (u32)randr_crtcs[i]->y != monitors[i].y ||
-       randr_crtcs[i]->width != monitors[i].width ||
-       randr_crtcs[i]->height != monitors[i].height) {
-      ret = 1;
-      break;
+  if(temp_monitor_count != monitor_count) {
+    ret = 1;
+  } else {
+    for(u32 i = 0; i < temp_monitor_count; i++) {
+      if((u32)randr_crtcs[i]->x != fullscreen[i].x ||
+         (u32)randr_crtcs[i]->y != fullscreen[i].y ||
+         randr_crtcs[i]->width != fullscreen[i].width ||
+         randr_crtcs[i]->height != fullscreen[i].height) {
+        ret = 1;
+        break;
+      }
     }
   }
   for(u32 i = 0; i < length; i++) free(randr_crtcs[i]);
