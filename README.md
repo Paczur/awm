@@ -11,6 +11,7 @@ Tiling X11 window manager featuring modal keybindings.
 - Modal keybidings
 - Floating mode
 - Non-reparenting
+- X Core fonts only
 - Limit of 4 windows per workspace
 
 ## Non portable settings
@@ -18,6 +19,7 @@ Tiling X11 window manager featuring modal keybindings.
 - colorscheme toggle (external script)
 - screenshot function (hardcoded path)
 - terminal and browser keybind (hardcoded name)
+- hardcoded font
 
 ## Configuration
 Most settings (keybinds, colorscheme) are customizable through **config.h** file.
