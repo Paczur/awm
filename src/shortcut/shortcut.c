@@ -57,8 +57,9 @@ void (*find_shortcut(u8 flags, u8 keycode))(void) {
         if(syms[i] == state.shortcuts[j].keysym &&
            flags == (state.shortcuts[j].flags & ~AUTO_REPEAT)) {
           if(state.last_keycode == keycode &&
-             !(state.shortcuts[j].flags & AUTO_REPEAT))
+             !(state.shortcuts[j].flags & AUTO_REPEAT)) {
             return NULL;
+          }
           state.last_keycode = keycode;
           return state.shortcuts[j].f;
         }
@@ -69,7 +70,7 @@ void (*find_shortcut(u8 flags, u8 keycode))(void) {
 }
 
 void handle_shortcut(u8 flags, u8 keycode) {
-  void (*const f)(void) = find_shortcut(flags, keycode);
+  void (*const f)(void) = find_shortcut(flags & ~RELEASE, keycode);
   if(keycode == state.mode_keycode) {
     state.mode_return = 0;
     state.mode_held = 1;
@@ -77,12 +78,13 @@ void handle_shortcut(u8 flags, u8 keycode) {
     state.mode_return = state.mode_keycode;
   }
   state.last_keycode = keycode;
-  if(f == NULL) return;
-  f();
+  if(f) f();
 }
 
-void release_handler(u8 keycode) {
+void release_handler(u8 flags, u8 keycode) {
   state.last_keycode = 0;
+  void (*const f)(void) = find_shortcut(flags | RELEASE, keycode);
+  if(f) f();
   if(keycode == state.mode_keycode) {
     state.mode_held = 0;
   }

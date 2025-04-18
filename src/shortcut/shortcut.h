@@ -4,9 +4,10 @@
 #include "../syms.h"
 #include "../types.h"
 
-#define MAX_SHORTCUT_SIZE 100
+#define MAX_SHORTCUT_SIZE 128
 
 #define AUTO_REPEAT (1 << 1)
+#define RELEASE (1 << 7)
 
 #define KEY_MODE KEY_Super_L
 #define MOD_MODE (1 << 6)
@@ -23,7 +24,7 @@ void init_shortcuts(struct shortcut *shortcuts, u8 size);
 
 void (*find_shortcut(u8 flags, u8 keycode))(void);
 
-void release_handler(u8 keycode);
+void release_handler(u8 flags, u8 keycode);
 
 void handle_shortcut(u8 flags, u8 keycode);
 

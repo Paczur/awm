@@ -130,7 +130,7 @@ static void deinit(void) {
 }
 
 static void key_release(const xcb_key_release_event_t *event) {
-  release_handler(event->detail);
+  release_handler(event->state, event->detail);
 }
 
 static void key_press(const xcb_key_press_event_t *event) {
@@ -169,8 +169,7 @@ static void button_release(const xcb_button_release_event_t *event) {
 }
 
 static void motion_notify(const xcb_motion_notify_event_t *event) {
-  if(mode_held()) {
-    move_window(event->root_x, event->root_y);
+  if(mode_held() && move_window(event->root_x, event->root_y)) {
     xcb_allow_events(conn, XCB_ALLOW_ASYNC_POINTER, XCB_CURRENT_TIME);
   } else {
     xcb_allow_events(conn, XCB_ALLOW_REPLAY_POINTER, XCB_CURRENT_TIME);

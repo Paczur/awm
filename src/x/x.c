@@ -126,7 +126,6 @@ void delete_window_property(u32 window, xcb_atom_t atom) {
 }
 
 void send_window_cardinal(u32 window, xcb_atom_t atom, u32 val) {
-  puts("send cardinal");
   xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window, atom,
                       XCB_ATOM_CARDINAL, 32, 1, &val);
 }
@@ -134,7 +133,6 @@ void send_window_cardinal(u32 window, xcb_atom_t atom, u32 val) {
 u32 query_window_cardinal_array(u32 window, xcb_atom_t atom, u32 *arr,
                                 u32 length) {
   u32 min = 0;
-  puts("query array");
   const xcb_get_property_cookie_t cookie =
     xcb_get_property(conn, 0, window, atom, XCB_ATOM_CARDINAL, 0, length);
   xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, cookie, NULL);
@@ -148,7 +146,6 @@ u32 query_window_cardinal_array(u32 window, xcb_atom_t atom, u32 *arr,
 
 void send_window_cardinal_array(u32 window, xcb_atom_t atom, u32 *arr,
                                 u32 length) {
-  puts("send array");
   xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window, atom,
                       XCB_ATOM_CARDINAL, 32, length, arr);
 }
@@ -157,7 +154,6 @@ u32 query_window_atom_array(u32 window, xcb_atom_t atom, xcb_atom_t *arr,
                             u32 length) {
   xcb_generic_error_t *err;
   u32 min = 0;
-  puts("query array");
   const xcb_get_property_cookie_t cookie =
     xcb_get_property(conn, 0, window, atom, XCB_ATOM_ATOM, 0, length);
   xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, cookie, &err);
@@ -171,19 +167,16 @@ u32 query_window_atom_array(u32 window, xcb_atom_t atom, xcb_atom_t *arr,
 
 void send_window_atom_array(u32 window, xcb_atom_t atom, xcb_atom_t *arr,
                             u32 length) {
-  puts("send array");
   xcb_change_property(conn, XCB_PROP_MODE_REPLACE, window, atom, XCB_ATOM_ATOM,
                       32, length, arr);
 }
 
 void append_window_atom_array(u32 window, xcb_atom_t atom, xcb_atom_t val) {
-  puts("append array");
   xcb_change_property(conn, XCB_PROP_MODE_APPEND, window, atom, XCB_ATOM_ATOM,
                       32, 1, &val);
 }
 
 u32 query_cardinal(xcb_atom_t atom, u32 def) {
-  puts("query cardinal");
   u32 val = def;
   const xcb_get_property_cookie_t cookie =
     xcb_get_property(conn, 0, screen->root, atom, XCB_ATOM_CARDINAL, 0, 1);
@@ -208,7 +201,6 @@ void send_cardinal_array(xcb_atom_t atom, u32 *arr, u32 length) {
 
 void query_window_string(xcb_window_t window, xcb_atom_t atom, char *str,
                          u32 *str_len, u32 str_size) {
-  puts("query string");
   xcb_get_property_cookie_t cookie =
     xcb_get_property_unchecked(conn, 0, window, atom, UTF8_STRING, 0, str_size);
   xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, cookie, NULL);
@@ -276,15 +268,9 @@ void x_deinit(void) {
   xcb_disconnect(conn);
 }
 
-void map_window(xcb_window_t id) {
-  puts("map");
-  xcb_map_window(conn, id);
-}
+void map_window(xcb_window_t id) { xcb_map_window(conn, id); }
 
-void unmap_window(xcb_window_t id) {
-  puts("unmap");
-  xcb_unmap_window(conn, id);
-}
+void unmap_window(xcb_window_t id) { xcb_unmap_window(conn, id); }
 
 u32 keycode_to_keysyms(u8 keycode, const u32 **syms) {
   return xkb_state_key_get_syms(state, keycode, syms);

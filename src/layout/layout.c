@@ -481,6 +481,7 @@ void focus_in_notify(u32 window) {
       }
     }
   }
+  return;
 finish:
   focused_windows[visible_workspaces[monitor]] = projection[monitor][window_i];
   send_focused_window(window);
@@ -867,10 +868,10 @@ void start_window_move(u32 window, u32 x, u32 y) {
   window_move_y = y;
 }
 
-void move_window(u32 x, u32 y) {
+u32 move_window(u32 x, u32 y) {
   const u32 curr_workspace = focused_workspace();
   struct geometry *geom;
-  if(!floating_workspaces[curr_workspace] || !window_moved) return;
+  if(!floating_workspaces[curr_workspace] || !window_moved) return 0;
   for(u32 i = 0; i < WINDOWS_PER_WORKSPACE; i++) {
     if(workspaces[curr_workspace][i] == window_moved) {
       geom = floating_window_geometry[curr_workspace] + i;
@@ -892,9 +893,10 @@ void move_window(u32 x, u32 y) {
                     floating_window_geometry[curr_workspace][i].y,
                     floating_window_geometry[curr_workspace][i].width,
                     floating_window_geometry[curr_workspace][i].height);
-      return;
+      return 1;
     }
   }
+  return 0;
 }
 
 void stop_window_move(void) { window_moved = 0; }
