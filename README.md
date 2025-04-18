@@ -25,6 +25,9 @@ Options more specific to window layout or status bar are to be found in
 **layout/layout_config.h** and **bar/bar_config.h** files respectively.
 
 ## Screenshots
+![empty](https://github.com/user-attachments/assets/4bc23708-2048-4c90-932a-75e25e95c462)
+![tiled](https://github.com/user-attachments/assets/2719d272-c37d-4dd7-8a5d-109a4240e72a)
+![floating](https://github.com/user-attachments/assets/bf06e33c-573e-4daf-ba62-76f2eb6215c4)
 
 ## Installation
 awm uses Makefiles for compilation so simple `make && make install` should work.
