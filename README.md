@@ -15,6 +15,9 @@ Tiling X11 window manager featuring modal keybindings.
 - Limit of 4 windows per workspace
 
 ## Non portable settings
+As it is AWM is developed for my usage, which means there will
+be a lot of functionality only working with my specific setup.
+Notable ones are:
 - volume block in status bar (external script)
 - colorscheme toggle (external script)
 - screenshot function (hardcoded path)
@@ -22,9 +25,9 @@ Tiling X11 window manager featuring modal keybindings.
 - hardcoded font
 
 ## Configuration
-Most settings (keybinds, colorscheme) are customizable through **config.h** file.
+Most settings (keybinds, colorscheme) are customizable through `config.h` file.
 Options more specific to window layout or status bar are to be found in
-**layout/layout_config.h** and **bar/bar_config.h** files respectively.
+`layout/layout_config.h` and `bar/bar_config.h` files respectively.
 
 ## Screenshots
 ![empty](https://github.com/user-attachments/assets/4bc23708-2048-4c90-932a-75e25e95c462)
