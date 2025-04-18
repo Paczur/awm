@@ -21,7 +21,7 @@
 #define BAR_FLAGS_ALWAYS_ACTIVE (1 << 0)
 
 #define BAR_WINDOW_NAME_LENGTH 10
-#define BAR_FONT "-misc-custom-medium-r-normal--14-200-72-72-c-100-iso10646-1"
+#define BAR_FONT "-misc-custom-medium-r-normal--24-240-72-72-c-100-iso10646-1"
 #define BAR_PADDING 5
 #define BAR_OUTER_MARGIN 5
 #define BAR_INNER_MARGIN 3

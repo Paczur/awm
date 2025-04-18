@@ -34,10 +34,10 @@ TEN_X
 
 #define MAX_COLORSCHEME_COUNT 2
 
-#define DARK_GRAY (u32[]){0xff111111, 0xffeeeeee}
-#define GRAY (u32[]){0xff333333, 0xffaaaaaa}
-#define YELLOW (u32[]){0xfff3f36e, 0xffe4bc04}
-#define WHITE (u32[]){0xfff3f3f3, 0xff000000}
+#define DARK_GRAY (u32[]){0xff111111, 0xfff3f3f3}
+#define GRAY (u32[]){0xff333333, 0xffd3d3d3}
+#define YELLOW (u32[]){0xfff3f36e, 0xff6e6ef3}
+#define WHITE (u32[]){0xfff3f3f3, 0xff111111}
 
 static void open_terminal(void) { system_run_bg("urxvt"); }
 static void open_browser(void) { system_run_bg("lb"); }
