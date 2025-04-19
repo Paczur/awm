@@ -8,13 +8,13 @@
 #include "../types.h"
 #include "system_x.h"
 
-void system_run_bg_raw(const char *cmd) {
+static void system_run_bg_raw(const char *cmd, const char *redir) {
   int status;
   int pid = fork();
   if(pid == 0) {
     int pid2 = vfork();
     if(pid2 == 0) {
-      execl("/bin/sh", "bash", "-c", cmd, NULL);
+      execl("/bin/sh", "bash", "-c", cmd, redir, NULL);
     } else {
       exit(0);
     }
@@ -24,15 +24,7 @@ void system_run_bg_raw(const char *cmd) {
 }
 
 void system_run_bg(const char *cmd) {
-  char str[512];
-  u32 len = strlen(cmd);
-  if(len + sizeof(" >/dev/null 2>&1") > 512) {
-    system_run_bg_raw(cmd);
-    return;
-  }
-  memcpy(str, cmd, strlen(cmd));
-  memcpy(str + len, " >/dev/null 2>&1", sizeof(" >/dev/null 2>&1"));
-  system_run_bg_raw(str);
+  system_run_bg_raw(cmd, " >/dev/null 2>&1");
 }
 
 int system_run_thread(const char *cmd) {

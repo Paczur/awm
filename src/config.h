@@ -39,8 +39,8 @@ TEN_X
 #define YELLOW (u32[]){0xfff3f36e, 0xff6e6ef3}
 #define WHITE (u32[]){0xfff3f3f3, 0xff111111}
 
-static void open_terminal(void) { SYSTEM_RUN_BG("urxvt"); }
-static void open_browser(void) { SYSTEM_RUN_BG("lb"); }
+static void open_terminal(void) { system_run_bg("urxvt"); }
+static void open_browser(void) { system_run_bg("lb"); }
 static void insert_mode(void) { set_mode(INSERT_MODE); }
 static void normal_mode(void) { set_mode(NORMAL_MODE); }
 static void die(void) { stop_wm = 1; }
@@ -53,7 +53,7 @@ static void signal_usr1(int unused) {
   (void)unused;
   clean_state_and_die();
 }
-static void system_shutdown(void) { SYSTEM_RUN_BG("sudo shutdown"); }
+static void system_shutdown(void) { system_run_bg("sudo shutdown"); }
 
 static void brightness_up(void) {
   system_run_thread("/etc/awm/scripts/brightness 2");
@@ -89,7 +89,7 @@ static void screenshot(void) {
   normal_mode();
 }
 static void full_screenshot(void) {
-  SYSTEM_RUN_BG(
+  system_run_bg(
     "scrot -q 100 -e "
     "\"xclip -selection clipboard -t image/png -i "
     "/home/paczur/Multimedia/Pictures/Screenshots/Scrot/"
@@ -103,7 +103,7 @@ static void toggle_colorscheme(void) {
   update_bar_colorscheme();
   update_layout_colorscheme();
   send_colorscheme();
-  SYSTEM_RUN_BG("color toggle");
+  system_run_bg("color toggle");
 }
 
 static void resize_up(void) { change_size_offset(-5, 0); }
