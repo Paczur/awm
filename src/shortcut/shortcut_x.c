@@ -19,14 +19,11 @@ void send_mode(u8 mode) {
   update_mode(mode);
 }
 
-void ungrab_keyboard(void) {
-  xcb_ungrab_keyboard(conn, XCB_CURRENT_TIME);
-  xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, XCB_MOD_MASK_ANY);
-}
+void ungrab_keyboard(void) { xcb_ungrab_keyboard(conn, XCB_CURRENT_TIME); }
 
 void grab_keyboard(void) {
-  xcb_grab_key(conn, 1, screen->root, XCB_MOD_MASK_ANY, XCB_GRAB_ANY,
-               XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC);
+  xcb_grab_keyboard(conn, 1, screen->root, XCB_CURRENT_TIME, XCB_GRAB_MODE_SYNC,
+                    XCB_GRAB_MODE_ASYNC);
 }
 
 void grab_key(u8 key, u8 mod) {

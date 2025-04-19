@@ -5,6 +5,8 @@
 #include <xcb/xcb.h>
 #include <xcb/xkb.h>
 
+#include "../types.h"
+
 #define ATOMS                     \
   X(AWM_MODE)                     \
   X(AWM_COLORSCHEME)              \

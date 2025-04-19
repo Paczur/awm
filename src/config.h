@@ -42,6 +42,7 @@ TEN_X
 static void open_terminal(void) { SYSTEM_RUN_BG("urxvt"); }
 static void open_browser(void) { SYSTEM_RUN_BG("lb"); }
 static void insert_mode(void) { set_mode(INSERT_MODE); }
+static void normal_mode(void) { set_mode(NORMAL_MODE); }
 static void die(void) { stop_wm = 1; }
 static void clean_state_and_die(void) {
   clean_layout_state();
@@ -55,35 +56,37 @@ static void signal_usr1(int unused) {
 static void system_shutdown(void) { SYSTEM_RUN_BG("sudo shutdown"); }
 
 static void brightness_up(void) {
-  system_run("/etc/awm/scripts/brightness 2");
+  system_run_thread("/etc/awm/scripts/brightness 2");
   update_clocked_block(2);
 }
 static void brightness_down(void) {
-  system_run("/etc/awm/scripts/brightness -2");
+  system_run_thread("/etc/awm/scripts/brightness -2");
   update_clocked_block(2);
 }
 
 static void volume_up(void) {
-  system_run("volume +");
+  system_run_thread("volume +");
   update_clocked_block(3);
 }
 static void volume_down(void) {
-  system_run("volume -");
+  system_run_thread("volume -");
   update_clocked_block(3);
 }
 static void volume_mute(void) {
-  system_run("volume m");
+  system_run_thread("volume m");
   update_clocked_block(3);
 }
 
 static void screenshot(void) {
-  SYSTEM_RUN_BG(
-    "scrot -s -f -q 100 -e "
+  insert_mode();
+  system_run(
+    "sleep 0.2 && scrot -s -f -q 100 -e "
     "\"xclip -selection clipboard -t image/png -i "
     "/home/paczur/Multimedia/Pictures/Screenshots/Scrot/"
     "%d-%m-%Y_%H-%M-%S_%wx%H.png\" "
     "/home/paczur/Multimedia/Pictures/Screenshots/Scrot/"
     "%d-%m-%Y_%H-%M-%S_%wx%H.png");
+  normal_mode();
 }
 static void full_screenshot(void) {
   SYSTEM_RUN_BG(
@@ -108,10 +111,10 @@ static void resize_down(void) { change_size_offset(5, 0); }
 static void resize_left(void) { change_size_offset(0, -5); }
 static void resize_right(void) { change_size_offset(0, 5); }
 
-static void resize_up_big(void) { change_size_offset(-10, 0); }
-static void resize_down_big(void) { change_size_offset(10, 0); }
-static void resize_left_big(void) { change_size_offset(0, -10); }
-static void resize_right_big(void) { change_size_offset(0, 10); }
+static void resize_up_big(void) { change_size_offset(-20, 0); }
+static void resize_down_big(void) { change_size_offset(20, 0); }
+static void resize_left_big(void) { change_size_offset(0, -20); }
+static void resize_right_big(void) { change_size_offset(0, 20); }
 
 static void focus_left(void) { focus_window_direction(LEFT); }
 static void focus_right(void) { focus_window_direction(RIGHT); }

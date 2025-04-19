@@ -6,6 +6,7 @@
 #include <unistd.h>
 
 #include "../types.h"
+#include "system_x.h"
 
 void system_run_bg_raw(const char *cmd) {
   int status;
@@ -34,12 +35,24 @@ void system_run_bg(const char *cmd) {
   system_run_bg_raw(str);
 }
 
-int system_run(const char *cmd) {
+int system_run_thread(const char *cmd) {
   int status = 0;
-  int pid = fork();
+  int pid = vfork();
   if(pid == 0) {
     execl("/bin/sh", "bash", "-c", cmd, NULL);
   } else {
+    waitpid(pid, &status, 0);
+  }
+  return status;
+}
+
+int system_run(const char *cmd) {
+  int status = 0;
+  int pid = vfork();
+  if(pid == 0) {
+    execl("/bin/sh", "bash", "-c", cmd, NULL);
+  } else {
+    send_changes();
     waitpid(pid, &status, 0);
   }
   return status;

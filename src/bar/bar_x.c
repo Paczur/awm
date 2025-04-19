@@ -120,13 +120,15 @@ void query_window_name(u32 window, u8 *name, u32 *name_length, u32 name_size) {
 
 void focus_launcher(u32 launcher) {
   set_mode(INSERT_MODE);
-  xcb_set_input_focus(conn, XCB_INPUT_FOCUS_NONE, launcher, XCB_CURRENT_TIME);
-  xcb_grab_key(conn, 1, launcher, XCB_MOD_MASK_ANY, XCB_GRAB_ANY,
-               XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+  xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, launcher,
+                      XCB_CURRENT_TIME);
+  xcb_grab_keyboard(conn, 1, launcher, XCB_CURRENT_TIME, XCB_GRAB_MODE_SYNC,
+                    XCB_GRAB_MODE_ASYNC);
 }
 
 void unfocus_launcher(void) {
   restore_focus();
+  xcb_ungrab_keyboard(conn, XCB_CURRENT_TIME);
   set_mode(NORMAL_MODE);
 }
 

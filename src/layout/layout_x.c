@@ -133,13 +133,12 @@ void raise_window(u32 window) {
 }
 
 void focus_window(u32 window) {
-  xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, window,
-                      XCB_CURRENT_TIME);
+  xcb_set_input_focus(conn, XCB_INPUT_FOCUS_NONE, window, XCB_CURRENT_TIME);
 }
 
 void unfocus_window(void) {
-  xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT,
-                      XCB_INPUT_FOCUS_POINTER_ROOT, XCB_CURRENT_TIME);
+  xcb_set_input_focus(conn, XCB_INPUT_FOCUS_NONE, XCB_INPUT_FOCUS_NONE,
+                      XCB_CURRENT_TIME);
   set_mode(NORMAL_MODE);
 }
 
