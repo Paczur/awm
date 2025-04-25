@@ -145,12 +145,12 @@ static void reconfigure_monitor(u32 monitor) {
                             fullscreen[monitor].x, fullscreen[monitor].y,
                             fullscreen[monitor].width,
                             fullscreen[monitor].height, 0);
-        bar_visibility(0);
+        bar_visibility(monitor, 0);
         return;
       }
     }
   }
-  bar_visibility(1);
+  bar_visibility(monitor, 1);
 
   for(u32 i = 0; i < WINDOWS_PER_WORKSPACE; i++) {
     projection[monitor][i] = workspace[i] ? i : WINDOWS_PER_WORKSPACE;

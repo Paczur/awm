@@ -65,7 +65,7 @@ void reset_window_fullscreen(u32 window);
 void set_window_minimized(u32 window);
 void reset_window_minimized(u32 window);
 
-void bar_visibility(u32 val);
+void bar_visibility(u32 monitor, u32 val);
 
 void setup_root(void);
 void send_changes(void);

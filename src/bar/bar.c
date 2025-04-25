@@ -38,7 +38,7 @@ static u32 monitor_count;
 static struct gc gc;
 static struct geometry bars[MAX_MONITOR_COUNT];
 static struct font_metrics font_metrics;
-static u32 visible = 1;
+static u32 visible[MAX_MONITOR_COUNT] = {1, 1, 1};
 
 static u32 mode_blocks[MAX_MONITOR_COUNT];
 static u32 mode = 2;
@@ -248,12 +248,13 @@ static void regenerate_hints(void) {
 }
 
 static void refresh_workspace_blocks(void) {
-  if(launcher_visible || !visible) return;
+  if(launcher_visible) return;
   u32 id;
   char text;
   u32 prev_x;
   for(u32 i = 0; i < WORKSPACE_COUNT; i++) {
     for(u32 j = 0; j < monitor_count; j++) {
+      if(!visible[j]) continue;
       if(workspace_blocks_mapped[j][i] && visible_workspaces[j] != i &&
          !workspace_occupied[i]) {
         unmap_window(workspace_blocks[j][i]);
@@ -262,6 +263,7 @@ static void refresh_workspace_blocks(void) {
     }
   }
   for(u32 i = 0; i < monitor_count; i++) {
+    if(!visible[i]) continue;
     prev_x =
       bars[i].x + mode_block_offset + BAR_OUTER_MARGIN + BAR_INNER_MARGIN;
     for(u32 j = 0; j < WORKSPACE_COUNT; j++) {
@@ -308,13 +310,14 @@ static void refresh_minimized_windows(void) {
   u32 id;
   u32 w;
   u32 text_length = 0;
-  if(launcher_visible || !visible) return;
+  if(launcher_visible) return;
   for(u32 i = 0; i < minimized_window_count; i++)
     text_length += minimized_window_name_len[i];
   minimized_window_blocks_width = text_length * font_metrics.width +
                                   minimized_window_count * 2 * BAR_PADDING +
                                   BAR_INNER_INSIDE_MARGIN;
   for(u32 i = 0; i < monitor_count; i++) {
+    if(!visible[i]) continue;
     x = bars[i].width / 2 + bars[i].x - minimized_window_blocks_width / 2;
     for(u32 j = 0; j < minimized_window_count; j++) {
       w = minimized_window_name_len[j] * font_metrics.width + BAR_PADDING * 2;
@@ -327,6 +330,7 @@ static void refresh_minimized_windows(void) {
       unmap_window(minimized_window_blocks[i][j]);
   }
   for(u32 i = 0; i < monitor_count; i++) {
+    if(!visible[i]) continue;
     for(u32 j = 0; j < minimized_window_count; j++) {
       for(u32 k = 0; k < MINIMIZE_QUEUE_SIZE; k++) {
         if(minimized_urgent_windows[k] == minimized_windows[j]) {
@@ -347,28 +351,24 @@ static void refresh_minimized_windows(void) {
   }
 }
 
-static void unmap_bar(void) {
-  for(u32 i = 0; i < monitor_count; i++) {
-    unmap_window(mode_blocks[i]);
-    for(u32 j = 0; j < WORKSPACE_COUNT; j++) {
-      unmap_window(workspace_blocks[i][j]);
-      workspace_blocks_mapped[i][j] = 0;
-    }
-    for(u32 j = 0; j < minimized_window_count; j++)
-      unmap_window(minimized_window_blocks[i][j]);
-    for(u32 j = 0; j < LENGTH(clocked_blocks_data); j++) {
-      unmap_window(clocked_blocks[i][j]);
-      clocked_blocks_state[j].mapped = 0;
-    }
+static void unmap_bar(u32 monitor) {
+  unmap_window(mode_blocks[monitor]);
+  for(u32 j = 0; j < WORKSPACE_COUNT; j++) {
+    unmap_window(workspace_blocks[monitor][j]);
+    workspace_blocks_mapped[monitor][j] = 0;
+  }
+  for(u32 j = 0; j < minimized_window_count; j++)
+    unmap_window(minimized_window_blocks[monitor][j]);
+  for(u32 j = 0; j < LENGTH(clocked_blocks_data); j++) {
+    unmap_window(clocked_blocks[monitor][j]);
+    clocked_blocks_state[j].mapped = 0;
   }
 }
 
-static void map_bar(void) {
-  for(u32 i = 0; i < monitor_count; i++) {
-    map_window(mode_blocks[i]);
-    for(u32 j = 0; j < minimized_window_count; j++)
-      map_window(minimized_window_blocks[i][j]);
-  }
+static void map_bar(u32 monitor) {
+  map_window(mode_blocks[monitor]);
+  for(u32 j = 0; j < minimized_window_count; j++)
+    map_window(minimized_window_blocks[monitor][j]);
   refresh_workspace_blocks();
 }
 
@@ -553,7 +553,7 @@ static void *thread_loop(void *unused) {
     }
     pthread_mutex_unlock(&update_mutex);
     seconds = (seconds + 1) % (second_multiple + 1);
-    if(!launcher_visible && visible && redraw != -1) {
+    if(!launcher_visible && redraw != -1) {
       refresh_clocked(redraw);
       send_changes();
     }
@@ -582,7 +582,7 @@ void update_urgent_minimized(u32 windows[MINIMIZE_QUEUE_SIZE]) {
 }
 
 void update_workspaces(u32 windows[WORKSPACE_COUNT][WINDOWS_PER_WORKSPACE]) {
-  if(launcher_visible || !visible) return;
+  if(launcher_visible) return;
   for(u32 i = 0; i < WORKSPACE_COUNT; i++) {
     workspace_occupied[i] = 0;
     for(u32 j = 0; j < WINDOWS_PER_WORKSPACE; j++) {
@@ -624,16 +624,20 @@ void update_clocked_block(u32 id) {
 void update_mode(u32 m) {
   const char text = m == NORMAL_MODE ? '+' : 'I';
   mode = m;
-  if(launcher_visible || !visible) return;
+  if(launcher_visible) return;
   for(u32 i = 0; i < focused_monitor; i++) {
+    if(!visible[i]) continue;
     change_window_color(mode_blocks[i], BAR_INACTIVE);
     draw_text(mode_blocks[i], gc.inactive[colorscheme_index], font_metrics,
               &text, 1);
   }
-  change_window_color(mode_blocks[focused_monitor], BAR_ACTIVE);
-  draw_text(mode_blocks[focused_monitor], gc.active[colorscheme_index],
-            font_metrics, &text, 1);
+  if(visible[focused_monitor]) {
+    change_window_color(mode_blocks[focused_monitor], BAR_ACTIVE);
+    draw_text(mode_blocks[focused_monitor], gc.active[colorscheme_index],
+              font_metrics, &text, 1);
+  }
   for(u32 i = focused_monitor + 1; i < monitor_count; i++) {
+    if(!visible[i]) continue;
     change_window_color(mode_blocks[i], BAR_INACTIVE);
     draw_text(mode_blocks[i], gc.inactive[colorscheme_index], font_metrics,
               &text, 1);
@@ -674,8 +678,8 @@ void show_launcher(void) {
   launcher_visible = 1;
   launcher_prompt_length = 0;
   launcher_hint_selected = 0;
-  unmap_bar();
   for(u32 i = 0; i < monitor_count; i++) {
+    unmap_bar(i);
     for(u32 j = 0; j < BAR_LAUNCHER_HINT_BLOCKS; j++)
       launcher_hint_blocks_mapped[i][j] = 0;
     map_window(launcher_prompt_blocks[i]);
@@ -695,8 +699,8 @@ void hide_launcher(void) {
       unmap_window(launcher_hint_blocks[i][j]);
     for(u32 j = 0; j < BAR_LAUNCHER_HINT_BLOCKS; j++)
       unmap_window(launcher_hint_blocks[i][j]);
+    map_bar(i);
   }
-  map_bar();
   launcher_visible = 0;
   pthread_mutex_unlock(&draw_mutex);
   unfocus_launcher();
@@ -784,13 +788,13 @@ u32 get_bar_height(void) {
          BAR_OUTER_MARGIN;
 }
 
-void bar_visibility(u32 val) {
-  if(visible == val) return;
-  visible = val;
-  if(visible) {
-    map_bar();
+void bar_visibility(u32 monitor, u32 val) {
+  if(visible[monitor] == val) return;
+  visible[monitor] = val;
+  if(visible[monitor]) {
+    map_bar(monitor);
   } else {
-    unmap_bar();
+    unmap_bar(monitor);
   }
 }
 

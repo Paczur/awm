@@ -32,7 +32,7 @@ void launcher_erase(void);
 u32 get_bar_height(void);
 void init_bar(const struct geometry *geoms, u32 m_count);
 void deinit_bar(void);
-void bar_visibility(u32 val);
+void bar_visibility(u32 monitor, u32 val);
 u32 bar_block_press(u32 window, u32 button);
 void update_bar_colorscheme(void);
 
